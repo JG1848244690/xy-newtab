@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "My Test Extension",
+  "name": "快捷标签",
   "description": "WXT 浏览器扩展项目",
   "version": "0.1.0",
   "icons": {
@@ -26,24 +26,15 @@
   "background": {
     "service_worker": "background.js"
   },
+  "chrome_url_overrides": {
+    "newtab": "newtab.html"
+  },
   "action": {
     "default_title": "Default Popup Title",
     "default_popup": "popup.html"
   },
   "host_permissions": [
-    "*://*.google.com/*",
     "http://localhost/*"
-  ],
-  "web_accessible_resources": [
-    {
-      "resources": [
-        "content-scripts/content.css"
-      ],
-      "use_dynamic_url": true,
-      "matches": [
-        "*://*.google.com/*"
-      ]
-    }
   ],
   "content_security_policy": {
     "extension_pages": "script-src 'self' 'wasm-unsafe-eval' http://localhost:3000; object-src 'self';",

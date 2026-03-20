@@ -28,7 +28,7 @@ pnpm add -D tailwindcss @tailwindcss/vite
 pnpm add dayjs clsx tailwind-merge lucide-react
 
 # 消息通信
-pnpm add @webext-core/messaging wxt-message-generator
+pnpm add @webext-core/messaging
 
 # 存储
 pnpm add @wxt-dev/storage
@@ -70,8 +70,7 @@ pnpm add fetch-intercept whatwg-fetch
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "tailwind-merge": "^3.5.0",
-    "whatwg-fetch": "^3.6.20",
-    "wxt-message-generator": "^2.1.9"
+    "whatwg-fetch": "^3.6.20"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
@@ -101,7 +100,7 @@ import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
   // WXT 模块
-  modules: ['@wxt-dev/module-react', 'wxt-message-generator'],
+  modules: ['@wxt-dev/module-react'],
 
   // Vite 插件配置
   vite: () => ({
@@ -113,13 +112,6 @@ export default defineConfig({
     name: 'My Extension',
     permissions: ['storage'],  // 扩展权限
     host_permissions: ['*://*.example.com/*'],  // 目标网站
-  },
-
-  // 消息系统配置 (使用 wxt-message-generator)
-  messages: {
-    msgDir: 'messaging/messages',  // 消息处理器目录
-    outDir: '.wxt',  // 输出目录
-    outputFileName: 'backgroundMessages.ts',  // 输出文件名
   },
 });
 ```
@@ -212,7 +204,7 @@ my-extension/
 │       └── extension-helper.ts
 │
 ├── .wxt/                     # WXT 生成文件
-│   └── backgroundMessages.ts # 自动生成的消息注册
+│   └── wxt.d.ts              # 类型声明
 │
 ├── wxt.config.ts
 ├── tsconfig.json
@@ -226,14 +218,15 @@ my-extension/
 ### 4.1 后台脚本 (entrypoints/background.ts)
 
 ```typescript
-// 自动生成的消息处理器初始化
-import { initMessageHandlers } from '@/.wxt/backgroundMessages';
+import { onMessage } from "@/messaging";
 
 export default defineBackground(() => {
   console.log('[Extension] Background script loaded');
 
-  // 初始化所有消息处理器
-  initMessageHandlers();
+  // 注册消息处理器
+  onMessage("example/hello", ({ data }) => {
+    return `Hello, ${data}!`;
+  });
 });
 ```
 

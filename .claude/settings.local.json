@@ -30,7 +30,9 @@
       "mcp__drawio__open_drawio_xml",
       "Bash(npx ctx7@latest library wxt \"browser extension framework installation setup\")",
       "Read(//c/Users/xy/Desktop/**)",
-      "Bash(pnpm install:*)"
+      "Bash(pnpm install:*)",
+      "Bash(pnpm dev:*)",
+      "Bash(npx ctx7@latest docs /llmstxt/wxt_dev_llms_txt \"@wxt-dev/storage usage\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\xy\\.claude\\skills"

@@ -1,10 +1,16 @@
 import { defineExtensionMessaging } from '@webext-core/messaging';
+import type { Shortcut } from '@/src/utils/types';
 
 // 定义消息协议：函数签名 = 参数类型 => 返回值类型
 interface ProtocolMap {
-  // 示例消息
-  'example/hello': (name: string) => string;
-  // 'video/get-data': (data: { videoId: string }) => VideoData | null;
+  // 快捷方式相关
+  'shortcuts/get-all': () => Shortcut[];
+  'shortcuts/add': (shortcut: Omit<Shortcut, 'id'>) => Shortcut;
+  'shortcuts/remove': (id: string) => boolean;
+
+  // 设置相关
+  'settings/get': () => Record<string, unknown>;
+  'settings/set': (settings: Record<string, unknown>) => boolean;
 }
 
 // 创建 messenger
