@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(npx ctx7@latest library wxt \"Shadow DOM createShadowRoot API\")",
+      "Bash(npx ctx7@latest docs /websites/wxt_dev \"Shadow DOM createShadowRoot content script how to create\")",
+      "Bash(npx ctx7@latest docs /wxt-dev/wxt \"Shadow DOM createShadowRoot content script how to create\")",
+      "Bash(npx ctx7@latest docs /llmstxt/wxt_dev_llms_txt \"Shadow DOM createShadowRoot content script how to create\")",
+      "WebSearch",
+      "Bash(npx ctx7@latest --help)",
+      "Bash(npx ctx7@latest --version)",
+      "Bash(npx ctx7@latest config --help)",
+      "Bash(npx ctx7@latest setup --help)",
+      "Bash(echo $CTX7_BASE_URL)",
+      "Bash(npx ctx7@latest library --help)",
+      "Bash(npx ctx7@latest library wxt \"Shadow DOM\" --json)",
+      "Bash(npx ctx7@latest --base-url https://api.context7.com docs /websites/wxt_dev \"Shadow DOM createShadowRootUi\")",
+      "Bash(npx ctx7@latest docs --help)",
+      "Bash(npx ctx7@latest docs /websites/wxt_dev \"Shadow DOM\" --json)",
+      "Bash(git config:*)",
+      "Bash(env)",
+      "Bash(EXEPATH=\"\" npx ctx7@latest docs /websites/wxt_dev \"Shadow DOM createShadowRootUi\")",
+      "Bash(EXEPATH=\"\" GIT_PREFIX=\"\" npx ctx7@latest docs \"//websites/wxt_dev\" \"Shadow DOM\")",
+      "Bash(where node:*)",
+      "Bash(npx @upstash/context7-mcp --help)",
+      "Bash(export MSYS_NO_PATHCONV=1)",
+      "Bash(npx ctx7@latest docs /websites/wxt_dev \"Shadow DOM createShadowRootUi content scripts\")",
+      "Read(//c/Users/xy/.claude/skills/**)",
+      "mcp__drawio__open_drawio_mermaid",
+      "mcp__drawio__open_drawio_xml",
+      "Bash(npx ctx7@latest library wxt \"browser extension framework installation setup\")"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\xy\\.claude\\skills"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "drawio"
+  ]
+}
