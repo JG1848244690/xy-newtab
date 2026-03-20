@@ -28,7 +28,9 @@
       "Read(//c/Users/xy/.claude/skills/**)",
       "mcp__drawio__open_drawio_mermaid",
       "mcp__drawio__open_drawio_xml",
-      "Bash(npx ctx7@latest library wxt \"browser extension framework installation setup\")"
+      "Bash(npx ctx7@latest library wxt \"browser extension framework installation setup\")",
+      "Read(//c/Users/xy/Desktop/**)",
+      "Bash(pnpm install:*)"
     ],
     "additionalDirectories": [
       "C:\\Users\\xy\\.claude\\skills"

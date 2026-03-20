@@ -1,28 +1,46 @@
 {
-  "name": "wxt-react-starter",
-  "description": "manifest.json description",
+  "name": "my-test-extension",
+  "description": "WXT 浏览器扩展项目",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "wxt",
     "dev:firefox": "wxt -b firefox",
-    "build": "wxt build",
+    "build": "wxt build -b chrome",
+    "build:dev": "wxt build -b chrome -m development",
     "build:firefox": "wxt build -b firefox",
     "zip": "wxt zip",
     "zip:firefox": "wxt zip -b firefox",
     "compile": "tsc --noEmit",
-    "postinstall": "wxt prepare"
+    "postinstall": "wxt prepare",
+    "test:e2e": "playwright test --config=e2e/playwright.config.ts",
+    "test:e2e:ui": "playwright test --config=e2e/playwright.config.ts --ui",
+    "test:e2e:report": "playwright show-report"
   },
   "dependencies": {
+    "@webext-core/messaging": "^2.3.0",
+    "@wxt-dev/storage": "^1.2.8",
+    "clsx": "^2.1.1",
+    "dayjs": "^1.11.19",
+    "fetch-intercept": "^2.4.0",
+    "lucide-react": "^0.577.0",
     "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+    "react-dom": "^19.2.4",
+    "tailwind-merge": "^3.5.0",
+    "whatwg-fetch": "^3.6.20"
   },
   "devDependencies": {
-    "@types/react": "^19.2.14",
+    "@playwright/test": "^1.58.2",
+    "@tailwindcss/vite": "^4.2.1",
+    "@types/node": "^25.5.0",
+    "@types/react": "^19.2.13",
     "@types/react-dom": "^19.2.3",
     "@wxt-dev/module-react": "^1.1.5",
+    "playwright": "^1.58.2",
+    "tailwindcss": "^4.2.1",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "wxt": "^0.20.20"
+    "wxt": "^0.20.18"
   }
 }
