@@ -282,14 +282,14 @@ function applyTheme(theme: Theme) {
 
 ## 待办事项
 
-- [ ] 安装配置 shadcn/ui
-- [ ] 实现 useTheme hook
-- [ ] 实现 useSearchEngine hook
-- [ ] 更新 useShortcuts hook
-- [ ] 实现 favicon 获取
-- [ ] 重构 SearchBar 组件
-- [ ] 重构 ShortcutCard 组件
-- [ ] 实现 ShortcutDialog 组件
-- [ ] 实现 ThemeToggle 组件
-- [ ] 更新新标签页布局
-- [ ] 测试暗色/亮色模式切换
+- [x] 安装配置 shadcn/ui
+- [x] 实现 useTheme hook
+- [x] 实现 useSearchEngine hook
+- [x] 更新 useShortcuts hook
+- [x] 实现 favicon 获取
+- [x] 重构 SearchBar 组件
+- [x] 重构 ShortcutCard 组件
+- [x] 实现 ShortcutDialog 组件
+- [x] 实现 ThemeToggle 组件
+- [x] 更新新标签页布局
+- [x] 测试暗色/亮色模式切换
