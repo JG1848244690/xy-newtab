@@ -3,6 +3,8 @@
  * 所有可复用或可配置的值集中管理
  */
 
+import type { SearchEngineOption, Settings } from './types';
+
 // 扩展名称
 export const EXTENSION_NAME = '快捷标签';
 
@@ -14,11 +16,26 @@ export const STORAGE_KEY = {
 
 // 默认快捷方式
 export const DEFAULT_SHORTCUTS = [
-  { id: '1', name: 'Google', url: 'https://www.google.com' },
-  { id: '2', name: 'GitHub', url: 'https://github.com' },
-  { id: '3', name: 'YouTube', url: 'https://www.youtube.com' },
-  { id: '4', name: 'Twitter', url: 'https://twitter.com' },
-] as const;
+  { id: '1', name: 'Google', url: 'https://www.google.com', createdAt: Date.now(), updatedAt: Date.now() },
+  { id: '2', name: 'GitHub', url: 'https://github.com', createdAt: Date.now(), updatedAt: Date.now() },
+  { id: '3', name: 'YouTube', url: 'https://www.youtube.com', createdAt: Date.now(), updatedAt: Date.now() },
+  { id: '4', name: 'Twitter', url: 'https://twitter.com', createdAt: Date.now(), updatedAt: Date.now() },
+];
+
+// 搜索引擎选项
+export const SEARCH_ENGINES: SearchEngineOption[] = [
+  { id: 'google', name: 'Google', url: 'https://www.google.com/search?q=', icon: '🔍' },
+  { id: 'bing', name: 'Bing', url: 'https://www.bing.com/search?q=', icon: '🔎' },
+  { id: 'duckduckgo', name: 'DuckDuckGo', url: 'https://duckduckgo.com/?q=', icon: '🦆' },
+  { id: 'baidu', name: '百度', url: 'https://www.baidu.com/s?wd=', icon: '🌐' },
+];
+
+// 默认设置
+export const DEFAULT_SETTINGS: Settings = {
+  theme: 'system',
+  searchEngine: 'google',
+  iconsPerRow: 8,
+};
 
 // UI 配置
 export const UI_CONFIG = {

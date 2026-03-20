@@ -8,6 +8,28 @@ export interface Shortcut {
   name: string;
   url: string;
   icon?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+// 搜索引擎
+export type SearchEngineType = 'google' | 'bing' | 'duckduckgo' | 'baidu';
+
+export interface SearchEngineOption {
+  id: SearchEngineType;
+  name: string;
+  url: string;
+  icon: string;
+}
+
+// 主题
+export type Theme = 'light' | 'dark' | 'system';
+
+// 设置
+export interface Settings {
+  theme: Theme;
+  searchEngine: SearchEngineType;
+  iconsPerRow: number;
 }
 
 // 页面类型
