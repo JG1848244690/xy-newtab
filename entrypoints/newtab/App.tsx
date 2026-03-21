@@ -10,7 +10,7 @@ import { useTheme } from '@/src/hooks/useTheme';
 import { sendMessage } from '@/messaging';
 
 function App() {
-  const { shortcuts, addShortcut, addShortcuts, updateShortcut, removeShortcut } = useShortcuts();
+  const { shortcuts, addShortcut, addShortcuts, updateShortcut, removeShortcut, removeShortcuts } = useShortcuts();
   const { engine, engineOption, engineOptions, setEngine, search } = useSearchEngine();
   const { theme, setTheme, mounted } = useTheme();
   const [isImporting, setIsImporting] = useState(false);
@@ -101,6 +101,7 @@ function App() {
           onAdd={addShortcut}
           onUpdate={updateShortcut}
           onRemove={removeShortcut}
+          onBatchRemove={removeShortcuts}
         />
       </div>
 

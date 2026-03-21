@@ -87,6 +87,14 @@ export function useShortcuts() {
     await saveShortcuts(current.filter((s) => s.id !== id));
   }, [saveShortcuts]);
 
+  // 批量删除快捷方式
+  const removeShortcuts = useCallback(async (ids: string[]) => {
+    // 从 storage 读取最新值
+    const current = await storage.getItem<Shortcut[]>(SHORTCUTS_KEY) || [];
+    const idsSet = new Set(ids);
+    await saveShortcuts(current.filter((s) => !idsSet.has(s.id)));
+  }, [saveShortcuts]);
+
   // 更新快捷方式
   const updateShortcut = useCallback(async (id: string, data: Partial<Omit<Shortcut, 'id' | 'createdAt' | 'updatedAt'>>) => {
     // 从 storage 读取最新值
@@ -110,6 +118,7 @@ export function useShortcuts() {
     addShortcut,
     addShortcuts,
     removeShortcut,
+    removeShortcuts,
     updateShortcut,
   };
 }
