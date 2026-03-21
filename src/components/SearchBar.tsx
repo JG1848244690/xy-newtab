@@ -40,15 +40,15 @@ export function SearchBar({
   };
 
   return (
-    <div className="w-full max-w-2xl">
+    <div className="w-full ">
       <div className="flex items-center gap-2 p-2 rounded-2xl bg-card border border-border shadow-lg hover:shadow-xl transition-shadow">
         {/* 搜索引擎选择 */}
         <Select value={engine} onValueChange={(value) => onEngineChange(value as SearchEngineType)}>
-          <SelectTrigger className="w-[140px] border-0 bg-transparent focus:ring-0">
+          <SelectTrigger className="w-[130px] border-0 bg-transparent focus:ring-0 shrink-0">
             <SelectValue>
-              <span className="flex items-center gap-2">
-                <span>{engineOption.icon}</span>
-                <span className="text-sm">{engineOption.name}</span>
+              <span className="flex items-center gap-1.5">
+                <span className="text-base">{engineOption.icon}</span>
+                <span className="text-sm truncate">{engineOption.name}</span>
               </span>
             </SelectValue>
           </SelectTrigger>
@@ -65,7 +65,7 @@ export function SearchBar({
         </Select>
 
         {/* 分隔线 */}
-        <div className="w-px h-8 bg-border" />
+        <div className="w-px h-8 bg-border shrink-0" />
 
         {/* 搜索输入框 */}
         <Input
@@ -75,7 +75,7 @@ export function SearchBar({
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}
           className={cn(
-            "flex-1 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0",
+            "flex-1 min-w-0 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0",
             "text-base placeholder:text-muted-foreground"
           )}
         />
@@ -84,7 +84,7 @@ export function SearchBar({
         <Button
           onClick={handleSearch}
           disabled={!query.trim()}
-          className="rounded-xl px-6"
+          className="rounded-xl px-6 shrink-0"
         >
           <Search className="w-4 h-4 mr-2" />
           搜索

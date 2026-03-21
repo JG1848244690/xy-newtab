@@ -20,21 +20,21 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-background transition-colors duration-300">
+    <div className="min-h-screen bg-background transition-colors duration-300 ">
       {/* 顶部工具栏 */}
       <div className="fixed top-4 right-4 z-10">
         <ThemeToggle theme={theme} onThemeChange={setTheme} />
       </div>
 
       {/* 主要内容 */}
-      <div className="flex flex-col items-center pt-32 px-8">
+      <div className="flex flex-col items-center pt-32 px-8 ">
         {/* Logo / 标题 */}
         <h1 className="text-4xl font-bold mb-8 text-foreground">
-          快捷标签
+          序言
         </h1>
 
         {/* 搜索栏 */}
-        <div className="mb-16">
+        <div className="mb-16 w-full max-w-4xl">
           <SearchBar
             engine={engine}
             engineOption={engineOption}
@@ -55,7 +55,7 @@ function App() {
 
       {/* 底部信息 */}
       <div className="fixed bottom-4 left-0 right-0 text-center text-muted-foreground text-sm">
-        自定义新标签页 · {shortcuts.length} 个快捷方式
+        序言 · {shortcuts.length} 个快捷方式
       </div>
     </div>
   );
