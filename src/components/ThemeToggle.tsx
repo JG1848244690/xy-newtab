@@ -1,13 +1,7 @@
 import { Sun, Moon, Monitor } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/src/components/ui/dropdown-menu';
+import { useRef } from 'react';
 import type { Theme } from '@/src/utils/types';
-import { cn } from '@/src/lib/utils';
 
 interface ThemeToggleProps {
   theme: Theme;
@@ -20,38 +14,41 @@ const themeConfig = {
   system: { icon: Monitor, label: '跟随系统' },
 };
 
-export function ThemeToggle({ theme, onThemeChange }: ThemeToggleProps) {
-  const CurrentIcon = themeConfig[theme].icon;
+// 循环顺序
+const themeOrder: Theme[] = ['light', 'dark', 'system'];
 
-  // 获取按钮中心位置并创建模拟事件
-  const handleClick = (t: Theme, event: React.MouseEvent) => {
-    // 使用点击位置作为扩散起点
-    onThemeChange(t, event);
+export function ThemeToggle({ theme, onThemeChange }: ThemeToggleProps) {
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  const handleClick = () => {
+    const currentIndex = themeOrder.indexOf(theme);
+    const nextTheme = themeOrder[(currentIndex + 1) % themeOrder.length];
+
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const fakeEvent = {
+        clientX: rect.left + rect.width / 2,
+        clientY: rect.top + rect.height / 2,
+      } as React.MouseEvent;
+      onThemeChange(nextTheme, fakeEvent);
+    } else {
+      onThemeChange(nextTheme);
+    }
   };
 
+  const CurrentIcon = themeConfig[theme].icon;
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="rounded-full">
-          <CurrentIcon className="h-5 w-5" />
-          <span className="sr-only">切换主题</span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        {(Object.keys(themeConfig) as Theme[]).map((t) => {
-          const Icon = themeConfig[t].icon;
-          return (
-            <DropdownMenuItem
-              key={t}
-              onClick={(e) => handleClick(t, e as unknown as React.MouseEvent)}
-              className={cn(theme === t && "bg-accent")}
-            >
-              <Icon className="mr-2 h-4 w-4" />
-              {themeConfig[t].label}
-            </DropdownMenuItem>
-          );
-        })}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <Button
+      ref={buttonRef}
+      variant="ghost"
+      size="icon"
+      className="rounded-full"
+      onClick={handleClick}
+      title={`当前: ${themeConfig[theme].label} (点击切换)`}
+    >
+      <CurrentIcon className="h-5 w-5" />
+      <span className="sr-only">切换主题</span>
+    </Button>
   );
 }

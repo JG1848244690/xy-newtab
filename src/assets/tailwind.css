@@ -152,3 +152,8 @@ body {
 ::view-transition-group(root) {
   animation-duration: 0s;
 }
+
+/* 主题切换动画期间禁用文字选择，防止误选 */
+:root:active {
+  user-select: none;
+}
