@@ -4,17 +4,27 @@ import { ShortcutCard } from './ShortcutCard';
 import { ShortcutDialog } from './ShortcutDialog';
 import { Button } from '@/src/components/ui/button';
 import { Checkbox } from '@/src/components/ui/checkbox';
-import type { Shortcut } from '@/src/utils/types';
+import type { Shortcut, LayoutType } from '@/src/utils/types';
 
 interface ShortcutGridProps {
   shortcuts: Shortcut[];
+  layout?: LayoutType;
+  onLayoutChange?: (layout: LayoutType) => void;
   onAdd: (data: { name: string; url: string; icon?: string }) => void;
   onUpdate: (id: string, data: Partial<Omit<Shortcut, 'id' | 'createdAt' | 'updatedAt'>>) => void;
   onRemove: (id: string) => void;
   onBatchRemove?: (ids: string[]) => void;
 }
 
-export function ShortcutGrid({ shortcuts, onAdd, onUpdate, onRemove, onBatchRemove }: ShortcutGridProps) {
+export function ShortcutGrid({
+  shortcuts,
+  layout = 'grid',
+  onLayoutChange,
+  onAdd,
+  onUpdate,
+  onRemove,
+  onBatchRemove
+}: ShortcutGridProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingShortcut, setEditingShortcut] = useState<Shortcut | null>(null);
   const [isSelectMode, setIsSelectMode] = useState(false);

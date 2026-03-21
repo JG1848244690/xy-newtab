@@ -1,19 +1,43 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Download, Loader2 } from 'lucide-react';
+import { storage } from '@wxt-dev/storage';
 import { SearchBar } from '@/src/components/SearchBar';
 import { ShortcutGrid } from '@/src/components/ShortcutGrid';
+import { GroupLayout } from '@/src/components/GroupLayout';
+import { LayoutTabs } from '@/src/components/LayoutTabs';
 import { ThemeToggle } from '@/src/components/ThemeToggle';
 import { Button } from '@/src/components/ui/button';
 import { useShortcuts } from '@/src/hooks/useShortcuts';
+import { useGroups } from '@/src/hooks/useGroups';
 import { useSearchEngine } from '@/src/hooks/useSearchEngine';
 import { useTheme } from '@/src/hooks/useTheme';
 import { sendMessage } from '@/messaging';
+import { STORAGE_KEY, DEFAULT_SETTINGS } from '@/src/utils/constants';
+import type { LayoutType } from '@/src/utils/types';
 
 function App() {
   const { shortcuts, addShortcut, addShortcuts, updateShortcut, removeShortcut, removeShortcuts } = useShortcuts();
+  const { groups, addGroup, updateGroup, removeGroup, toggleGroupExpand, addShortcutToGroup, moveShortcutsToGroup, getUngroupedShortcutIds } = useGroups();
   const { engine, engineOption, engineOptions, setEngine, search } = useSearchEngine();
   const { theme, setTheme, mounted } = useTheme();
   const [isImporting, setIsImporting] = useState(false);
+  const [layout, setLayout] = useState<LayoutType>(DEFAULT_SETTINGS.layout);
+
+  // 加载布局设置
+  useEffect(() => {
+    storage.getItem<{ layout?: LayoutType }>(`local:${STORAGE_KEY.SETTINGS}`).then((settings) => {
+      if (settings?.layout) {
+        setLayout(settings.layout);
+      }
+    });
+  }, []);
+
+  // 保存布局设置
+  const handleLayoutChange = async (newLayout: LayoutType) => {
+    setLayout(newLayout);
+    const settings = await storage.getItem<typeof DEFAULT_SETTINGS>(`local:${STORAGE_KEY.SETTINGS}`) || DEFAULT_SETTINGS;
+    await storage.setItem(`local:${STORAGE_KEY.SETTINGS}`, { ...settings, layout: newLayout });
+  };
 
   // 从 Chrome 书签导入快捷方式
   const handleImport = async () => {
@@ -95,14 +119,42 @@ function App() {
           />
         </div>
 
-        {/* 快捷图标网格 */}
-        <ShortcutGrid
-          shortcuts={shortcuts}
-          onAdd={addShortcut}
-          onUpdate={updateShortcut}
-          onRemove={removeShortcut}
-          onBatchRemove={removeShortcuts}
-        />
+        {/* 布局切换和快捷方式区域 */}
+        <div className="w-full max-w-4xl">
+          {/* 布局切换标签 */}
+          <div className="flex justify-center mb-4">
+            <LayoutTabs layout={layout} onLayoutChange={handleLayoutChange} />
+          </div>
+
+          {/* 根据布局类型显示不同内容 */}
+          {layout === 'grid' ? (
+            <ShortcutGrid
+              shortcuts={shortcuts}
+              layout={layout}
+              onLayoutChange={handleLayoutChange}
+              onAdd={addShortcut}
+              onUpdate={updateShortcut}
+              onRemove={removeShortcut}
+              onBatchRemove={removeShortcuts}
+            />
+          ) : (
+            <GroupLayout
+              groups={groups}
+              shortcuts={shortcuts}
+              onToggleGroupExpand={toggleGroupExpand}
+              onAddGroup={addGroup}
+              onUpdateGroup={updateGroup}
+              onRemoveGroup={removeGroup}
+              onAddShortcutToGroup={addShortcutToGroup}
+              onAddShortcut={addShortcut}
+              onUpdateShortcut={updateShortcut}
+              onRemoveShortcut={removeShortcut}
+              onBatchRemoveShortcuts={removeShortcuts}
+              onMoveShortcutsToGroup={moveShortcutsToGroup}
+              getUngroupedShortcutIds={getUngroupedShortcutIds}
+            />
+          )}
+        </div>
       </div>
 
       {/* 底部信息 */}

@@ -3,7 +3,7 @@
  * 所有可复用或可配置的值集中管理
  */
 
-import type { SearchEngineOption, Settings } from './types';
+import type { SearchEngineOption, Settings, ShortcutGroup } from './types';
 
 // 扩展名称
 export const EXTENSION_NAME = '序言';
@@ -12,6 +12,7 @@ export const EXTENSION_NAME = '序言';
 export const STORAGE_KEY = {
   SETTINGS: 'settings',
   SHORTCUTS: 'shortcuts',
+  GROUPS: 'groups',
 } as const;
 
 // 默认快捷方式
@@ -21,6 +22,19 @@ export const DEFAULT_SHORTCUTS = [
   { id: '3', name: 'YouTube', url: 'https://www.youtube.com', createdAt: Date.now(), updatedAt: Date.now() },
   { id: '4', name: 'Twitter', url: 'https://twitter.com', createdAt: Date.now(), updatedAt: Date.now() },
 ];
+
+// 默认分组
+export const DEFAULT_GROUPS: ShortcutGroup[] = [];
+
+// 分组颜色选项
+export const GROUP_COLORS = [
+  { name: '蓝色', value: 'blue' },
+  { name: '绿色', value: 'green' },
+  { name: '紫色', value: 'purple' },
+  { name: '橙色', value: 'orange' },
+  { name: '红色', value: 'red' },
+  { name: '青色', value: 'cyan' },
+] as const;
 
 // 搜索引擎选项
 export const SEARCH_ENGINES: SearchEngineOption[] = [
@@ -35,6 +49,7 @@ export const DEFAULT_SETTINGS: Settings = {
   theme: 'system',
   searchEngine: 'google',
   iconsPerRow: 8,
+  layout: 'grid',
 };
 
 // UI 配置

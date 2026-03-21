@@ -12,6 +12,21 @@ export interface Shortcut {
   updatedAt: number;
 }
 
+// 快捷方式分组
+export interface ShortcutGroup {
+  id: string;
+  name: string;
+  icon?: string;
+  color?: string; // 分组颜色
+  shortcutIds: string[]; // 分组包含的快捷方式 ID
+  isExpanded: boolean; // 是否展开
+  createdAt: number;
+  updatedAt: number;
+}
+
+// 布局类型
+export type LayoutType = 'grid' | 'group';
+
 // 搜索引擎
 export type SearchEngineType = 'google' | 'bing' | 'duckduckgo' | 'baidu';
 
@@ -30,6 +45,7 @@ export interface Settings {
   theme: Theme;
   searchEngine: SearchEngineType;
   iconsPerRow: number;
+  layout: LayoutType; // 布局类型
 }
 
 // 页面类型
