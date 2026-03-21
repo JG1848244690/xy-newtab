@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -61,6 +62,9 @@ export function ShortcutDialog({ open, onOpenChange, shortcut, onSave }: Shortcu
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{isEditing ? '编辑快捷方式' : '添加快捷方式'}</DialogTitle>
+          <DialogDescription>
+            {isEditing ? '修改快捷方式的名称和网址' : '添加一个新的网站快捷方式'}
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">

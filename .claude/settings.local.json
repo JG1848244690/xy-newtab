@@ -39,7 +39,8 @@
       "Bash(npx ctx7@latest library wxt \"storage binary data images files\")",
       "Bash(npx ctx7@latest docs /websites/wxt_dev_guide \"storage binary data images files assets\")",
       "Bash(npx ctx7@latest docs /wxt-dev/wxt \"storage binary data images files assets\")",
-      "Bash(pnpm run:*)"
+      "Bash(pnpm run:*)",
+      "Bash(pnpm exec:*)"
     ],
     "additionalDirectories": [
       "C:\\Users\\xy\\.claude\\skills"

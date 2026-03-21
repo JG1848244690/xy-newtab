@@ -14,14 +14,16 @@
   },
   "permissions": [
     "storage",
-    "tabs"
+    "tabs",
+    "bookmarks"
   ],
   "host_permissions": [
     "https://www.google.com/*",
     "https://*.google.com/*",
     "https://*.gstatic.com/*",
     "https://favicon.im/*",
-    "https://icons.duckduckgo.com/*"
+    "https://icons.duckduckgo.com/*",
+    "https://icon.horse/*"
   ],
   "background": {
     "service_worker": "background.js"

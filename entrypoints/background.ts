@@ -63,4 +63,46 @@ export default defineBackground(() => {
         return null;
     }
   });
+
+  // 注册消息处理器 - 从 Chrome 书签导入快捷方式
+  onMessage('shortcuts/import-from-newtab', async () => {
+    try {
+      // 使用 Chrome Bookmarks API 读取书签
+      const bookmarks = await browser.bookmarks.getTree();
+
+      const shortcuts: { name: string; url: string }[] = [];
+
+      // 递归遍历书签树
+      const traverseBookmarks = (nodes: typeof bookmarks) => {
+        for (const node of nodes) {
+          if (node.url && node.title) {
+            // 只导入 http/https 链接
+            if (node.url.startsWith('http://') || node.url.startsWith('https://')) {
+              shortcuts.push({
+                name: node.title,
+                url: node.url,
+              });
+            }
+          }
+          if (node.children) {
+            traverseBookmarks(node.children);
+          }
+        }
+      };
+
+      traverseBookmarks(bookmarks);
+
+      return {
+        shortcuts,
+        success: true,
+      };
+    } catch (error) {
+      console.error('[Background] Failed to import bookmarks:', error);
+      return {
+        shortcuts: [],
+        success: false,
+        error: error instanceof Error ? error.message : '未知错误',
+      };
+    }
+  });
 });

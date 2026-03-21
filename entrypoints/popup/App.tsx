@@ -1,6 +1,6 @@
 import { EXTENSION_NAME } from '@/src/utils/constants';
 import { useState } from 'react';
-import { ExternalLink, Plus } from 'lucide-react';
+import { ExternalLink, Plus, BookOpen } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
 import { ThemeToggle } from '@/src/components/ThemeToggle';
 import { cn } from '@/src/lib/utils';
@@ -69,10 +69,7 @@ function App() {
       {/* 内容区 */}
       <div className="p-4">
         {activeTab === 'shortcuts' && (
-          <div className="space-y-2">
-            <p className="text-muted-foreground text-sm mb-4">
-              在新标签页管理你的快捷方式
-            </p>
+          <div className="space-y-4">
             <Button
               onClick={openNewTab}
               className="w-full"
@@ -80,6 +77,26 @@ function App() {
               <Plus className="w-4 h-4 mr-2" />
               打开新标签页
             </Button>
+
+            {/* 导入教程 */}
+            <div className="border border-border rounded-lg p-3 space-y-3">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <BookOpen className="w-4 h-4" />
+                从 Chrome 书签导入
+              </div>
+              <p className="text-xs text-muted-foreground">
+                一键导入浏览器书签中的所有网站快捷方式
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={openNewTab}
+                className="w-full"
+              >
+                <ExternalLink className="w-3 h-3 mr-2" />
+                打开新标签页导入
+              </Button>
+            </div>
           </div>
         )}
 

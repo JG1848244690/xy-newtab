@@ -39,19 +39,60 @@ export function useShortcuts() {
       createdAt: now,
       updatedAt: now,
     };
-    await saveShortcuts([...shortcuts, newShortcut]);
+
+    // 从 storage 读取最新值，避免闭包问题
+    const current = await storage.getItem<Shortcut[]>(SHORTCUTS_KEY) || [];
+    const updated = [...current, newShortcut];
+    await saveShortcuts(updated);
     return newShortcut;
-  }, [shortcuts, saveShortcuts]);
+  }, [saveShortcuts]);
+
+  // 批量添加快捷方式
+  const addShortcuts = useCallback(async (items: { name: string; url: string }[]) => {
+    // 从 storage 读取最新值
+    const current = await storage.getItem<Shortcut[]>(SHORTCUTS_KEY) || [];
+    const existingUrls = new Set(current.map(s => s.url));
+
+    const now = Date.now();
+    const newShortcuts: Shortcut[] = [];
+    let idCounter = now;
+
+    for (const item of items) {
+      const url = item.url.startsWith('http') ? item.url : `https://${item.url}`;
+      // 跳过重复
+      if (!existingUrls.has(url)) {
+        newShortcuts.push({
+          id: (idCounter++).toString(),
+          name: item.name,
+          url,
+          createdAt: now,
+          updatedAt: now,
+        });
+        existingUrls.add(url);
+      }
+    }
+
+    if (newShortcuts.length > 0) {
+      const updated = [...current, ...newShortcuts];
+      await saveShortcuts(updated);
+    }
+
+    return newShortcuts.length;
+  }, [saveShortcuts]);
 
   // 删除快捷方式
   const removeShortcut = useCallback(async (id: string) => {
-    await saveShortcuts(shortcuts.filter((s) => s.id !== id));
-  }, [shortcuts, saveShortcuts]);
+    // 从 storage 读取最新值
+    const current = await storage.getItem<Shortcut[]>(SHORTCUTS_KEY) || [];
+    await saveShortcuts(current.filter((s) => s.id !== id));
+  }, [saveShortcuts]);
 
   // 更新快捷方式
   const updateShortcut = useCallback(async (id: string, data: Partial<Omit<Shortcut, 'id' | 'createdAt' | 'updatedAt'>>) => {
+    // 从 storage 读取最新值
+    const current = await storage.getItem<Shortcut[]>(SHORTCUTS_KEY) || [];
     await saveShortcuts(
-      shortcuts.map((s) =>
+      current.map((s) =>
         s.id === id
           ? {
               ...s,
@@ -62,11 +103,12 @@ export function useShortcuts() {
           : s
       )
     );
-  }, [shortcuts, saveShortcuts]);
+  }, [saveShortcuts]);
 
   return {
     shortcuts,
     addShortcut,
+    addShortcuts,
     removeShortcut,
     updateShortcut,
   };

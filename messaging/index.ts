@@ -6,6 +6,7 @@ interface ProtocolMap {
   // 快捷方式相关
   'shortcuts/get-all': () => Shortcut[];
   'shortcuts/add': (shortcut: Omit<Shortcut, 'id'>) => Shortcut;
+  'shortcuts/add-batch': (shortcuts: Omit<Shortcut, 'id'>[]) => Shortcut[];
   'shortcuts/remove': (id: string) => boolean;
 
   // 设置相关
@@ -14,6 +15,9 @@ interface ProtocolMap {
 
   // Favicon 获取（通过 background 绕过 CORS）
   'favicon/fetch': (url: string) => string | null;
+
+  // 从 Chrome 新标签页导入书签
+  'shortcuts/import-from-newtab': () => { shortcuts: { name: string; url: string }[]; success: boolean; error?: string };
 }
 
 // 创建 messenger

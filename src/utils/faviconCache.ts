@@ -188,25 +188,25 @@ export function getGoogleFaviconUrl(domain: string, size: number = 64): string {
 }
 
 /**
- * 获取 DuckDuckGo Favicon 服务 URL（备选，更稳定）
+ * 获取 DuckDuckGo Favicon 服务 URL
  */
 export function getDuckDuckGoFaviconUrl(domain: string): string {
   return `https://icons.duckduckgo.com/ip3/${domain}.ico`;
 }
 
 /**
- * 获取备选 favicon 服务 URL
+ * 获取 Icon Horse Favicon 服务 URL（备选，更稳定）
  */
-export function getFaviconImUrl(domain: string): string {
-  return `https://favicon.im/${domain}?larger=true`;
+export function getIconHorseUrl(domain: string): string {
+  return `https://icon.horse/icon/${domain}`;
 }
 
 /**
- * 获取 Favicon URL（优先 DuckDuckGo，备选 Google）
+ * 获取 Favicon URL（优先 Icon Horse，备选 DuckDuckGo）
  */
 export function getFaviconUrl(domain: string): string {
-  // DuckDuckGo 的 favicon API 更稳定，不涉及重定向
-  return getDuckDuckGoFaviconUrl(domain);
+  // Icon Horse 的 favicon API 更稳定
+  return getIconHorseUrl(domain);
 }
 
 /**
