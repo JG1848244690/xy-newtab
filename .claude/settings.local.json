@@ -40,7 +40,12 @@
       "Bash(npx ctx7@latest docs /websites/wxt_dev_guide \"storage binary data images files assets\")",
       "Bash(npx ctx7@latest docs /wxt-dev/wxt \"storage binary data images files assets\")",
       "Bash(pnpm run:*)",
-      "Bash(pnpm exec:*)"
+      "Bash(pnpm exec:*)",
+      "Bash(npx shadcn@latest add checkbox -y)",
+      "Bash(pnpm add:*)",
+      "Bash(npx tsc:*)",
+      "WebFetch(domain:minimax-algeng-chat-tts.oss-cn-wulanchabu.aliyuncs.com)",
+      "Bash(npm run:*)"
     ],
     "additionalDirectories": [
       "C:\\Users\\xy\\.claude\\skills"

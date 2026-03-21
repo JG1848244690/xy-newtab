@@ -6,7 +6,6 @@ declare module "wxt/browser" {
     | ""
     | "/"
     | "/background.js"
-    | "/favicon.zip"
     | "/favicon_io/site.webmanifest"
     | "/icon/128.png"
     | "/icon/16.png"
