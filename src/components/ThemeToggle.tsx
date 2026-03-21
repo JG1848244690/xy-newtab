@@ -11,7 +11,7 @@ import { cn } from '@/src/lib/utils';
 
 interface ThemeToggleProps {
   theme: Theme;
-  onThemeChange: (theme: Theme) => void;
+  onThemeChange: (theme: Theme, event?: React.MouseEvent) => void;
 }
 
 const themeConfig = {
@@ -22,6 +22,12 @@ const themeConfig = {
 
 export function ThemeToggle({ theme, onThemeChange }: ThemeToggleProps) {
   const CurrentIcon = themeConfig[theme].icon;
+
+  // 获取按钮中心位置并创建模拟事件
+  const handleClick = (t: Theme, event: React.MouseEvent) => {
+    // 使用点击位置作为扩散起点
+    onThemeChange(t, event);
+  };
 
   return (
     <DropdownMenu>
@@ -37,7 +43,7 @@ export function ThemeToggle({ theme, onThemeChange }: ThemeToggleProps) {
           return (
             <DropdownMenuItem
               key={t}
-              onClick={() => onThemeChange(t)}
+              onClick={(e) => handleClick(t, e as unknown as React.MouseEvent)}
               className={cn(theme === t && "bg-accent")}
             >
               <Icon className="mr-2 h-4 w-4" />

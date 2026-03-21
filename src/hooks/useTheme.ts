@@ -33,6 +33,13 @@ function applyTheme(theme: Theme) {
 }
 
 /**
+ * 检查浏览器是否支持 View Transitions API
+ */
+function supportsViewTransitions(): boolean {
+  return 'startViewTransition' in document;
+}
+
+/**
  * 主题切换 Hook
  */
 export function useTheme() {
@@ -60,23 +67,46 @@ export function useTheme() {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, [theme]);
 
-  // 设置主题
-  const setTheme = useCallback(async (newTheme: Theme) => {
-    setThemeState(newTheme);
-    applyTheme(newTheme);
+  // 设置主题（带动画）
+  const setTheme = useCallback(async (newTheme: Theme, event?: React.MouseEvent) => {
+    // 设置扩散起点坐标（使用点击位置或右上角按钮位置）
+    const root = document.documentElement;
+    if (event?.clientX !== undefined && event?.clientY !== undefined) {
+      root.style.setProperty('--theme-x', `${event.clientX}px`);
+      root.style.setProperty('--theme-y', `${event.clientY}px`);
+    } else {
+      // 默认：右上角
+      root.style.setProperty('--theme-x', `${window.innerWidth - 40}px`);
+      root.style.setProperty('--theme-y', '40px');
+    }
 
+    // 使用 View Transitions API（如果支持）
+    if (supportsViewTransitions()) {
+      const transition = document.startViewTransition(() => {
+        setThemeState(newTheme);
+        applyTheme(newTheme);
+      });
+
+      await transition.finished;
+    } else {
+      // 降级：无动画直接切换
+      setThemeState(newTheme);
+      applyTheme(newTheme);
+    }
+
+    // 保存到 storage
     const settings = await storage.getItem<{ theme: Theme }>(SETTINGS_KEY) || DEFAULT_SETTINGS;
     await storage.setItem(SETTINGS_KEY, { ...settings, theme: newTheme });
   }, []);
 
-  // 循环切换主题: light -> dark -> system -> light
-  const toggleTheme = useCallback(() => {
+  // 循环切换主题: light -> dark -> system -> light（带动画）
+  const toggleTheme = useCallback((event?: React.MouseEvent) => {
     const nextTheme: Theme = {
       light: 'dark',
       dark: 'system',
       system: 'light',
     }[theme] as Theme;
-    setTheme(nextTheme);
+    setTheme(nextTheme, event);
   }, [theme, setTheme]);
 
   // 获取当前实际主题（用于显示图标）

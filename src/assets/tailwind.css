@@ -83,3 +83,38 @@ body {
   color: hsl(var(--foreground));
   font-feature-settings: "rlig" 1, "calt" 1;
 }
+
+/* View Transitions API - 主题切换圆圈扩散动画 */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+/* 新主题从点击位置扩散（无论亮→暗还是暗→亮） */
+::view-transition-new(root) {
+  animation: circle-expand 0.4s ease-out;
+}
+
+/* 旧主题保持静止，不动画 */
+::view-transition-old(root) {
+  z-index: -1;
+}
+
+@keyframes circle-expand {
+  from {
+    clip-path: circle(0% at var(--theme-x, 50%) var(--theme-y, 50%));
+  }
+  to {
+    clip-path: circle(150% at var(--theme-x, 50%) var(--theme-y, 50%));
+  }
+}
+
+/* 禁用默认的 view transition 淡入淡出 */
+::view-transition-image-pair(root) {
+  isolation: auto;
+}
+
+::view-transition-group(root) {
+  animation-duration: 0s;
+}
