@@ -146,7 +146,8 @@ export async function getFaviconWithFallback(
   name: string
 ): Promise<{ src: string; isFallback: boolean }> {
   const domain = extractDomain(url);
-  const faviconUrl = getGoogleFaviconUrl(domain, 64);
+  // 使用 DuckDuckGo API（更稳定，无重定向）
+  const faviconUrl = getFaviconUrl(domain);
 
   // 1. 尝试网络获取
   const base64 = await fetchImageAsBase64(faviconUrl);
@@ -187,10 +188,25 @@ export function getGoogleFaviconUrl(domain: string, size: number = 64): string {
 }
 
 /**
+ * 获取 DuckDuckGo Favicon 服务 URL（备选，更稳定）
+ */
+export function getDuckDuckGoFaviconUrl(domain: string): string {
+  return `https://icons.duckduckgo.com/ip3/${domain}.ico`;
+}
+
+/**
  * 获取备选 favicon 服务 URL
  */
 export function getFaviconImUrl(domain: string): string {
   return `https://favicon.im/${domain}?larger=true`;
+}
+
+/**
+ * 获取 Favicon URL（优先 DuckDuckGo，备选 Google）
+ */
+export function getFaviconUrl(domain: string): string {
+  // DuckDuckGo 的 favicon API 更稳定，不涉及重定向
+  return getDuckDuckGoFaviconUrl(domain);
 }
 
 /**

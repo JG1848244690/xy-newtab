@@ -5,6 +5,15 @@ import { STORAGE_KEY, DEFAULT_SETTINGS } from '@/src/utils/constants';
 
 const SETTINGS_KEY = `local:${STORAGE_KEY.SETTINGS}` as const;
 
+const THEME_CACHE_KEY = 'theme-cache';
+
+/**
+ * 保存主题到 localStorage 缓存（用于防止闪烁）
+ */
+function saveThemeCache(theme: Theme) {
+  localStorage.setItem(THEME_CACHE_KEY, JSON.stringify({ theme }));
+}
+
 /**
  * 应用主题到 DOM
  */
@@ -18,6 +27,9 @@ function applyTheme(theme: Theme) {
   } else {
     root.classList.add(theme);
   }
+
+  // 保存到 localStorage 缓存
+  saveThemeCache(theme);
 }
 
 /**

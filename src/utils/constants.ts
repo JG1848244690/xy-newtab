@@ -6,7 +6,7 @@
 import type { SearchEngineOption, Settings } from './types';
 
 // 扩展名称
-export const EXTENSION_NAME = '快捷标签';
+export const EXTENSION_NAME = '序言';
 
 // Storage Keys
 export const STORAGE_KEY = {

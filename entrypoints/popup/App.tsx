@@ -1,3 +1,4 @@
+import { EXTENSION_NAME } from '@/src/utils/constants';
 import { useState } from 'react';
 import { ExternalLink, Plus } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
@@ -25,7 +26,7 @@ function App() {
     <div className="w-80 min-h-96 bg-background text-foreground">
       {/* 头部 */}
       <div className="flex items-center justify-between p-4 border-b border-border">
-        <h1 className="text-lg font-bold">快捷标签</h1>
+        <h1 className="text-lg font-bold">{EXTENSION_NAME}</h1>
         <div className="flex items-center gap-1">
           <ThemeToggle theme={theme} onThemeChange={setTheme} />
           <Button
