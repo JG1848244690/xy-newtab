@@ -173,9 +173,23 @@ export async function getFaviconWithFallback(
  */
 export function extractDomain(url: string): string {
   try {
-    const urlObj = new URL(url.startsWith('http') ? url : `https://${url}`);
+    const urlWithProtocol = url.startsWith('http') ? url : `https://${url}`;
+    const urlObj = new URL(urlWithProtocol);
     return urlObj.hostname;
   } catch {
+    // URL解析失败，尝试直接作为域名处理
+    // 补上 .com 等常见后缀尝试修复
+    const commonTlds = ['.com', '.cn', '.org', '.net', '.io', '.co', '.me'];
+    for (const tld of commonTlds) {
+      if (url.includes('.')) break; // 已经有域名后缀了
+      try {
+        const testUrl = `https://${url}${tld}`;
+        const urlObj = new URL(testUrl);
+        return urlObj.hostname;
+      } catch {
+        continue;
+      }
+    }
     return url;
   }
 }

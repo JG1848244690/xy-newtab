@@ -18,12 +18,44 @@ interface ShortcutDialogProps {
   onOpenChange: (open: boolean) => void;
   shortcut?: Shortcut | null;
   onSave: (data: { name: string; url: string; icon?: string }) => void;
+  /** 快捷模式：粘贴URL后自动提取name，回车直接添加 */
+  quickMode?: boolean;
 }
 
-export function ShortcutDialog({ open, onOpenChange, shortcut, onSave }: ShortcutDialogProps) {
+/**
+ * 从 URL 自动提取名称
+ * https://github.com/anthropics → anthropics
+ * https://google.com → Google
+ * https://youtube.com/watch?v=xxx → youtube
+ */
+function extractNameFromUrl(url: string): string {
+  try {
+    const urlObj = new URL(url.startsWith('http') ? url : `https://${url}`);
+    const hostname = urlObj.hostname.replace('www.', '');
+
+    // 获取路径中的有意义部分（如 github.com/user/repo → user）
+    const pathParts = urlObj.pathname.split('/').filter(p => p.length > 0);
+
+    if (pathParts.length >= 2) {
+      // 有多级路径，取第二部分（如 /anthropics/code → anthropics）
+      return pathParts[1];
+    }
+
+    // 只有域名，去掉 .com 等后缀
+    const name = hostname.split('.')[0];
+    // 首字母大写
+    return name.charAt(0).toUpperCase() + name.slice(1);
+  } catch {
+    return '';
+  }
+}
+
+export function ShortcutDialog({ open, onOpenChange, shortcut, onSave, quickMode = false }: ShortcutDialogProps) {
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
   const [icon, setIcon] = useState('');
+  const [urlInputKey, setUrlInputKey] = useState(0); // 用于重置输入框聚焦
+  const urlInputRef = { current: null as HTMLInputElement | null };
   const isEditing = !!shortcut;
 
   // 当打开弹窗时，初始化表单数据
@@ -38,14 +70,32 @@ export function ShortcutDialog({ open, onOpenChange, shortcut, onSave }: Shortcu
         setUrl('');
         setIcon('');
       }
+      // 快捷模式下，每次打开都重置并聚焦URL输入框
+      if (quickMode && !shortcut) {
+        setUrlInputKey(k => k + 1);
+        setTimeout(() => {
+          const input = document.getElementById('quick-url-input');
+          if (input) input.focus();
+        }, 50);
+      }
     }
-  }, [open, shortcut]);
+  }, [open, shortcut, quickMode]);
+
+  // URL变化时自动提取name
+  useEffect(() => {
+    if (quickMode && url && !shortcut) {
+      const extractedName = extractNameFromUrl(url);
+      if (extractedName && !name) {
+        setName(extractedName);
+      }
+    }
+  }, [url, quickMode, shortcut]);
 
   // 预览图标（直接使用 Google Favicon URL）
   const previewIcon = url ? getGoogleFaviconUrl(extractDomain(url), 64) : '';
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!name.trim() || !url.trim()) return;
 
     // 不传 icon，让 ShortcutCard 通过三级 fallback 自己获取和缓存
@@ -57,59 +107,106 @@ export function ShortcutDialog({ open, onOpenChange, shortcut, onSave }: Shortcu
     onOpenChange(false);
   };
 
+  // 快捷模式：URL输入框回车直接提交
+  const handleUrlKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && name.trim()) {
+      handleSubmit();
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>{isEditing ? '编辑快捷方式' : '添加快捷方式'}</DialogTitle>
-          <DialogDescription>
-            {isEditing ? '修改快捷方式的名称和网址' : '添加一个新的网站快捷方式'}
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="name">名称</Label>
-              <Input
-                id="name"
-                placeholder="例如：Google"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
+      <DialogContent className={quickMode ? 'sm:max-w-[480px]' : 'sm:max-w-[425px]'}>
+        {quickMode ? (
+          // 快捷模式：极简布局，无图标预览
+          <div className="flex items-center gap-3 py-2">
+            {/* 加号占位 */}
+            <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-muted flex items-center justify-center">
+              <span className="text-2xl font-bold text-primary/50">+</span>
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="url">网址</Label>
+            {/* 输入框 */}
+            <div className="flex-1 flex items-center gap-2">
               <Input
-                id="url"
-                placeholder="例如：google.com"
+                key={`quick-url-${urlInputKey}`}
+                id="quick-url-input"
+                placeholder="粘贴网址..."
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
+                onKeyDown={handleUrlKeyDown}
+                className="flex-1 h-10"
               />
+              <Input
+                placeholder="名称"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-28 h-10"
+              />
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => handleSubmit()}
+                disabled={!name.trim() || !url.trim()}
+                className="h-10 px-4"
+              >
+                添加
+              </Button>
             </div>
-            {/* 图标预览 */}
-            {previewIcon && (
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-muted-foreground">图标预览：</span>
-                <img
-                  src={previewIcon}
-                  alt="Favicon"
-                  className="w-8 h-8 rounded"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
-                  }}
-                />
-              </div>
-            )}
           </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              取消
-            </Button>
-            <Button type="submit" disabled={!name.trim() || !url.trim()}>
-              {isEditing ? '保存' : '添加'}
-            </Button>
-          </DialogFooter>
-        </form>
+        ) : (
+          // 普通模式：完整表单
+          <>
+            <DialogHeader>
+              <DialogTitle>{isEditing ? '编辑快捷方式' : '添加快捷方式'}</DialogTitle>
+              <DialogDescription>
+                {isEditing ? '修改快捷方式的名称和网址' : '添加一个新的网站快捷方式'}
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit}>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="name">名称</Label>
+                  <Input
+                    id="name"
+                    placeholder="例如：Google"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="url">网址</Label>
+                  <Input
+                    id="url"
+                    placeholder="例如：google.com"
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                  />
+                </div>
+                {/* 图标预览 */}
+                {previewIcon && (
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-muted-foreground">图标预览：</span>
+                    <img
+                      src={previewIcon}
+                      alt="Favicon"
+                      className="w-8 h-8 rounded"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                  取消
+                </Button>
+                <Button type="submit" disabled={!name.trim() || !url.trim()}>
+                  {isEditing ? '保存' : '添加'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );

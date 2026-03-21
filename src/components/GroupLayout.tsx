@@ -45,6 +45,7 @@ export function GroupLayout({
   const [editingGroup, setEditingGroup] = useState<ShortcutGroup | null>(null);
   const [editingShortcut, setEditingShortcut] = useState<Shortcut | null>(null);
   const [currentGroupId, setCurrentGroupId] = useState<string | null>(null);
+  const [isQuickMode, setIsQuickMode] = useState(false);
 
   // 未分组批量管理状态
   const [isUngroupedSelectMode, setIsUngroupedSelectMode] = useState(false);
@@ -85,6 +86,7 @@ export function GroupLayout({
   const handleAddShortcutToGroup = (groupId: string) => {
     setCurrentGroupId(groupId);
     setEditingShortcut(null);
+    setIsQuickMode(true);
     setShortcutDialogOpen(true);
   };
 
@@ -92,6 +94,7 @@ export function GroupLayout({
   const handleAddUngroupedShortcut = () => {
     setCurrentGroupId(null);
     setEditingShortcut(null);
+    setIsQuickMode(true);
     setShortcutDialogOpen(true);
   };
 
@@ -329,6 +332,7 @@ export function GroupLayout({
         onOpenChange={setShortcutDialogOpen}
         shortcut={editingShortcut}
         onSave={handleSaveShortcut}
+        quickMode={isQuickMode}
       />
 
       {/* 未分组迁移弹窗 */}

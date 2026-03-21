@@ -29,9 +29,11 @@ export function ShortcutGrid({
   const [editingShortcut, setEditingShortcut] = useState<Shortcut | null>(null);
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isQuickMode, setIsQuickMode] = useState(false);
 
   const handleAddClick = () => {
     setEditingShortcut(null);
+    setIsQuickMode(true); // 网格中的添加按钮使用快捷模式
     setDialogOpen(true);
   };
 
@@ -215,6 +217,7 @@ export function ShortcutGrid({
         onOpenChange={setDialogOpen}
         shortcut={editingShortcut}
         onSave={handleSave}
+        quickMode={isQuickMode}
       />
     </div>
   );
