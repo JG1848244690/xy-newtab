@@ -11,5 +11,11 @@ export default defineConfig({
   manifest: {
     name: '快捷标签',
     permissions: ['storage', 'tabs'],
+    host_permissions: [
+      'https://www.google.com/*',
+      'https://*.google.com/*',
+      'https://*.gstatic.com/*',
+      'https://favicon.im/*',
+    ],
   },
 });

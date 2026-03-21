@@ -10,7 +10,7 @@ import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { Label } from '@/src/components/ui/label';
 import type { Shortcut } from '@/src/utils/types';
-import { getFaviconUrl } from '@/src/utils/favicon';
+import { getGoogleFaviconUrl, extractDomain } from '@/src/utils/faviconCache';
 
 interface ShortcutDialogProps {
   open: boolean;
@@ -40,17 +40,17 @@ export function ShortcutDialog({ open, onOpenChange, shortcut, onSave }: Shortcu
     }
   }, [open, shortcut]);
 
-  // 自动获取 favicon 预览
-  const previewIcon = url ? getFaviconUrl(url) : '';
+  // 预览图标（直接使用 Google Favicon URL）
+  const previewIcon = url ? getGoogleFaviconUrl(extractDomain(url), 64) : '';
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !url.trim()) return;
 
+    // 不传 icon，让 ShortcutCard 通过三级 fallback 自己获取和缓存
     onSave({
       name: name.trim(),
       url: url.trim(),
-      icon: previewIcon,
     });
 
     onOpenChange(false);

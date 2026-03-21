@@ -11,6 +11,9 @@ interface ProtocolMap {
   // 设置相关
   'settings/get': () => Record<string, unknown>;
   'settings/set': (settings: Record<string, unknown>) => boolean;
+
+  // Favicon 获取（通过 background 绕过 CORS）
+  'favicon/fetch': (url: string) => string | null;
 }
 
 // 创建 messenger

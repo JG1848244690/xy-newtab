@@ -1,4 +1,4 @@
-import { test as base, chromium, BrowserContext } from '@playwright/test';
+import { test as base, chromium, BrowserContext, Page } from '@playwright/test';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -37,3 +37,4 @@ export const test = base.extend<ExtensionFixtures>({
 });
 
 export { expect } from '@playwright/test';
+export type { Page, BrowserContext } from '@playwright/test';

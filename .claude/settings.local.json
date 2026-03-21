@@ -32,7 +32,14 @@
       "Read(//c/Users/xy/Desktop/**)",
       "Bash(pnpm install:*)",
       "Bash(pnpm dev:*)",
-      "Bash(npx ctx7@latest docs /llmstxt/wxt_dev_llms_txt \"@wxt-dev/storage usage\")"
+      "Bash(npx ctx7@latest docs /llmstxt/wxt_dev_llms_txt \"@wxt-dev/storage usage\")",
+      "Bash(dir /s /b \"C:\\\\Users\\\\xy\\\\Desktop\\\\myTestExtension\\\\e2e\")",
+      "Bash(pnpm build:dev)",
+      "Bash(pnpm test:e2e --reporter=list)",
+      "Bash(npx ctx7@latest library wxt \"storage binary data images files\")",
+      "Bash(npx ctx7@latest docs /websites/wxt_dev_guide \"storage binary data images files assets\")",
+      "Bash(npx ctx7@latest docs /wxt-dev/wxt \"storage binary data images files assets\")",
+      "Bash(pnpm run:*)"
     ],
     "additionalDirectories": [
       "C:\\Users\\xy\\.claude\\skills"

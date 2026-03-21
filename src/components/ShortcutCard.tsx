@@ -1,4 +1,5 @@
-import { Pencil, Trash2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Pencil, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
 import {
   DropdownMenu,
@@ -7,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from '@/src/components/ui/dropdown-menu';
 import type { Shortcut } from '@/src/utils/types';
-import { getFaviconUrl } from '@/src/utils/favicon';
+import { getFaviconWithFallback, generateInitialFallback } from '@/src/utils/faviconCache';
 import { cn } from '@/src/lib/utils';
 
 interface ShortcutCardProps {
@@ -17,11 +18,41 @@ interface ShortcutCardProps {
 }
 
 export function ShortcutCard({ shortcut, onEdit, onRemove }: ShortcutCardProps) {
+  const [faviconSrc, setFaviconSrc] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadFavicon = async () => {
+      setIsLoading(true);
+
+      try {
+        // 三级 fallback: 网络 → IndexedDB → 首字母
+        const { src } = await getFaviconWithFallback(shortcut.url, shortcut.name);
+
+        if (isMounted) {
+          setFaviconSrc(src);
+          setIsLoading(false);
+        }
+      } catch {
+        if (isMounted) {
+          setFaviconSrc(generateInitialFallback(shortcut.name));
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadFavicon();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [shortcut.url, shortcut.name]);
+
   const handleClick = () => {
     window.open(shortcut.url, '_blank');
   };
-
-  const faviconUrl = shortcut.icon || getFaviconUrl(shortcut.url);
 
   return (
     <div
@@ -67,20 +98,28 @@ export function ShortcutCard({ shortcut, onEdit, onRemove }: ShortcutCardProps) 
 
       {/* 图标 */}
       <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500/10 to-purple-500/10 dark:from-blue-500/20 dark:to-purple-500/20 flex items-center justify-center shadow-sm group-hover:shadow transition-all">
-        <img
-          src={faviconUrl}
-          alt={shortcut.name}
-          className="w-8 h-8 rounded-lg"
-          onError={(e) => {
-            // 如果 favicon 加载失败，显示首字母
-            const target = e.target as HTMLImageElement;
-            target.style.display = 'none';
-            const parent = target.parentElement;
-            if (parent) {
-              parent.innerHTML = `<span class="text-lg font-bold text-primary">${shortcut.name.charAt(0).toUpperCase()}</span>`;
-            }
-          }}
-        />
+        {isLoading ? (
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        ) : faviconSrc ? (
+          <img
+            src={faviconSrc}
+            alt={shortcut.name}
+            className="w-8 h-8 rounded-lg"
+            onError={(e) => {
+              // 如果图片加载失败，替换为首字母
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+              const parent = target.parentElement;
+              if (parent) {
+                parent.innerHTML = `<span class="text-lg font-bold text-primary">${shortcut.name.charAt(0).toUpperCase()}</span>`;
+              }
+            }}
+          />
+        ) : (
+          <span className="text-lg font-bold text-primary">
+            {shortcut.name.charAt(0).toUpperCase()}
+          </span>
+        )}
       </div>
 
       {/* 名称 */}
