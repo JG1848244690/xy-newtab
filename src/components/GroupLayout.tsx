@@ -1,12 +1,15 @@
-import { useState } from 'react';
-import { Plus, Trash2, X, Move } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Plus, Trash2, X, Move, Search } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
 import { Checkbox } from '@/src/components/ui/checkbox';
+import { Input } from '@/src/components/ui/input';
 import { ShortcutGroupCard } from './ShortcutGroupCard';
 import { ShortcutCard } from './ShortcutCard';
 import { ShortcutDialog } from './ShortcutDialog';
 import { GroupDialog } from './GroupDialog';
 import { MigrateDialog } from './MigrateDialog';
+import { useDebounce } from '@/src/hooks/useDebounce';
+import { UI_CONFIG } from '@/src/utils/constants';
 import type { Shortcut, ShortcutGroup } from '@/src/utils/types';
 
 interface GroupLayoutProps {
@@ -46,6 +49,10 @@ export function GroupLayout({
   const [editingShortcut, setEditingShortcut] = useState<Shortcut | null>(null);
   const [currentGroupId, setCurrentGroupId] = useState<string | null>(null);
   const [isQuickMode, setIsQuickMode] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // 防抖搜索
+  const debouncedQuery = useDebounce(searchQuery, UI_CONFIG.SEARCH_DEBOUNCE_DELAY);
 
   // 未分组批量管理状态
   const [isUngroupedSelectMode, setIsUngroupedSelectMode] = useState(false);
@@ -57,9 +64,47 @@ export function GroupLayout({
     return shortcuts.filter(s => group.shortcutIds.includes(s.id));
   };
 
-  // 获取未分组的快捷方式
-  const ungroupedIds = getUngroupedShortcutIds(shortcuts.map(s => s.id));
-  const ungroupedShortcuts = shortcuts.filter(s => ungroupedIds.includes(s.id));
+  // 获取未分组的快捷方式（使用 useMemo 避免重复计算）
+  const ungroupedShortcuts = useMemo(() => {
+    const ids = getUngroupedShortcutIds(shortcuts.map(s => s.id));
+    return shortcuts.filter(s => ids.includes(s.id));
+  }, [shortcuts, getUngroupedShortcutIds]);
+
+  // 搜索过滤逻辑
+  const filteredData = useMemo(() => {
+    if (!debouncedQuery.trim()) {
+      return {
+        groups: groups.map(group => ({
+          group,
+          shortcuts: getGroupShortcuts(group),
+        })),
+        ungroupedShortcuts,
+        totalResults: shortcuts.length,
+      };
+    }
+
+    const query = debouncedQuery.toLowerCase();
+    const matchesSearch = (s: Shortcut) =>
+      s.name.toLowerCase().includes(query) ||
+      s.url.toLowerCase().includes(query);
+
+    // 过滤分组
+    const filteredGroups = groups.map(group => {
+      const groupShortcuts = getGroupShortcuts(group).filter(matchesSearch);
+      return { group, shortcuts: groupShortcuts };
+    }).filter(item => item.shortcuts.length > 0);
+
+    // 过滤未分组
+    const filteredUngrouped = ungroupedShortcuts.filter(matchesSearch);
+
+    const totalResults = filteredGroups.reduce((sum, item) => sum + item.shortcuts.length, 0) + filteredUngrouped.length;
+
+    return {
+      groups: filteredGroups,
+      ungroupedShortcuts: filteredUngrouped,
+      totalResults,
+    };
+  }, [groups, shortcuts, ungroupedShortcuts, debouncedQuery]);
 
   // 添加分组
   const handleAddGroup = () => {
@@ -153,22 +198,48 @@ export function GroupLayout({
     <div className="w-full max-w-4xl space-y-4">
       {/* 工具栏 */}
       <div className="flex items-center justify-between mb-4">
-        <span className="text-sm text-muted-foreground">
-          共 {groups.length} 个分组，{shortcuts.length} 个快捷方式
-        </span>
+        <div className="flex items-center gap-2 flex-1 max-w-xs">
+          <div className="relative w-full">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="搜索快捷方式..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 pr-8 h-9"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-muted rounded-sm"
+              >
+                <X className="w-3 h-3 text-muted-foreground" />
+              </button>
+            )}
+          </div>
+        </div>
         <Button variant="outline" size="sm" onClick={handleAddGroup}>
           <Plus className="w-4 h-4 mr-1" />
           新建分组
         </Button>
       </div>
 
+      {/* 搜索结果提示 */}
+      {debouncedQuery.trim() && (
+        <div className="text-sm text-muted-foreground">
+          {filteredData.totalResults > 0
+            ? `找到 ${filteredData.totalResults} 个结果`
+            : '无匹配结果'}
+        </div>
+      )}
+
       {/* 分组列表 - 固定高度，内部滚动 */}
       <div className="space-y-4 scroll-container max-h-70 overflow-y-auto pr-2">
-        {groups.map((group) => (
+        {filteredData.groups.map(({ group, shortcuts: groupShortcuts }) => (
           <ShortcutGroupCard
             key={group.id}
             group={group}
-            shortcuts={getGroupShortcuts(group)}
+            shortcuts={groupShortcuts}
             allGroups={groups}
             onToggleExpand={() => onToggleGroupExpand(group.id)}
             onEdit={() => handleEditGroup(group)}
@@ -187,7 +258,7 @@ export function GroupLayout({
         ))}
 
         {/* 未分组的快捷方式 */}
-        {(ungroupedShortcuts.length > 0 || isUngroupedSelectMode) && (
+        {(filteredData.ungroupedShortcuts.length > 0 || (isUngroupedSelectMode && !debouncedQuery.trim())) && (
           <div className="rounded-xl border border-dashed border-border bg-muted/20">
             <div className="flex items-center justify-between p-3 border-b border-border/50">
               <div className="flex items-center gap-2">
@@ -277,7 +348,7 @@ export function GroupLayout({
             </div>
             <div className="p-3">
               <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-3">
-                {ungroupedShortcuts.map((shortcut) => (
+                {filteredData.ungroupedShortcuts.map((shortcut) => (
                   <div key={shortcut.id} className="relative">
                     {isUngroupedSelectMode && (
                       <div className="absolute top-1 left-1 z-10">
@@ -307,14 +378,20 @@ export function GroupLayout({
         )}
 
         {/* 空状态 */}
-        {groups.length === 0 && ungroupedShortcuts.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-            <p className="text-sm mb-4">暂无快捷方式</p>
-            <Button variant="outline" onClick={handleAddUngroupedShortcut}>
-              <Plus className="w-4 h-4 mr-1" />
-              添加快捷方式
-            </Button>
-          </div>
+        {filteredData.groups.length === 0 && filteredData.ungroupedShortcuts.length === 0 && (
+          debouncedQuery.trim() ? (
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+              <p className="text-sm">无匹配结果</p>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+              <p className="text-sm mb-4">暂无快捷方式</p>
+              <Button variant="outline" onClick={handleAddUngroupedShortcut}>
+                <Plus className="w-4 h-4 mr-1" />
+                添加快捷方式
+              </Button>
+            </div>
+          )
         )}
       </div>
 

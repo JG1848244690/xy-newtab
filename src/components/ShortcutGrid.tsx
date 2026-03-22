@@ -1,9 +1,12 @@
-import { useState } from 'react';
-import { Plus, Trash2, X } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Plus, Trash2, X, Search } from 'lucide-react';
 import { ShortcutCard } from './ShortcutCard';
 import { ShortcutDialog } from './ShortcutDialog';
 import { Button } from '@/src/components/ui/button';
 import { Checkbox } from '@/src/components/ui/checkbox';
+import { Input } from '@/src/components/ui/input';
+import { useDebounce } from '@/src/hooks/useDebounce';
+import { UI_CONFIG } from '@/src/utils/constants';
 import type { Shortcut, LayoutType } from '@/src/utils/types';
 
 interface ShortcutGridProps {
@@ -30,6 +33,22 @@ export function ShortcutGrid({
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isQuickMode, setIsQuickMode] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // 防抖搜索
+  const debouncedQuery = useDebounce(searchQuery, UI_CONFIG.SEARCH_DEBOUNCE_DELAY);
+
+  // 过滤快捷方式
+  const filteredShortcuts = useMemo(() => {
+    if (!debouncedQuery.trim()) {
+      return shortcuts;
+    }
+    const query = debouncedQuery.toLowerCase();
+    return shortcuts.filter(
+      s => s.name.toLowerCase().includes(query) ||
+           s.url.toLowerCase().includes(query)
+    );
+  }, [shortcuts, debouncedQuery]);
 
   const handleAddClick = () => {
     setEditingShortcut(null);
@@ -66,10 +85,10 @@ export function ShortcutGrid({
   };
 
   const handleSelectAll = () => {
-    if (selectedIds.size === shortcuts.length) {
+    if (selectedIds.size === filteredShortcuts.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(shortcuts.map(s => s.id)));
+      setSelectedIds(new Set(filteredShortcuts.map(s => s.id)));
     }
   };
 
@@ -89,7 +108,7 @@ export function ShortcutGrid({
     <div className="w-full max-w-4xl">
       {/* 工具栏 */}
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-1 max-w-xs">
           {isSelectMode ? (
             <>
               <Button
@@ -98,20 +117,35 @@ export function ShortcutGrid({
                 onClick={handleSelectAll}
               >
                 <Checkbox
-                  checked={selectedIds.size === shortcuts.length && shortcuts.length > 0}
+                  checked={selectedIds.size === filteredShortcuts.length && filteredShortcuts.length > 0}
                   onCheckedChange={handleSelectAll}
                   className="mr-2"
                 />
-                {selectedIds.size === shortcuts.length ? '取消全选' : '全选'}
+                {selectedIds.size === filteredShortcuts.length ? '取消全选' : '全选'}
               </Button>
               <span className="text-sm text-muted-foreground">
                 已选择 {selectedIds.size} 项
               </span>
             </>
           ) : (
-            <span className="text-sm text-muted-foreground">
-              共 {shortcuts.length} 个快捷方式
-            </span>
+            <div className="relative w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="搜索快捷方式..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 pr-8 h-9"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-muted rounded-sm"
+                >
+                  <X className="w-3 h-3 text-muted-foreground" />
+                </button>
+              )}
+            </div>
           )}
         </div>
 
@@ -162,11 +196,20 @@ export function ShortcutGrid({
 
       {/* 固定三行的网格容器 */}
       <div className="relative">
+        {/* 搜索结果提示 */}
+        {debouncedQuery.trim() && (
+          <div className="mb-2 text-sm text-muted-foreground">
+            {filteredShortcuts.length > 0
+              ? `找到 ${filteredShortcuts.length} 个结果`
+              : '无匹配结果'}
+          </div>
+        )}
+
         {/* 网格容器 - 固定高度，内部滚动 */}
         <div
           className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-4 max-h-70 overflow-y-auto pr-2 scroll-container"
         >
-          {shortcuts.map((shortcut) => (
+          {filteredShortcuts.map((shortcut) => (
             <div key={shortcut.id} className="relative">
               {isSelectMode && (
                 <div className="absolute top-1 left-1 z-10">
@@ -188,8 +231,8 @@ export function ShortcutGrid({
             </div>
           ))}
 
-          {/* 添加按钮 - 非选择模式时显示 */}
-          {!isSelectMode && (
+          {/* 添加按钮 - 非选择模式且无搜索时显示 */}
+          {!isSelectMode && !debouncedQuery.trim() && (
             <Button
               variant="outline"
               onClick={handleAddClick}
@@ -206,7 +249,7 @@ export function ShortcutGrid({
         </div>
 
         {/* 滚动提示 - 当内容超出时显示渐变 */}
-        {shortcuts.length > 24 && (
+        {filteredShortcuts.length > 24 && (
           <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-background to-transparent pointer-events-none" />
         )}
       </div>

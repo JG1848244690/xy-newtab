@@ -95,6 +95,7 @@ export const UI_CONFIG = {
   DEFAULT_ICONS_PER_ROW: 8,
   MIN_ICONS_PER_ROW: 4,
   MAX_ICONS_PER_ROW: 12,
+  SEARCH_DEBOUNCE_DELAY: 300,
 } as const;
 
 // 样式常量
