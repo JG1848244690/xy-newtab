@@ -21,8 +21,6 @@ interface ShortcutGridProps {
 
 export function ShortcutGrid({
   shortcuts,
-  layout = 'grid',
-  onLayoutChange,
   onAdd,
   onUpdate,
   onRemove,
@@ -207,7 +205,7 @@ export function ShortcutGrid({
 
         {/* 网格容器 - 固定高度，内部滚动 */}
         <div
-          className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-4 max-h-70 overflow-y-auto pr-2 scroll-container"
+          className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-4 max-h-70 overflow-y-auto p-1 pt-2 scroll-container"
         >
           {filteredShortcuts.map((shortcut) => (
             <div key={shortcut.id} className="relative">
