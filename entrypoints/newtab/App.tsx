@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Download, Loader2, Settings } from 'lucide-react';
+import { Download, Loader2, Settings, ListTodo } from 'lucide-react';
 import { storage } from '@wxt-dev/storage';
 import { SearchBar } from '@/src/components/SearchBar';
 import { ShortcutGrid } from '@/src/components/ShortcutGrid';
@@ -7,11 +7,14 @@ import { GroupLayout } from '@/src/components/GroupLayout';
 import { LayoutTabs } from '@/src/components/LayoutTabs';
 import { ThemeToggle } from '@/src/components/ThemeToggle';
 import { SettingsSheet } from '@/src/components/SettingsSheet';
+import { TodoSheet } from '@/src/components/TodoSheet';
 import { Button } from '@/src/components/ui/button';
+import { Input } from '@/src/components/ui/input';
 import { useShortcuts } from '@/src/hooks/useShortcuts';
 import { useGroups } from '@/src/hooks/useGroups';
 import { useSearchEngine } from '@/src/hooks/useSearchEngine';
 import { useTheme } from '@/src/hooks/useTheme';
+import { useTodos } from '@/src/hooks/useTodos';
 import { sendMessage } from '@/messaging';
 import { STORAGE_KEY, DEFAULT_SETTINGS } from '@/src/utils/constants';
 import type { LayoutType, BackgroundSetting } from '@/src/utils/types';
@@ -24,10 +27,13 @@ function App() {
   const { groups, addGroup, updateGroup, removeGroup, toggleGroupExpand, addShortcutToGroup, moveShortcutsToGroup, getUngroupedShortcutIds } = useGroups();
   const { engine, engineOption, engineOptions, setEngine, search } = useSearchEngine();
   const { theme, setTheme, mounted } = useTheme();
+  const { todayTodos, stats, addTodo, toggleTodo, removeTodo, clearCompleted } = useTodos();
   const [isImporting, setIsImporting] = useState(false);
   const [layout, setLayout] = useState<LayoutType>(DEFAULT_SETTINGS.layout);
   const [background, setBackground] = useState<BackgroundSetting | undefined>(DEFAULT_SETTINGS.background);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [todoOpen, setTodoOpen] = useState(false);
+  const [todoInput, setTodoInput] = useState('');
 
   // 加载布局和背景设置
   useEffect(() => {
@@ -102,6 +108,16 @@ function App() {
     await storage.setItem(SETTINGS_KEY, { ...settings, background: setting });
   };
 
+  // 处理待办输入
+  const handleTodoSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (todoInput.trim()) {
+      addTodo(todoInput.trim());
+      setTodoInput('');
+    }
+    setTodoOpen(true);
+  };
+
   // 等待主题加载完成
   if (!mounted) {
     return (
@@ -146,11 +162,31 @@ function App() {
   return (
     <div className="min-h-screen relative" style={getBackgroundStyle()}>
       {/* 背景遮罩 */}
-      <div className="fixed inset-0 -z-10" style={getOverlayStyle()} />
+      {background?.type === 'image' && background.imageUrl && (
+        <div
+          className="fixed inset-0 z-0 transition-colors duration-300"
+          style={getOverlayStyle()}
+        />
+      )}
+
       {/* 主内容 */}
-      <div className="min-h-screen bg-background/80 transition-colors duration-300">
+      <div className="min-h-screen bg-background/80 transition-colors duration-300 relative z-10">
         {/* 顶部工具栏 */}
         <div className="fixed top-4 right-4 z-10 flex items-center gap-2">
+          {/* 待办输入框 - 诱导用户添加 */}
+          <form onSubmit={handleTodoSubmit} className="flex items-center">
+            <div className="relative">
+              <ListTodo className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                value={todoInput}
+                onChange={(e) => setTodoInput(e.target.value)}
+                placeholder="添加待办..."
+                className="pl-9 w-48 h-9 text-sm"
+                onClick={() => setTodoOpen(true)}
+              />
+            </div>
+          </form>
+
           <Button
             variant="ghost"
             size="sm"
@@ -238,7 +274,19 @@ function App() {
         </div>
       </div>
 
-      {/* 设置侧栏 */}
+      {/* 待办侧栏 - 左侧 */}
+      <TodoSheet
+        open={todoOpen}
+        onOpenChange={setTodoOpen}
+        todos={todayTodos}
+        stats={stats}
+        onAdd={addTodo}
+        onToggle={toggleTodo}
+        onRemove={removeTodo}
+        onClearCompleted={clearCompleted}
+      />
+
+      {/* 设置侧栏 - 右侧 */}
       <SettingsSheet
         open={settingsOpen}
         onOpenChange={setSettingsOpen}

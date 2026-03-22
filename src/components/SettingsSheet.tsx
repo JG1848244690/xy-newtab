@@ -115,7 +115,7 @@ export function SettingsSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-80 sm:max-w-80 overflow-y-auto">
+      <SheetContent className="w-80 sm:max-w-80 overflow-y-auto bg-transparent dark:bg-background shadow-xl">
         <SheetHeader className="pb-4">
           <SheetTitle className="flex items-center gap-2">
             <Palette className="w-5 h-5" />

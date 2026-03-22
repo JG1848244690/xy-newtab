@@ -24,6 +24,16 @@ export interface ShortcutGroup {
   updatedAt: number;
 }
 
+// 待办事项
+export interface Todo {
+  id: string;
+  content: string; // 待办内容
+  completed: boolean; // 是否完成
+  dueDate?: string; // 截止日期 (YYYY-MM-DD 格式)
+  createdAt: number;
+  updatedAt: number;
+}
+
 // 布局类型
 export type LayoutType = 'grid' | 'group';
 

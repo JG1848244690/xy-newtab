@@ -13,6 +13,7 @@ export const STORAGE_KEY = {
   SETTINGS: 'settings',
   SHORTCUTS: 'shortcuts',
   GROUPS: 'groups',
+  TODOS: 'todos',
 } as const;
 
 // 默认快捷方式
