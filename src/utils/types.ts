@@ -40,12 +40,28 @@ export interface SearchEngineOption {
 // 主题
 export type Theme = 'light' | 'dark' | 'system';
 
+// 背景适配方式
+export type BackgroundSize = 'cover' | 'contain' | 'auto' | '100% 100%';
+
+// 背景类型
+export type BackgroundType = 'none' | 'color' | 'image';
+
+// 背景设置
+export interface BackgroundSetting {
+  type: BackgroundType; // 'none' | 'color' | 'image'
+  color?: string; // 背景色，如 '#1a1a2e'
+  imageUrl?: string; // 背景图 URL
+  size?: BackgroundSize; // 适配方式
+  opacity?: number; // 透明度 0-1
+}
+
 // 设置
 export interface Settings {
   theme: Theme;
   searchEngine: SearchEngineType;
   iconsPerRow: number;
   layout: LayoutType; // 布局类型
+  background?: BackgroundSetting; // 背景设置
 }
 
 // 页面类型

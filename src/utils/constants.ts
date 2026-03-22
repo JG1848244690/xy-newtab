@@ -50,6 +50,7 @@ export const DEFAULT_SETTINGS: Settings = {
   searchEngine: 'google',
   iconsPerRow: 8,
   layout: 'grid',
+  background: { type: 'none' },
 };
 
 // UI 配置
