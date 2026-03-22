@@ -72,10 +72,15 @@ export function ShortcutCard({
     <div
       onClick={handleClick}
       className={cn(
-        "flex flex-col items-center p-4 rounded-xl cursor-pointer transition-all group relative h-25",
-        "bg-card hover:bg-accent border border-border",
-        isSelectMode && isSelected && "ring-2 ring-primary border-primary bg-primary/5",
-        !isSelectMode && "hover:border-primary/50 shadow-sm hover:shadow-md"
+        "flex flex-col items-center p-4 rounded-2xl cursor-pointer transition-all duration-300 group relative h-25",
+        "bg-white/60 dark:bg-card/60 backdrop-blur-md",
+        "border border-white/40 dark:border-border/50",
+        "hover:bg-white/80 dark:hover:bg-card/80",
+        "hover:border-primary/30 dark:hover:border-primary/30",
+        "hover:shadow-lg hover:shadow-primary/5",
+        "hover:-translate-y-1 hover:scale-[1.02]",
+        "active:scale-[0.98]",
+        isSelectMode && isSelected && "ring-2 ring-primary border-primary bg-primary/10"
       )}
     >
       {/* 选择模式下隐藏操作菜单 */}

@@ -45,7 +45,17 @@ export function TodoSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-80 sm:max-w-80 overflow-y-auto bg-transparent dark:bg-background shadow-xl">
+      <SheetContent
+        side="right"
+        className="w-80 sm:max-w-80 overflow-y-auto
+          bg-white/70 dark:bg-background/80
+          backdrop-blur-xl
+          border-l border-white/20 dark:border-border/50
+          shadow-2xl shadow-black/10 dark:shadow-black/50
+          data-[state=open]:animate-in data-[state=closed]:animate-out
+          data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right
+          duration-300"
+      >
         <SheetHeader className="pb-4">
           <SheetTitle className="flex items-center gap-2">
             <ListTodo className="w-5 h-5" />

@@ -172,27 +172,37 @@ function App() {
       {/* 主内容 */}
       <div className="min-h-screen bg-background/80 transition-colors duration-300 relative z-10">
         {/* 顶部工具栏 */}
-        <div className="fixed top-4 right-4 z-10 flex items-center gap-2">
+        <div className="fixed top-4 right-4 z-10 flex items-center gap-2
+          bg-white/60 dark:bg-card/60 backdrop-blur-xl
+          border border-white/40 dark:border-border/50
+          rounded-2xl p-2 shadow-lg shadow-black/5 dark:shadow-black/20">
           {/* 待办输入框 - 诱导用户添加 */}
           <form onSubmit={handleTodoSubmit} className="flex items-center">
-            <div className="relative">
-              <ListTodo className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <div className="relative group">
+              <ListTodo className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
               <Input
                 value={todoInput}
                 onChange={(e) => setTodoInput(e.target.value)}
                 placeholder="添加待办..."
-                className="pl-9 w-48 h-9 text-sm"
+                className="pl-9 w-44 h-9 text-sm
+                  bg-transparent border-0
+                  focus-visible:ring-1 focus-visible:ring-primary/50
+                  placeholder:text-muted-foreground
+                  transition-all duration-300"
                 onClick={() => setTodoOpen(true)}
               />
             </div>
           </form>
+
+          <div className="w-px h-6 bg-border/50" />
 
           <Button
             variant="ghost"
             size="sm"
             onClick={handleImport}
             disabled={isImporting}
-            className="text-muted-foreground hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground
+              hover:bg-accent/50 rounded-xl transition-all duration-300"
           >
             {isImporting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -205,7 +215,8 @@ function App() {
             variant="ghost"
             size="sm"
             onClick={() => setSettingsOpen(true)}
-            className="text-muted-foreground hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground
+              hover:bg-accent/50 rounded-xl transition-all duration-300"
           >
             <Settings className="h-4 w-4" />
           </Button>
