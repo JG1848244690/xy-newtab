@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Sheet,
   SheetContent,
@@ -22,7 +22,7 @@ import {
   DEFAULT_BACKGROUND_COLOR,
 } from '@/src/utils/constants';
 import type { BackgroundSetting, BackgroundType, BackgroundSize } from '@/src/utils/types';
-import { Image, Palette, Maximize2, RotateCcw } from 'lucide-react';
+import { Image, Palette, Maximize2, RotateCcw, Upload } from 'lucide-react';
 
 interface SettingsSheetProps {
   open: boolean;
@@ -42,6 +42,7 @@ export function SettingsSheet({
   const [imageUrl, setImageUrl] = useState(setting.imageUrl || '');
   const [size, setSize] = useState<BackgroundSize>(setting.size || 'cover');
   const [opacity, setOpacity] = useState(setting.opacity ?? 1);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 当弹窗打开时，同步最新设置
   useEffect(() => {
@@ -83,6 +84,38 @@ export function SettingsSheet({
     setImageUrl(newUrl);
     if (type === 'image' && newUrl) {
       saveSetting({ type: 'image', imageUrl: newUrl, size, opacity });
+    }
+  };
+
+  // 本地图片上传
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // 检查文件类型
+    if (!file.type.startsWith('image/')) {
+      alert('请选择图片文件');
+      return;
+    }
+
+    // 检查文件大小 (限制 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('图片大小不能超过 5MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      if (dataUrl) {
+        handleImageUrlChange(dataUrl);
+      }
+    };
+    reader.readAsDataURL(file);
+
+    // 清空 input 以便重复选择同一文件
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -238,15 +271,63 @@ export function SettingsSheet({
                 </div>
               </div>
 
-              {/* 自定义 URL */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">自定义图片链接</Label>
+              {/* 自定义图片 */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">自定义图片</Label>
+
+                {/* 上传按钮 */}
+                <div className="flex gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 gap-2"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="w-4 h-4" />
+                    上传本地图片
+                  </Button>
+                </div>
+
+                {/* 分隔线 */}
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 h-px bg-border" />
+                  <span className="text-xs text-muted-foreground">或</span>
+                  <div className="flex-1 h-px bg-border" />
+                </div>
+
+                {/* URL 输入 */}
                 <Input
                   value={imageUrl}
                   onChange={(e) => handleImageUrlChange(e.target.value)}
                   placeholder="粘贴图片 URL..."
                   className="w-full"
                 />
+
+                {/* 当前图片预览 */}
+                {imageUrl && !PRESET_IMAGES.some(p => p.url === imageUrl) && (
+                  <div className="relative aspect-video rounded-lg overflow-hidden border border-border">
+                    <img
+                      src={imageUrl}
+                      alt="当前背景"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-linear-to-t from-black/50 to-transparent" />
+                    <span className="absolute bottom-2 left-2 text-xs text-white">
+                      当前背景
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* 适配方式 */}
