@@ -48,7 +48,7 @@ export interface SearchEngineOption {
 }
 
 // 主题
-export type Theme = 'light' | 'dark' | 'system';
+export type Theme = 'light' | 'dark';
 
 // 背景适配方式
 export type BackgroundSize = 'cover' | 'contain' | 'auto' | '100% 100%';

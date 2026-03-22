@@ -1,4 +1,4 @@
-import { Sun, Moon, Monitor } from 'lucide-react';
+import { Sun, Moon } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
 import { useRef } from 'react';
 import type { Theme } from '@/src/utils/types';
@@ -11,11 +11,10 @@ interface ThemeToggleProps {
 const themeConfig = {
   light: { icon: Sun, label: '浅色' },
   dark: { icon: Moon, label: '深色' },
-  system: { icon: Monitor, label: '跟随系统' },
 };
 
 // 循环顺序
-const themeOrder: Theme[] = ['light', 'dark', 'system'];
+const themeOrder: Theme[] = ['light', 'dark'];
 
 export function ThemeToggle({ theme, onThemeChange }: ThemeToggleProps) {
   const buttonRef = useRef<HTMLButtonElement>(null);

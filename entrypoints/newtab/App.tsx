@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import { Download, Loader2, Settings, ListTodo } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Download, Loader2, Settings, ListTodo, ChevronUp, X } from 'lucide-react';
+import { gsap } from 'gsap';
 import { storage } from '@wxt-dev/storage';
 import { SearchBar } from '@/src/components/SearchBar';
 import { ShortcutGrid } from '@/src/components/ShortcutGrid';
@@ -34,6 +35,12 @@ function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [todoOpen, setTodoOpen] = useState(false);
   const [todoInput, setTodoInput] = useState('');
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  // GSAP refs
+  const searchRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   // 加载布局和背景设置
   useEffect(() => {
@@ -116,6 +123,81 @@ function App() {
       setTodoInput('');
     }
     setTodoOpen(true);
+  };
+
+  // 展开动画
+  const handleExpand = () => {
+    if (isExpanded) return;
+    setIsExpanded(true);
+
+    // 搜索框归位动画
+    gsap.to(searchRef.current, {
+      scale: 1,
+      y: 0,
+      duration: 0.5,
+      ease: 'power2.out',
+    });
+
+    // 标题隐藏
+    gsap.to(titleRef.current, {
+      opacity: 0,
+      scale: 0.8,
+      duration: 0.4,
+      ease: 'power2.out',
+    });
+
+    // Grid 区域显示
+    gsap.to(contentRef.current, {
+      opacity: 1,
+      y: 0,
+      duration: 0.5,
+      delay: 0.15,
+      ease: 'power2.out',
+      onComplete: () => {
+        // 动画完成后启用点击
+        if (contentRef.current) {
+          contentRef.current.style.pointerEvents = 'auto';
+        }
+      },
+    });
+  };
+
+  // 收起动画
+  const handleCollapse = () => {
+    if (!isExpanded) return;
+
+    // 立即禁用点击，防止动画过程中的干扰
+    if (contentRef.current) {
+      contentRef.current.style.pointerEvents = 'none';
+    }
+
+    // Grid 区域隐藏
+    gsap.to(contentRef.current, {
+      opacity: 0,
+      y: 60,
+      duration: 0.3,
+      ease: 'power2.in',
+    });
+
+    // 搜索框放大并向下偏移到视口中间
+    gsap.to(searchRef.current, {
+      scale: 1.25,
+      y: '35vh',
+      duration: 0.4,
+      delay: 0.1,
+      ease: 'power2.out',
+    });
+
+    // 标题显示
+    gsap.to(titleRef.current, {
+      opacity: 1,
+      scale: 1,
+      duration: 0.4,
+      delay: 0.15,
+      ease: 'power2.out',
+    });
+
+    setTimeout(() => setIsExpanded(false), 400);
   };
 
   // 等待主题加载完成
@@ -224,27 +306,71 @@ function App() {
         </div>
 
         {/* 主要内容 */}
-        <div className="flex flex-col items-center pt-32 px-8">
-          {/* Logo / 标题 */}
-          <h1 className="text-4xl font-bold mb-8 text-foreground">
-            序言
-          </h1>
+        <div className="min-h-screen flex flex-col items-center px-8 pt-16">
 
-          {/* 搜索栏 */}
-          <div className="mb-16 w-full max-w-4xl">
-            <SearchBar
-              engine={engine}
-              engineOption={engineOption}
-              engineOptions={engineOptions}
-              onEngineChange={setEngine}
-              onSearch={search}
-            />
+          {/* 中央搜索区域 */}
+          <div
+            ref={searchRef}
+            className="flex flex-col items-center w-full max-w-3xl"
+            style={{ transform: 'scale(1.25) translateY(25vh)' }}
+          >
+            {/* Logo / 标题 */}
+            <h1
+              ref={titleRef}
+              className="text-6xl font-bold mb-8 text-foreground tracking-[0.3em] drop-shadow-lg"
+            >
+              序言
+            </h1>
+
+            {/* 搜索栏 */}
+            <div className="w-full">
+              <SearchBar
+                engine={engine}
+                engineOption={engineOption}
+                engineOptions={engineOptions}
+                onEngineChange={setEngine}
+                onSearch={search}
+              />
+            </div>
+
+            {/* 展开提示 - 箭头 (仅在未展开时显示) */}
+            {!isExpanded && (
+              <div
+                className="flex flex-col items-center mt-6 cursor-pointer select-none"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleExpand();
+                }}
+              >
+                <ChevronUp className="w-5 h-5 text-muted-foreground/60  animate-bounce rotate-180" />
+
+              </div>
+            )}
+
+            {/* 收起提示 - 箭头 (仅在展开时显示) */}
+            {isExpanded && (
+              <div
+                className="flex flex-col items-center mt-6 cursor-pointer select-none"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleCollapse();
+                }}
+              >
+
+
+                <ChevronUp className="w-5 h-5 text-muted-foreground/60   " />
+              </div>
+            )}
           </div>
 
           {/* 布局切换和快捷方式区域 */}
-          <div className="w-full max-w-4xl">
+          <div
+            ref={contentRef}
+            className="w-full max-w-4xl"
+            style={{ opacity: 0, transform: 'translateY(60px)', pointerEvents: 'none' }}
+          >
             {/* 布局切换标签 */}
-            <div className="flex justify-center mb-4">
+            <div className="flex justify-center mb-4 mt-8">
               <LayoutTabs layout={layout} onLayoutChange={handleLayoutChange} />
             </div>
 
@@ -277,6 +403,7 @@ function App() {
               />
             )}
           </div>
+
         </div>
 
         {/* 底部信息 */}

@@ -49,21 +49,15 @@ export function SearchBar({
         transition-all duration-300">
         {/* 搜索引擎选择 */}
         <Select value={engine} onValueChange={(value) => onEngineChange(value as SearchEngineType)}>
-          <SelectTrigger className="w-[130px] border-0 bg-transparent focus:ring-0 shrink-0 hover:bg-accent/50 rounded-xl transition-colors">
+          <SelectTrigger className="w-[100px] border-0 bg-transparent focus:ring-0 shrink-0 hover:bg-accent/50 rounded-xl transition-colors">
             <SelectValue>
-              <span className="flex items-center gap-1.5">
-                <span className="text-base">{engineOption.icon}</span>
-                <span className="text-sm truncate">{engineOption.name}</span>
-              </span>
+              <span className="text-sm truncate">{engineOption.name}</span>
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {engineOptions.map((option) => (
               <SelectItem key={option.id} value={option.id}>
-                <span className="flex items-center gap-2">
-                  <span>{option.icon}</span>
-                  <span>{option.name}</span>
-                </span>
+                {option.name}
               </SelectItem>
             ))}
           </SelectContent>

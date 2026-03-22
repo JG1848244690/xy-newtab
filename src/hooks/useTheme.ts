@@ -20,13 +20,7 @@ function saveThemeCache(theme: Theme) {
 function applyTheme(theme: Theme) {
   const root = document.documentElement;
   root.classList.remove('light', 'dark');
-
-  if (theme === 'system') {
-    const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    root.classList.add(isDark ? 'dark' : 'light');
-  } else {
-    root.classList.add(theme);
-  }
+  root.classList.add(theme);
 
   // 保存到 localStorage 缓存
   saveThemeCache(theme);
@@ -55,17 +49,6 @@ export function useTheme() {
       setMounted(true);
     });
   }, []);
-
-  // 监听系统主题变化
-  useEffect(() => {
-    if (theme !== 'system') return;
-
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = () => applyTheme('system');
-
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, [theme]);
 
   // 设置主题（带动画）
   const setTheme = useCallback(async (newTheme: Theme, event?: React.MouseEvent) => {
@@ -99,21 +82,17 @@ export function useTheme() {
     await storage.setItem(SETTINGS_KEY, { ...settings, theme: newTheme });
   }, []);
 
-  // 循环切换主题: light -> dark -> system -> light（带动画）
+  // 循环切换主题: light -> dark -> light（带动画）
   const toggleTheme = useCallback((event?: React.MouseEvent) => {
     const nextTheme: Theme = {
       light: 'dark',
-      dark: 'system',
-      system: 'light',
+      dark: 'light',
     }[theme] as Theme;
     setTheme(nextTheme, event);
   }, [theme, setTheme]);
 
   // 获取当前实际主题（用于显示图标）
   const getActualTheme = useCallback((): 'light' | 'dark' => {
-    if (theme === 'system') {
-      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    }
     return theme;
   }, [theme]);
 

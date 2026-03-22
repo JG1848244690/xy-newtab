@@ -47,11 +47,11 @@ export const SEARCH_ENGINES: SearchEngineOption[] = [
 
 // 默认设置
 export const DEFAULT_SETTINGS: Settings = {
-  theme: 'system',
+  theme: 'dark',
   searchEngine: 'google',
   iconsPerRow: 8,
   layout: 'grid',
-  background: { type: 'none' },
+  background: { type: 'image', imageUrl: 'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=1920&q=80', size: 'cover', opacity: 1 },
 };
 
 // 背景设置相关
