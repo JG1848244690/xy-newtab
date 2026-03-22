@@ -1,14 +1,37 @@
-import { EXTENSION_NAME } from '@/src/utils/constants';
-import { useState } from 'react';
-import { ExternalLink, Plus, BookOpen } from 'lucide-react';
+import { EXTENSION_NAME, STORAGE_KEY, DEFAULT_SETTINGS } from '@/src/utils/constants';
+import { useState, useEffect } from 'react';
+import { ExternalLink, Plus, BookOpen, Palette } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
 import { ThemeToggle } from '@/src/components/ThemeToggle';
+import { BackgroundDialog } from '@/src/components/BackgroundDialog';
 import { cn } from '@/src/lib/utils';
 import { useTheme } from '@/src/hooks/useTheme';
+import type { BackgroundSetting } from '@/src/utils/types';
+import { storage } from '@wxt-dev/storage';
+
+// 完整的存储键
+const SETTINGS_KEY = `local:${STORAGE_KEY.SETTINGS}` as const;
 
 function App() {
   const [activeTab, setActiveTab] = useState<'shortcuts' | 'settings'>('shortcuts');
+  const [backgroundSetting, setBackgroundSetting] = useState<BackgroundSetting>(DEFAULT_SETTINGS.background!);
+  const [bgDialogOpen, setBgDialogOpen] = useState(false);
   const { theme, setTheme, mounted } = useTheme();
+
+  // 加载背景设置
+  useEffect(() => {
+    storage.getItem<{ background?: BackgroundSetting }>(SETTINGS_KEY).then((settings) => {
+      if (settings?.background) {
+        setBackgroundSetting(settings.background);
+      }
+    });
+  }, []);
+
+  const handleSaveBackground = async (setting: BackgroundSetting) => {
+    setBackgroundSetting(setting);
+    const current = await storage.getItem(SETTINGS_KEY) || {};
+    await storage.setItem(SETTINGS_KEY, { ...current, background: setting });
+  };
 
   const openNewTab = () => {
     browser.tabs.create({});
@@ -106,9 +129,30 @@ function App() {
               <span className="text-sm">主题</span>
               <ThemeToggle theme={theme} onThemeChange={setTheme} />
             </div>
+
+            <div className="flex items-center justify-between">
+              <span className="text-sm">新标签页背景</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setBgDialogOpen(true)}
+                className="gap-1"
+              >
+                <Palette className="w-3 h-3" />
+                {backgroundSetting.type === 'none' ? '默认' :
+                  backgroundSetting.type === 'color' ? '纯色' : '图片'}
+              </Button>
+            </div>
           </div>
         )}
       </div>
+
+        <BackgroundDialog
+          open={bgDialogOpen}
+          onOpenChange={setBgDialogOpen}
+          setting={backgroundSetting}
+          onSave={handleSaveBackground}
+        />
     </div>
   );
 }
