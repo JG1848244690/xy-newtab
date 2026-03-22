@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Download, Loader2 } from 'lucide-react';
+import { Download, Loader2, Settings } from 'lucide-react';
 import { storage } from '@wxt-dev/storage';
 import { SearchBar } from '@/src/components/SearchBar';
 import { ShortcutGrid } from '@/src/components/ShortcutGrid';
 import { GroupLayout } from '@/src/components/GroupLayout';
 import { LayoutTabs } from '@/src/components/LayoutTabs';
 import { ThemeToggle } from '@/src/components/ThemeToggle';
+import { SettingsSheet } from '@/src/components/SettingsSheet';
 import { Button } from '@/src/components/ui/button';
 import { useShortcuts } from '@/src/hooks/useShortcuts';
 import { useGroups } from '@/src/hooks/useGroups';
@@ -26,6 +27,7 @@ function App() {
   const [isImporting, setIsImporting] = useState(false);
   const [layout, setLayout] = useState<LayoutType>(DEFAULT_SETTINGS.layout);
   const [background, setBackground] = useState<BackgroundSetting | undefined>(DEFAULT_SETTINGS.background);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   // 加载布局和背景设置
   useEffect(() => {
@@ -93,6 +95,13 @@ function App() {
     }
   };
 
+  // 保存背景设置
+  const handleSaveBackground = async (setting: BackgroundSetting) => {
+    setBackground(setting);
+    const settings = await storage.getItem<typeof DEFAULT_SETTINGS>(SETTINGS_KEY) || DEFAULT_SETTINGS;
+    await storage.setItem(SETTINGS_KEY, { ...settings, background: setting });
+  };
+
   // 等待主题加载完成
   if (!mounted) {
     return (
@@ -155,6 +164,14 @@ function App() {
               <Download className="h-4 w-4" />
             )}
             <span className="ml-2 hidden sm:inline">导入</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSettingsOpen(true)}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <Settings className="h-4 w-4" />
           </Button>
           <ThemeToggle theme={theme} onThemeChange={setTheme} />
         </div>
@@ -220,6 +237,14 @@ function App() {
           序言 · {shortcuts.length} 个快捷方式
         </div>
       </div>
+
+      {/* 设置侧栏 */}
+      <SettingsSheet
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        setting={background || { type: 'none' }}
+        onSave={handleSaveBackground}
+      />
     </div>
   );
 }

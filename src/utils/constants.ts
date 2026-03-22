@@ -3,7 +3,7 @@
  * 所有可复用或可配置的值集中管理
  */
 
-import type { SearchEngineOption, Settings, ShortcutGroup } from './types';
+import type { SearchEngineOption, Settings, ShortcutGroup, BackgroundSize } from './types';
 
 // 扩展名称
 export const EXTENSION_NAME = '序言';
@@ -52,6 +52,36 @@ export const DEFAULT_SETTINGS: Settings = {
   layout: 'grid',
   background: { type: 'none' },
 };
+
+// 背景设置相关
+export const DEFAULT_BACKGROUND_COLOR = '#1a1a2e';
+
+export const PRESET_COLORS = [
+  { name: '深夜蓝', color: '#1a1a2e' },
+  { name: '星空紫', color: '#16213e' },
+  { name: '极客黑', color: '#0f0f23' },
+  { name: '薄荷绿', color: '#1e3a3a' },
+  { name: '暖阳橙', color: '#2d2d44' },
+  { name: '玫瑰粉', color: '#2e1f2e' },
+  { name: '冰川蓝', color: '#1a2a3a' },
+  { name: '森林绿', color: '#1a2e1a' },
+] as const;
+
+export const PRESET_IMAGES = [
+  { name: '星空', url: 'https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?w=1920&q=80' },
+  { name: '山脉', url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80' },
+  { name: '城市', url: 'https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?w=1920&q=80' },
+  { name: '海浪', url: 'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=1920&q=80' },
+  { name: '森林', url: 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=1920&q=80' },
+  { name: '日落', url: 'https://images.unsplash.com/photo-1495616811223-4d98c6e9c869?w=1920&q=80' },
+] as const;
+
+export const SIZE_OPTIONS: { value: BackgroundSize; label: string }[] = [
+  { value: 'cover', label: '覆盖 (cover)' },
+  { value: 'contain', label: '适应 (contain)' },
+  { value: 'auto', label: '原始大小 (auto)' },
+  { value: '100% 100%', label: '拉伸 (100% 100%)' },
+];
 
 // UI 配置
 export const UI_CONFIG = {
