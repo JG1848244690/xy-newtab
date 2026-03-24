@@ -270,7 +270,7 @@ function App() {
           {/* 中央搜索区域 */}
           <div
             ref={searchRef}
-            className="flex flex-col items-center w-full max-w-3xl"
+            className="flex flex-col items-center w-full max-w-3xl relative z-50"
             style={{ transform: 'scale(1.25) translateY(25vh)' }}
           >
             {/* Logo / 标题 */}
@@ -289,6 +289,7 @@ function App() {
                 engineOptions={engineOptions}
                 onEngineChange={setEngine}
                 onSearch={search}
+                shortcuts={shortcuts}
               />
             </div>
 

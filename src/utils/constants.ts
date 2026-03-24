@@ -14,6 +14,7 @@ export const STORAGE_KEY = {
   SHORTCUTS: 'shortcuts',
   GROUPS: 'groups',
   TODOS: 'todos',
+  SEARCH_HISTORY: 'searchHistory',
 } as const;
 
 // 默认快捷方式
