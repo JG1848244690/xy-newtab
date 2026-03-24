@@ -146,6 +146,31 @@ export function useGroups() {
     await saveGroups(newGroups);
   }, [saveGroups]);
 
+  // 重新排序分组
+  const reorderGroups = useCallback(async (activeId: string, overId: string) => {
+    const current = await storage.getItem<ShortcutGroup[]>(GROUPS_KEY) || [];
+
+    const oldIndex = current.findIndex(g => g.id === activeId);
+    const newIndex = current.findIndex(g => g.id === overId);
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    // 使用 array-move 逻辑
+    const newGroups = [...current];
+    const [removed] = newGroups.splice(oldIndex, 1);
+    newGroups.splice(newIndex, 0, removed);
+
+    // 更新 order 字段
+    const now = Date.now();
+    const updated = newGroups.map((g, index) => ({
+      ...g,
+      order: index,
+      updatedAt: now,
+    }));
+
+    await saveGroups(updated);
+  }, [saveGroups]);
+
   return {
     groups,
     addGroup,
@@ -158,5 +183,6 @@ export function useGroups() {
     getGroupByShortcutId,
     getUngroupedShortcutIds,
     importGroups,
+    reorderGroups,
   };
 }

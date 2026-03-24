@@ -47,7 +47,9 @@
       "WebFetch(domain:minimax-algeng-chat-tts.oss-cn-wulanchabu.aliyuncs.com)",
       "Bash(npm run:*)",
       "mcp__MiniMax__understand_image",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "mcp__MiniMax__web_search",
+      "Bash(pnpm build:*)"
     ],
     "additionalDirectories": [
       "C:\\Users\\xy\\.claude\\skills"

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronRight, Plus, Pencil, Trash2, FolderOpen, Move, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, Pencil, Trash2, FolderOpen, Move, X, GripVertical } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
 import { Checkbox } from '@/src/components/ui/checkbox';
 import {
@@ -25,6 +25,8 @@ interface ShortcutGroupCardProps {
   onRemoveShortcut: (id: string) => void;
   onBatchRemoveShortcuts?: (ids: string[]) => void;
   onMigrateShortcuts?: (targetGroupId: string | null, shortcutIds: string[]) => void;
+  dragHandleProps?: React.HTMLAttributes<HTMLButtonElement>; // 拖拽手柄 props
+  isDragging?: boolean;
 }
 
 export function ShortcutGroupCard({
@@ -39,6 +41,8 @@ export function ShortcutGroupCard({
   onRemoveShortcut,
   onBatchRemoveShortcuts,
   onMigrateShortcuts,
+  dragHandleProps,
+  isDragging,
 }: ShortcutGroupCardProps) {
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -109,7 +113,8 @@ export function ShortcutGroupCard({
 
   return (
     <div className={cn(
-      "rounded-xl border bg-gradient-to-br",
+      "rounded-xl border bg-gradient-to-br transition-opacity",
+      isDragging && "opacity-50",
       colorClass || 'from-muted/50 to-muted/30 border-border'
     )}>
       {/* 分组头部 - sticky 吸顶 */}
@@ -117,10 +122,21 @@ export function ShortcutGroupCard({
         "sticky top-0 z-10 flex items-center justify-between p-3 border-b border-border/50 backdrop-blur-sm",
         stickyBg
       )}>
-        <button
-          onClick={onToggleExpand}
-          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-        >
+        <div className="flex items-center gap-1">
+          {/* 拖拽手柄 */}
+          {dragHandleProps && (
+            <button
+              {...dragHandleProps}
+              className="flex items-center justify-center p-1 hover:bg-muted/50 rounded cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="拖拽排序"
+            >
+              <GripVertical className="w-4 h-4" />
+            </button>
+          )}
+          <button
+            onClick={onToggleExpand}
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+          >
           {group.isExpanded ? (
             <ChevronDown className="w-4 h-4 text-muted-foreground" />
           ) : (
@@ -131,7 +147,8 @@ export function ShortcutGroupCard({
           <span className="text-xs text-muted-foreground">
             ({shortcuts.length})
           </span>
-        </button>
+          </button>
+        </div>
 
         <div className="flex items-center gap-1">
           {isSelectMode ? (

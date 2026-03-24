@@ -1,5 +1,22 @@
 import { useState, useMemo } from 'react';
 import { Plus, Trash2, X, Move, Search, Download } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { Button } from '@/src/components/ui/button';
 import { Checkbox } from '@/src/components/ui/checkbox';
 import { Input } from '@/src/components/ui/input';
@@ -28,7 +45,71 @@ interface GroupLayoutProps {
   onBatchRemoveShortcuts?: (ids: string[]) => void;
   onMoveShortcutsToGroup?: (sourceGroupId: string | null, targetGroupId: string | null, shortcutIds: string[]) => void;
   onImportData?: (shortcuts: Shortcut[], groups: ShortcutGroup[]) => void;
+  onReorderGroups?: (activeId: string, overId: string) => void;
   getUngroupedShortcutIds: (ids: string[]) => string[];
+}
+
+// 可排序的分组卡片包装器
+interface SortableGroupCardProps {
+  group: ShortcutGroup;
+  shortcuts: Shortcut[];
+  allGroups: ShortcutGroup[];
+  onToggleExpand: () => void;
+  onEdit: () => void;
+  onRemove: () => void;
+  onAddShortcut: () => void;
+  onEditShortcut: (shortcut: Shortcut) => void;
+  onRemoveShortcut: (id: string) => void;
+  onBatchRemoveShortcuts?: (ids: string[]) => void;
+  onMigrateShortcuts?: (targetGroupId: string | null, shortcutIds: string[]) => void;
+}
+
+function SortableGroupCard({
+  group,
+  shortcuts,
+  allGroups,
+  onToggleExpand,
+  onEdit,
+  onRemove,
+  onAddShortcut,
+  onEditShortcut,
+  onRemoveShortcut,
+  onBatchRemoveShortcuts,
+  onMigrateShortcuts,
+}: SortableGroupCardProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: group.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <ShortcutGroupCard
+        group={group}
+        shortcuts={shortcuts}
+        allGroups={allGroups}
+        onToggleExpand={onToggleExpand}
+        onEdit={onEdit}
+        onRemove={onRemove}
+        onAddShortcut={onAddShortcut}
+        onEditShortcut={onEditShortcut}
+        onRemoveShortcut={onRemoveShortcut}
+        onBatchRemoveShortcuts={onBatchRemoveShortcuts}
+        onMigrateShortcuts={onMigrateShortcuts}
+        dragHandleProps={{ ...attributes, ...listeners }}
+        isDragging={isDragging}
+      />
+    </div>
+  );
 }
 
 export function GroupLayout({
@@ -46,6 +127,7 @@ export function GroupLayout({
   onBatchRemoveShortcuts,
   onMoveShortcutsToGroup,
   onImportData,
+  onReorderGroups,
   getUngroupedShortcutIds,
 }: GroupLayoutProps) {
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
@@ -64,6 +146,27 @@ export function GroupLayout({
   const [isUngroupedSelectMode, setIsUngroupedSelectMode] = useState(false);
   const [ungroupedSelectedIds, setUngroupedSelectedIds] = useState<Set<string>>(new Set());
   const [ungroupedMigrateDialogOpen, setUngroupedMigrateDialogOpen] = useState(false);
+
+  // 拖拽传感器配置
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5, // 需要移动5px才开始拖拽，避免误触
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // 拖拽结束处理
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      onReorderGroups?.(active.id as string, over.id as string);
+    }
+  };
 
   // 获取分组内的快捷方式
   const getGroupShortcuts = (group: ShortcutGroup): Shortcut[] => {
@@ -256,29 +359,38 @@ export function GroupLayout({
       )}
 
       {/* 分组列表 - 固定高度，内部滚动 */}
-      <div className="space-y-4 scroll-container max-h-70 overflow-y-auto pr-2">
-        {filteredData.groups.map(({ group, shortcuts: groupShortcuts }) => (
-          <ShortcutGroupCard
-            key={group.id}
-            group={group}
-            shortcuts={groupShortcuts}
-            allGroups={groups}
-            onToggleExpand={() => onToggleGroupExpand(group.id)}
-            onEdit={() => handleEditGroup(group)}
-            onRemove={() => onRemoveGroup(group.id)}
-            onAddShortcut={() => handleAddShortcutToGroup(group.id)}
-            onEditShortcut={(shortcut) => {
-              setEditingShortcut(shortcut);
-              setIsQuickMode(false); // 编辑时使用完整表单模式
-              setShortcutDialogOpen(true);
-            }}
-            onRemoveShortcut={onRemoveShortcut}
-            onBatchRemoveShortcuts={onBatchRemoveShortcuts}
-            onMigrateShortcuts={(targetGroupId, shortcutIds) => {
-              onMoveShortcutsToGroup?.(group.id, targetGroupId, shortcutIds);
-            }}
-          />
-        ))}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={filteredData.groups.map(g => g.group.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          <div className="space-y-4 scroll-container max-h-70 overflow-y-auto pr-2">
+            {filteredData.groups.map(({ group, shortcuts: groupShortcuts }) => (
+              <SortableGroupCard
+                key={group.id}
+                group={group}
+                shortcuts={groupShortcuts}
+                allGroups={groups}
+                onToggleExpand={() => onToggleGroupExpand(group.id)}
+                onEdit={() => handleEditGroup(group)}
+                onRemove={() => onRemoveGroup(group.id)}
+                onAddShortcut={() => handleAddShortcutToGroup(group.id)}
+                onEditShortcut={(shortcut) => {
+                  setEditingShortcut(shortcut);
+                  setIsQuickMode(false); // 编辑时使用完整表单模式
+                  setShortcutDialogOpen(true);
+                }}
+                onRemoveShortcut={onRemoveShortcut}
+                onBatchRemoveShortcuts={onBatchRemoveShortcuts}
+                onMigrateShortcuts={(targetGroupId, shortcutIds) => {
+                  onMoveShortcutsToGroup?.(group.id, targetGroupId, shortcutIds);
+                }}
+              />
+            ))}
 
         {/* 未分组的快捷方式 */}
         {(filteredData.ungroupedShortcuts.length > 0 || (isUngroupedSelectMode && !debouncedQuery.trim())) && (
@@ -418,6 +530,8 @@ export function GroupLayout({
           )
         )}
       </div>
+        </SortableContext>
+      </DndContext>
 
       {/* 分组弹窗 */}
       <GroupDialog

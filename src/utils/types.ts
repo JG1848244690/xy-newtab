@@ -20,6 +20,7 @@ export interface ShortcutGroup {
   color?: string; // 分组颜色
   shortcutIds: string[]; // 分组包含的快捷方式 ID
   isExpanded: boolean; // 是否展开
+  order?: number; // 排序顺序
   createdAt: number;
   updatedAt: number;
 }

@@ -24,7 +24,7 @@ const SETTINGS_KEY = `local:${STORAGE_KEY.SETTINGS}` as const;
 
 function App() {
   const { shortcuts, addShortcut, addShortcuts, updateShortcut, removeShortcut, removeShortcuts, importShortcuts } = useShortcuts();
-  const { groups, addGroup, updateGroup, removeGroup, toggleGroupExpand, addShortcutToGroup, moveShortcutsToGroup, getUngroupedShortcutIds, importGroups } = useGroups();
+  const { groups, addGroup, updateGroup, removeGroup, toggleGroupExpand, addShortcutToGroup, moveShortcutsToGroup, getUngroupedShortcutIds, importGroups, reorderGroups } = useGroups();
   const { engine, engineOption, engineOptions, setEngine, search } = useSearchEngine();
   const { theme, setTheme, mounted } = useTheme();
   const { todayTodos, stats, addTodo, toggleTodo, removeTodo, clearCompleted } = useTodos();
@@ -360,6 +360,7 @@ function App() {
                 onBatchRemoveShortcuts={removeShortcuts}
                 onMoveShortcutsToGroup={moveShortcutsToGroup}
                 onImportData={handleImportData}
+                onReorderGroups={reorderGroups}
                 getUngroupedShortcutIds={getUngroupedShortcutIds}
               />
             )}
