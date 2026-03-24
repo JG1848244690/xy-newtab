@@ -49,7 +49,9 @@
       "mcp__MiniMax__understand_image",
       "Bash(npm install:*)",
       "mcp__MiniMax__web_search",
-      "Bash(pnpm build:*)"
+      "Bash(pnpm build:*)",
+      "mcp__github__search_code",
+      "mcp__github__get_file_contents"
     ],
     "additionalDirectories": [
       "C:\\Users\\xy\\.claude\\skills"

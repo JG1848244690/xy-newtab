@@ -46,6 +46,7 @@ interface GroupLayoutProps {
   onMoveShortcutsToGroup?: (sourceGroupId: string | null, targetGroupId: string | null, shortcutIds: string[]) => void;
   onImportData?: (shortcuts: Shortcut[], groups: ShortcutGroup[]) => void;
   onReorderGroups?: (activeId: string, overId: string) => void;
+  onReorderShortcutsInGroup?: (groupId: string, activeId: string, overId: string) => void;
   getUngroupedShortcutIds: (ids: string[]) => string[];
 }
 
@@ -62,6 +63,7 @@ interface SortableGroupCardProps {
   onRemoveShortcut: (id: string) => void;
   onBatchRemoveShortcuts?: (ids: string[]) => void;
   onMigrateShortcuts?: (targetGroupId: string | null, shortcutIds: string[]) => void;
+  onReorderShortcutsInGroup?: (groupId: string, activeId: string, overId: string) => void;
 }
 
 function SortableGroupCard({
@@ -76,6 +78,7 @@ function SortableGroupCard({
   onRemoveShortcut,
   onBatchRemoveShortcuts,
   onMigrateShortcuts,
+  onReorderShortcutsInGroup,
 }: SortableGroupCardProps) {
   const {
     attributes,
@@ -105,6 +108,7 @@ function SortableGroupCard({
         onRemoveShortcut={onRemoveShortcut}
         onBatchRemoveShortcuts={onBatchRemoveShortcuts}
         onMigrateShortcuts={onMigrateShortcuts}
+        onReorderShortcutsInGroup={onReorderShortcutsInGroup}
         dragHandleProps={{ ...attributes, ...listeners }}
         isDragging={isDragging}
       />
@@ -128,6 +132,7 @@ export function GroupLayout({
   onMoveShortcutsToGroup,
   onImportData,
   onReorderGroups,
+  onReorderShortcutsInGroup,
   getUngroupedShortcutIds,
 }: GroupLayoutProps) {
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
@@ -168,9 +173,13 @@ export function GroupLayout({
     }
   };
 
-  // 获取分组内的快捷方式
+  // 获取分组内的快捷方式（按照 group.shortcutIds 的顺序）
   const getGroupShortcuts = (group: ShortcutGroup): Shortcut[] => {
-    return shortcuts.filter(s => group.shortcutIds.includes(s.id));
+    const result = group.shortcutIds
+      .map(id => shortcuts.find(s => s.id === id))
+      .filter((s): s is Shortcut => s !== undefined);
+    console.log('[GroupLayout] getGroupShortcuts', group.name, 'shortcutIds:', group.shortcutIds, 'result:', result.map(s => s.name));
+    return result;
   };
 
   // 获取未分组的快捷方式（使用 useMemo 避免重复计算）
@@ -389,6 +398,7 @@ export function GroupLayout({
                 onMigrateShortcuts={(targetGroupId, shortcutIds) => {
                   onMoveShortcutsToGroup?.(group.id, targetGroupId, shortcutIds);
                 }}
+                onReorderShortcutsInGroup={onReorderShortcutsInGroup}
               />
             ))}
 

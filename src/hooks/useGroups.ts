@@ -171,6 +171,54 @@ export function useGroups() {
     await saveGroups(updated);
   }, [saveGroups]);
 
+  // 重排分组内的快捷方式顺序
+  const reorderShortcutsInGroup = useCallback(async (groupId: string, activeShortcutId: string, overShortcutId: string) => {
+    console.log('[useGroups] reorderShortcutsInGroup called', { groupId, activeShortcutId, overShortcutId });
+
+    const current = await storage.getItem<ShortcutGroup[]>(GROUPS_KEY) || [];
+    const groupIndex = current.findIndex(g => g.id === groupId);
+
+    if (groupIndex === -1) {
+      console.log('[useGroups] group not found', groupId);
+      return;
+    }
+
+    const group = current[groupIndex];
+    const shortcutIds = group.shortcutIds;
+
+    console.log('[useGroups] current shortcutIds', shortcutIds);
+
+    const oldIndex = shortcutIds.indexOf(activeShortcutId);
+    const newIndex = shortcutIds.indexOf(overShortcutId);
+
+    console.log('[useGroups] indices', { oldIndex, newIndex });
+
+    if (oldIndex === -1 || newIndex === -1) {
+      console.log('[useGroups] shortcut not found in group');
+      return;
+    }
+
+    // 重新排序
+    const newShortcutIds = [...shortcutIds];
+    const [removed] = newShortcutIds.splice(oldIndex, 1);
+    newShortcutIds.splice(newIndex, 0, removed);
+
+    console.log('[useGroups] new shortcutIds', newShortcutIds);
+
+    // 更新分组
+    const now = Date.now();
+    const updated = [...current];
+    updated[groupIndex] = {
+      ...group,
+      shortcutIds: newShortcutIds,
+      updatedAt: now,
+    };
+
+    console.log('[useGroups] saving groups...');
+    await saveGroups(updated);
+    console.log('[useGroups] groups saved');
+  }, [saveGroups]);
+
   return {
     groups,
     addGroup,
@@ -184,5 +232,6 @@ export function useGroups() {
     getUngroupedShortcutIds,
     importGroups,
     reorderGroups,
+    reorderShortcutsInGroup,
   };
 }
