@@ -267,7 +267,7 @@ export function GroupLayout({
         {/* 未分组的快捷方式 */}
         {(filteredData.ungroupedShortcuts.length > 0 || (isUngroupedSelectMode && !debouncedQuery.trim())) && (
           <div className="rounded-xl border border-dashed border-border bg-muted/20">
-            <div className="flex items-center justify-between p-3 border-b border-border/50">
+            <div className="sticky top-0 z-10 flex items-center justify-between p-3 border-b border-border/50 bg-muted/80 backdrop-blur-sm">
               <div className="flex items-center gap-2">
                 {isUngroupedSelectMode ? (
                   <>

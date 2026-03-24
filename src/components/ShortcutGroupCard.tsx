@@ -55,6 +55,17 @@ export function ShortcutGroupCard({
 
   const colorClass = group.color ? groupColorMap[group.color] || '' : '';
 
+  // sticky 头部背景色映射
+  const stickyBgMap: Record<string, string> = {
+    blue: 'bg-blue-500/20',
+    green: 'bg-green-500/20',
+    purple: 'bg-purple-500/20',
+    orange: 'bg-orange-500/20',
+    red: 'bg-red-500/20',
+    cyan: 'bg-cyan-500/20',
+  };
+  const stickyBg = group.color ? stickyBgMap[group.color] || 'bg-muted/80' : 'bg-muted/80';
+
   const toggleSelect = (id: string) => {
     const newSelected = new Set(selectedIds);
     if (newSelected.has(id)) {
@@ -101,8 +112,11 @@ export function ShortcutGroupCard({
       "rounded-xl border bg-gradient-to-br",
       colorClass || 'from-muted/50 to-muted/30 border-border'
     )}>
-      {/* 分组头部 */}
-      <div className="flex items-center justify-between p-3 border-b border-border/50">
+      {/* 分组头部 - sticky 吸顶 */}
+      <div className={cn(
+        "sticky top-0 z-10 flex items-center justify-between p-3 border-b border-border/50 backdrop-blur-sm",
+        stickyBg
+      )}>
         <button
           onClick={onToggleExpand}
           className="flex items-center gap-2 hover:opacity-80 transition-opacity"
