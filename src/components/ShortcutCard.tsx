@@ -71,6 +71,7 @@ export function ShortcutCard({
   return (
     <div
       onClick={handleClick}
+      title={`${shortcut.name}\n${shortcut.url}`}
       className={cn(
         "flex flex-col items-center p-4 rounded-2xl cursor-pointer transition-all duration-300 group relative h-25",
         "bg-white/60 dark:bg-card/60 backdrop-blur-md",

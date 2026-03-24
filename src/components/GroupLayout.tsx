@@ -143,12 +143,18 @@ export function GroupLayout({
     setShortcutDialogOpen(true);
   };
 
-  // 保存快捷方式
+  // 保存快捷方式（区分新建和编辑）
   const handleSaveShortcut = async (data: { name: string; url: string }) => {
-    const shortcut = await onAddShortcut(data);
-    // 如果是在分组内添加，则添加到分组
-    if (currentGroupId && shortcut) {
-      onAddShortcutToGroup(currentGroupId, shortcut.id);
+    if (editingShortcut) {
+      // 编辑模式：更新现有快捷方式
+      onUpdateShortcut(editingShortcut.id, data);
+    } else {
+      // 新建模式：创建新快捷方式
+      const shortcut = await onAddShortcut(data);
+      // 如果是在分组内添加，则添加到分组
+      if (currentGroupId && shortcut) {
+        onAddShortcutToGroup(currentGroupId, shortcut.id);
+      }
     }
   };
 
@@ -247,6 +253,7 @@ export function GroupLayout({
             onAddShortcut={() => handleAddShortcutToGroup(group.id)}
             onEditShortcut={(shortcut) => {
               setEditingShortcut(shortcut);
+              setIsQuickMode(false); // 编辑时使用完整表单模式
               setShortcutDialogOpen(true);
             }}
             onRemoveShortcut={onRemoveShortcut}
@@ -363,6 +370,7 @@ export function GroupLayout({
                       shortcut={shortcut}
                       onEdit={(s) => {
                         setEditingShortcut(s);
+                        setIsQuickMode(false); // 编辑时使用完整表单模式
                         setShortcutDialogOpen(true);
                       }}
                       onRemove={onRemoveShortcut}
