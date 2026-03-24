@@ -22,6 +22,7 @@ interface GroupLayoutProps {
   onRemoveGroup: (id: string) => void;
   onAddShortcutToGroup: (groupId: string, shortcutId: string) => void;
   onAddShortcut: (data: { name: string; url: string }) => Promise<Shortcut>;
+  onAddShortcuts?: (items: { name: string; url: string }[]) => Promise<number>;
   onUpdateShortcut: (id: string, data: Partial<Omit<Shortcut, 'id' | 'createdAt' | 'updatedAt'>>) => void;
   onRemoveShortcut: (id: string) => void;
   onBatchRemoveShortcuts?: (ids: string[]) => void;
@@ -39,6 +40,7 @@ export function GroupLayout({
   onRemoveGroup,
   onAddShortcutToGroup,
   onAddShortcut,
+  onAddShortcuts,
   onUpdateShortcut,
   onRemoveShortcut,
   onBatchRemoveShortcuts,
@@ -452,6 +454,16 @@ export function GroupLayout({
         groups={groups}
         onImport={(newShortcuts, newGroups) => {
           onImportData?.(newShortcuts, newGroups);
+        }}
+        addShortcuts={async (items) => {
+          if (!onAddShortcuts) {
+            // fallback: 逐个添加
+            for (const item of items) {
+              await onAddShortcut(item);
+            }
+            return items.length;
+          }
+          return onAddShortcuts(items);
         }}
       />
     </div>

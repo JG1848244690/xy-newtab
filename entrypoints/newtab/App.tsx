@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Download, Loader2, Settings, ListTodo, ChevronUp, X } from 'lucide-react';
+import { Settings, ListTodo, ChevronUp, X } from 'lucide-react';
 import { gsap } from 'gsap';
 import { storage } from '@wxt-dev/storage';
 import { SearchBar } from '@/src/components/SearchBar';
@@ -16,7 +16,6 @@ import { useGroups } from '@/src/hooks/useGroups';
 import { useSearchEngine } from '@/src/hooks/useSearchEngine';
 import { useTheme } from '@/src/hooks/useTheme';
 import { useTodos } from '@/src/hooks/useTodos';
-import { sendMessage } from '@/messaging';
 import { STORAGE_KEY, DEFAULT_SETTINGS } from '@/src/utils/constants';
 import type { LayoutType, BackgroundSetting } from '@/src/utils/types';
 
@@ -29,7 +28,6 @@ function App() {
   const { engine, engineOption, engineOptions, setEngine, search } = useSearchEngine();
   const { theme, setTheme, mounted } = useTheme();
   const { todayTodos, stats, addTodo, toggleTodo, removeTodo, clearCompleted } = useTodos();
-  const [isImporting, setIsImporting] = useState(false);
   const [layout, setLayout] = useState<LayoutType>(DEFAULT_SETTINGS.layout);
   const [background, setBackground] = useState<BackgroundSetting | undefined>(DEFAULT_SETTINGS.background);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -74,38 +72,6 @@ function App() {
     setLayout(newLayout);
     const settings = await storage.getItem<typeof DEFAULT_SETTINGS>(SETTINGS_KEY) || DEFAULT_SETTINGS;
     await storage.setItem(SETTINGS_KEY, { ...settings, layout: newLayout });
-  };
-
-  // 从 Chrome 书签导入快捷方式
-  const handleImport = async () => {
-    setIsImporting(true);
-    try {
-      const result = await sendMessage('shortcuts/import-from-newtab');
-
-      if (!result.success) {
-        alert(result.error || '导入失败');
-        return;
-      }
-
-      if (result.shortcuts.length === 0) {
-        alert('未找到可导入的书签');
-        return;
-      }
-
-      // 使用批量添加函数
-      const importedCount = await addShortcuts(result.shortcuts);
-
-      if (importedCount === 0) {
-        alert('所有书签都已存在，跳过导入');
-      } else {
-        alert(`成功导入 ${importedCount} 个快捷方式${importedCount < result.shortcuts.length ? `（跳过 ${result.shortcuts.length - importedCount} 个重复）` : ''}`);
-      }
-    } catch (error) {
-      console.error('Import failed:', error);
-      alert('导入失败');
-    } finally {
-      setIsImporting(false);
-    }
   };
 
   // 保存背景设置
@@ -289,21 +255,6 @@ function App() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={handleImport}
-            disabled={isImporting}
-            className="text-muted-foreground hover:text-foreground
-              hover:bg-accent/50 rounded-xl transition-all duration-300"
-          >
-            {isImporting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Download className="h-4 w-4" />
-            )}
-            <span className="ml-2 hidden sm:inline">导入</span>
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
             onClick={() => setSettingsOpen(true)}
             className="text-muted-foreground hover:text-foreground
               hover:bg-accent/50 rounded-xl transition-all duration-300"
@@ -403,6 +354,7 @@ function App() {
                 onRemoveGroup={removeGroup}
                 onAddShortcutToGroup={addShortcutToGroup}
                 onAddShortcut={addShortcut}
+                onAddShortcuts={addShortcuts}
                 onUpdateShortcut={updateShortcut}
                 onRemoveShortcut={removeShortcut}
                 onBatchRemoveShortcuts={removeShortcuts}

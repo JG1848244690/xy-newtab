@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Download, Upload, AlertCircle, Check } from 'lucide-react';
+import { Download, Upload, AlertCircle, Check, Chrome, Loader2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -11,6 +11,7 @@ import {
 import { Button } from '@/src/components/ui/button';
 import type { Shortcut, ShortcutGroup, ExportData } from '@/src/utils/types';
 import { exportData, parseImportFile, mergeImportData, replaceImportData, type ImportMode } from '@/src/utils/importExport';
+import { sendMessage } from '@/messaging';
 
 interface ImportExportDialogProps {
   open: boolean;
@@ -18,6 +19,7 @@ interface ImportExportDialogProps {
   shortcuts: Shortcut[];
   groups: ShortcutGroup[];
   onImport: (shortcuts: Shortcut[], groups: ShortcutGroup[]) => void;
+  addShortcuts: (items: { name: string; url: string }[]) => Promise<number>;
 }
 
 export function ImportExportDialog({
@@ -26,10 +28,13 @@ export function ImportExportDialog({
   shortcuts,
   groups,
   onImport,
+  addShortcuts,
 }: ImportExportDialogProps) {
   const [importMode, setImportMode] = useState<ImportMode>('merge');
   const [previewData, setPreviewData] = useState<ExportData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [isChromeImporting, setIsChromeImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleExport = () => {
@@ -42,6 +47,7 @@ export function ImportExportDialog({
     if (!file) return;
 
     setError(null);
+    setSuccessMsg(null);
     try {
       const data = await parseImportFile(file);
       setPreviewData(data);
@@ -71,9 +77,43 @@ export function ImportExportDialog({
     onOpenChange(false);
   };
 
+  const handleChromeImport = async () => {
+    setIsChromeImporting(true);
+    setError(null);
+    setSuccessMsg(null);
+
+    try {
+      const result = await sendMessage('shortcuts/import-from-newtab');
+
+      if (!result.success) {
+        setError(result.error || '导入失败');
+        return;
+      }
+
+      if (result.shortcuts.length === 0) {
+        setError('未找到可导入的书签');
+        return;
+      }
+
+      const importedCount = await addShortcuts(result.shortcuts);
+
+      if (importedCount === 0) {
+        setSuccessMsg('没有新书签需要导入（已跳过重复）');
+      } else {
+        const skipped = result.shortcuts.length - importedCount;
+        setSuccessMsg(`成功从 Chrome 书签导入 ${importedCount} 个${skipped > 0 ? `（跳过 ${skipped} 个重复）` : ''}`);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Chrome 书签导入失败');
+    } finally {
+      setIsChromeImporting(false);
+    }
+  };
+
   const handleClose = () => {
     setPreviewData(null);
     setError(null);
+    setSuccessMsg(null);
     onOpenChange(false);
   };
 
@@ -102,10 +142,36 @@ export function ImportExportDialog({
             </Button>
           </div>
 
-          {/* 导入区域 */}
+          {/* 从 Chrome 书签导入 */}
+          <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
+            <div>
+              <p className="font-medium">从 Chrome 书签导入</p>
+              <p className="text-sm text-muted-foreground">
+                一键同步浏览器书签栏
+              </p>
+            </div>
+            <Button
+              onClick={handleChromeImport}
+              variant="outline"
+              size="sm"
+              disabled={isChromeImporting}
+            >
+              {isChromeImporting ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Chrome className="w-4 h-4 mr-2" />
+              )}
+              导入
+            </Button>
+          </div>
+
+          {/* 从文件导入 */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <p className="font-medium">导入数据</p>
+              <div>
+                <p className="font-medium">从备份文件导入</p>
+                <p className="text-xs text-muted-foreground">支持 .json 格式</p>
+              </div>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -160,6 +226,14 @@ export function ImportExportDialog({
               </div>
             )}
 
+            {/* 成功提示 */}
+            {successMsg && (
+              <div className="flex items-center gap-2 p-3 rounded-lg border border-green-500/50 bg-green-500/10 text-sm text-green-600 dark:text-green-400">
+                <Check className="w-4 h-4 flex-shrink-0" />
+                {successMsg}
+              </div>
+            )}
+
             {/* 错误提示 */}
             {error && (
               <div className="flex items-center gap-2 p-3 rounded-lg border border-destructive/50 bg-destructive/10 text-sm text-destructive">
@@ -172,7 +246,7 @@ export function ImportExportDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={handleClose}>
-            取消
+            关闭
           </Button>
           <Button onClick={handleImport} disabled={!previewData}>
             确认导入
