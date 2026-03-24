@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Plus, Trash2, X, Move, Search } from 'lucide-react';
+import { Plus, Trash2, X, Move, Search, Download } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
 import { Checkbox } from '@/src/components/ui/checkbox';
 import { Input } from '@/src/components/ui/input';
@@ -8,6 +8,7 @@ import { ShortcutCard } from './ShortcutCard';
 import { ShortcutDialog } from './ShortcutDialog';
 import { GroupDialog } from './GroupDialog';
 import { MigrateDialog } from './MigrateDialog';
+import { ImportExportDialog } from './ImportExportDialog';
 import { useDebounce } from '@/src/hooks/useDebounce';
 import { UI_CONFIG } from '@/src/utils/constants';
 import type { Shortcut, ShortcutGroup } from '@/src/utils/types';
@@ -25,6 +26,7 @@ interface GroupLayoutProps {
   onRemoveShortcut: (id: string) => void;
   onBatchRemoveShortcuts?: (ids: string[]) => void;
   onMoveShortcutsToGroup?: (sourceGroupId: string | null, targetGroupId: string | null, shortcutIds: string[]) => void;
+  onImportData?: (shortcuts: Shortcut[], groups: ShortcutGroup[]) => void;
   getUngroupedShortcutIds: (ids: string[]) => string[];
 }
 
@@ -41,10 +43,12 @@ export function GroupLayout({
   onRemoveShortcut,
   onBatchRemoveShortcuts,
   onMoveShortcutsToGroup,
+  onImportData,
   getUngroupedShortcutIds,
 }: GroupLayoutProps) {
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const [shortcutDialogOpen, setShortcutDialogOpen] = useState(false);
+  const [importExportDialogOpen, setImportExportDialogOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<ShortcutGroup | null>(null);
   const [editingShortcut, setEditingShortcut] = useState<Shortcut | null>(null);
   const [currentGroupId, setCurrentGroupId] = useState<string | null>(null);
@@ -224,10 +228,20 @@ export function GroupLayout({
             )}
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={handleAddGroup}>
-          <Plus className="w-4 h-4 mr-1" />
-          新建分组
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setImportExportDialogOpen(true)}
+            title="导入导出"
+          >
+            <Download className="w-4 h-4" />
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleAddGroup}>
+            <Plus className="w-4 h-4 mr-1" />
+            新建分组
+          </Button>
+        </div>
       </div>
 
       {/* 搜索结果提示 */}
@@ -428,6 +442,17 @@ export function GroupLayout({
         currentGroupId={null}
         onMigrate={handleUngroupedMigrate}
         selectedCount={ungroupedSelectedIds.size}
+      />
+
+      {/* 导入导出弹窗 */}
+      <ImportExportDialog
+        open={importExportDialogOpen}
+        onOpenChange={setImportExportDialogOpen}
+        shortcuts={shortcuts}
+        groups={groups}
+        onImport={(newShortcuts, newGroups) => {
+          onImportData?.(newShortcuts, newGroups);
+        }}
       />
     </div>
   );

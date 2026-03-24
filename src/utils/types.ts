@@ -77,6 +77,14 @@ export interface Settings {
 // 页面类型
 export type PageType = 'home' | 'detail' | 'unknown';
 
+// 导出数据格式
+export interface ExportData {
+  version: string; // 版本号，用于兼容性
+  exportedAt: number; // 导出时间戳
+  shortcuts: Shortcut[];
+  groups: ShortcutGroup[];
+}
+
 // 扩展 Window 类型
 declare global {
   interface Window {

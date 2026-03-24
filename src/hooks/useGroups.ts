@@ -141,6 +141,11 @@ export function useGroups() {
     await saveGroups(updated);
   }, [saveGroups]);
 
+  // 批量导入分组（用于导入功能）
+  const importGroups = useCallback(async (newGroups: ShortcutGroup[]) => {
+    await saveGroups(newGroups);
+  }, [saveGroups]);
+
   return {
     groups,
     addGroup,
@@ -152,5 +157,6 @@ export function useGroups() {
     moveShortcutsToGroup,
     getGroupByShortcutId,
     getUngroupedShortcutIds,
+    importGroups,
   };
 }

@@ -24,8 +24,8 @@ import type { LayoutType, BackgroundSetting } from '@/src/utils/types';
 const SETTINGS_KEY = `local:${STORAGE_KEY.SETTINGS}` as const;
 
 function App() {
-  const { shortcuts, addShortcut, addShortcuts, updateShortcut, removeShortcut, removeShortcuts } = useShortcuts();
-  const { groups, addGroup, updateGroup, removeGroup, toggleGroupExpand, addShortcutToGroup, moveShortcutsToGroup, getUngroupedShortcutIds } = useGroups();
+  const { shortcuts, addShortcut, addShortcuts, updateShortcut, removeShortcut, removeShortcuts, importShortcuts } = useShortcuts();
+  const { groups, addGroup, updateGroup, removeGroup, toggleGroupExpand, addShortcutToGroup, moveShortcutsToGroup, getUngroupedShortcutIds, importGroups } = useGroups();
   const { engine, engineOption, engineOptions, setEngine, search } = useSearchEngine();
   const { theme, setTheme, mounted } = useTheme();
   const { todayTodos, stats, addTodo, toggleTodo, removeTodo, clearCompleted } = useTodos();
@@ -113,6 +113,14 @@ function App() {
     setBackground(setting);
     const settings = await storage.getItem<typeof DEFAULT_SETTINGS>(SETTINGS_KEY) || DEFAULT_SETTINGS;
     await storage.setItem(SETTINGS_KEY, { ...settings, background: setting });
+  };
+
+  // 处理导入数据（从导入导出对话框）
+  const handleImportData = async (newShortcuts: typeof shortcuts, newGroups: typeof groups) => {
+    await Promise.all([
+      importShortcuts(newShortcuts),
+      importGroups(newGroups),
+    ]);
   };
 
   // 处理待办输入
@@ -399,6 +407,7 @@ function App() {
                 onRemoveShortcut={removeShortcut}
                 onBatchRemoveShortcuts={removeShortcuts}
                 onMoveShortcutsToGroup={moveShortcutsToGroup}
+                onImportData={handleImportData}
                 getUngroupedShortcutIds={getUngroupedShortcutIds}
               />
             )}

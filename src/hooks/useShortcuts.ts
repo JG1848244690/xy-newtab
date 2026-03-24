@@ -113,6 +113,11 @@ export function useShortcuts() {
     );
   }, [saveShortcuts]);
 
+  // 批量导入快捷方式（用于导入功能）
+  const importShortcuts = useCallback(async (newShortcuts: Shortcut[]) => {
+    await saveShortcuts(newShortcuts);
+  }, [saveShortcuts]);
+
   return {
     shortcuts,
     addShortcut,
@@ -120,5 +125,6 @@ export function useShortcuts() {
     removeShortcut,
     removeShortcuts,
     updateShortcut,
+    importShortcuts,
   };
 }
