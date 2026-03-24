@@ -38,7 +38,7 @@ export interface Todo {
 export type LayoutType = 'grid' | 'group';
 
 // 搜索引擎
-export type SearchEngineType = 'google' | 'bing' | 'duckduckgo' | 'baidu';
+export type SearchEngineType = 'google' | 'bing' | 'baidu';
 
 export interface SearchEngineOption {
   id: SearchEngineType;

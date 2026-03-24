@@ -41,14 +41,13 @@ export const GROUP_COLORS = [
 export const SEARCH_ENGINES: SearchEngineOption[] = [
   { id: 'google', name: 'Google', url: 'https://www.google.com/search?q=', icon: '🔍' },
   { id: 'bing', name: 'Bing', url: 'https://www.bing.com/search?q=', icon: '🔎' },
-  { id: 'duckduckgo', name: 'DuckDuckGo', url: 'https://duckduckgo.com/?q=', icon: '🦆' },
   { id: 'baidu', name: '百度', url: 'https://www.baidu.com/s?wd=', icon: '🌐' },
 ];
 
 // 默认设置
 export const DEFAULT_SETTINGS: Settings = {
   theme: 'dark',
-  searchEngine: 'google',
+  searchEngine: 'bing',
   iconsPerRow: 8,
   layout: 'grid',
   background: { type: 'image', imageUrl: 'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=1920&q=80', size: 'cover', opacity: 1 },
