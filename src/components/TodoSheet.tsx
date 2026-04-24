@@ -48,9 +48,9 @@ export function TodoSheet({
       <SheetContent
         side="right"
         className="w-80 sm:max-w-80 overflow-y-auto
-          bg-white/40 dark:bg-black/40
+          bg-white/20 dark:bg-black/20
           backdrop-blur-xl
-          border-l border-white/20 dark:border-black/20
+          border-l border-white/20 dark:border-black/10
           shadow-2xl shadow-black/10 dark:shadow-black/50
           data-[state=open]:animate-in data-[state=closed]:animate-out
           data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right
