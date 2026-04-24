@@ -312,7 +312,7 @@ export function SettingsSheet({
 
                 {/* 当前图片预览 */}
                 {imageUrl && !PRESET_IMAGES.some(p => p.url === imageUrl) && (
-                  <div className="relative aspect-video rounded-lg overflow-hidden border border-border">
+                  <div className="relative aspect-video rounded-lg overflow-hidden border border-white/20 dark:border-black/10">
                     <img
                       src={imageUrl}
                       alt="当前背景"

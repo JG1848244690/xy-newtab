@@ -448,8 +448,8 @@ export function SearchBar({
           <div
             ref={suggestionsRef}
             className="fixed z-[10001]
-              bg-white/95 dark:bg-card/95 backdrop-blur-xl
-              border border-border/50 rounded-xl shadow-2xl
+              bg-white/20 dark:bg-black/20 backdrop-blur-xl
+              border border-white/20 dark:border-black/10 rounded-xl shadow-2xl
               overflow-hidden animate-in fade-in-0 slide-in-from-top-2 duration-200"
             style={{
               top: dropdownPosition.top,
@@ -532,7 +532,7 @@ export function SearchBar({
               ))}
             </div>
 
-            <div className="flex items-center justify-between px-3 py-2 border-t border-border/50 bg-muted/30 text-xs text-muted-foreground">
+            <div className="flex items-center justify-between px-3 py-2 border-t border-white/20 dark:border-black/10 bg-white/10 dark:bg-black/10 text-xs text-muted-foreground">
               <div className="flex items-center gap-4">
                 <span className="flex items-center gap-1">
                   <kbd className="px-1.5 py-0.5 rounded bg-muted text-[10px] font-mono">↑↓</kbd>

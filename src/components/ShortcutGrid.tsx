@@ -214,7 +214,7 @@ export function ShortcutGrid({
                   <Checkbox
                     checked={selectedIds.has(shortcut.id)}
                     onCheckedChange={() => toggleSelect(shortcut.id)}
-                    className="bg-background border-border"
+                    className="bg-background border-white/20 dark:border-black/10"
                   />
                 </div>
               )}

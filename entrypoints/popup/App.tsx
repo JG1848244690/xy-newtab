@@ -14,7 +14,7 @@ function App() {
   return (
     <div className="w-80 min-h-96 bg-background text-foreground">
       {/* 头部 */}
-      <div className="flex items-center justify-between p-4 border-b border-border">
+      <div className="flex items-center justify-between p-4 border-b border-white/20 dark:border-black/10">
         <h1 className="text-lg font-bold">{EXTENSION_NAME}</h1>
         <div className="flex items-center gap-1">
           <Button
@@ -29,7 +29,7 @@ function App() {
       </div>
 
       {/* 标签切换 */}
-      <div className="flex border-b border-border">
+      <div className="flex border-b border-white/20 dark:border-black/10">
         <button
           onClick={() => setActiveTab('shortcuts')}
           className={cn(
@@ -67,7 +67,7 @@ function App() {
             </Button>
 
             {/* 导入教程 */}
-            <div className="border border-border rounded-lg p-3 space-y-3">
+            <div className="border border-white/20 dark:border-black/10 rounded-lg p-3 space-y-3">
               <div className="flex items-center gap-2 text-sm font-medium">
                 <BookOpen className="w-4 h-4" />
                 从 Chrome 书签导入

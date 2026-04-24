@@ -404,8 +404,8 @@ export function GroupLayout({
 
         {/* 未分组的快捷方式 */}
         {(filteredData.ungroupedShortcuts.length > 0 || (isUngroupedSelectMode && !debouncedQuery.trim())) && (
-          <div className="rounded-xl border border-dashed border-border/50 bg-white/10 dark:bg-black/10 backdrop-blur-xl shadow-lg shadow-black/5 dark:shadow-black/20">
-            <div className="sticky top-0 z-10 flex items-center justify-between p-3 border-b border-border/50 bg-white/5 dark:bg-black/5 backdrop-blur-sm">
+          <div className="rounded-xl border border-dashed border-white/20 dark:border-black/10 bg-white/10 dark:bg-black/10 backdrop-blur-xl shadow-lg shadow-black/5 dark:shadow-black/20">
+            <div className="sticky top-0 z-10 flex items-center justify-between p-3 border-b border-white/20 dark:border-black/10 bg-white/5 dark:bg-black/5 backdrop-blur-sm">
               <div className="flex items-center gap-2">
                 {isUngroupedSelectMode ? (
                   <>
@@ -500,7 +500,7 @@ export function GroupLayout({
                         <Checkbox
                           checked={ungroupedSelectedIds.has(shortcut.id)}
                           onCheckedChange={() => toggleUngroupedSelect(shortcut.id)}
-                          className="bg-background border-border"
+                          className="bg-background border-white/20 dark:border-black/10"
                         />
                       </div>
                     )}

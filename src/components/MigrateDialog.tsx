@@ -61,7 +61,7 @@ export function MigrateDialog({
                 className="w-full justify-start gap-3 h-auto py-3"
                 onClick={() => handleSelect(null)}
               >
-                <div className="w-4 h-4 rounded bg-muted border border-dashed border-border" />
+                <div className="w-4 h-4 rounded bg-muted border border-dashed border-white/20 dark:border-black/10" />
                 <span>未分组</span>
               </Button>
             )}

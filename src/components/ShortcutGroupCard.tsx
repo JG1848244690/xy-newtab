@@ -82,7 +82,7 @@ function SortableShortcutCard({
           <Checkbox
             checked={isSelected}
             onCheckedChange={onSelect}
-            className="bg-background border-border"
+            className="bg-background border-white/20 dark:border-black/10"
           />
         </div>
       )}
@@ -373,7 +373,7 @@ export function ShortcutGroupCard({
 
       {/* 选择模式提示 */}
       {isSelectMode && selectedIds.size > 0 && (
-        <div className="px-3 py-1 bg-primary/10 text-xs text-primary border-b border-border/50">
+        <div className="px-3 py-1 bg-primary/10 text-xs text-primary border-b border-white/20 dark:border-black/10">
           已选择 {selectedIds.size} 项
         </div>
       )}
