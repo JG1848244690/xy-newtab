@@ -51,7 +51,13 @@
       "mcp__MiniMax__web_search",
       "Bash(pnpm build:*)",
       "mcp__github__search_code",
-      "mcp__github__get_file_contents"
+      "mcp__github__get_file_contents",
+      "mcp__github__get_me",
+      "mcp__github__create_repository",
+      "Bash(git remote *)",
+      "Bash(git push *)",
+      "Bash(gh auth *)",
+      "Bash(curl *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\xy\\.claude\\skills"

@@ -125,14 +125,16 @@ body {
   mix-blend-mode: normal;
 }
 
+/* 旧主题保持静止，添加透明度减少遮盖感 */
+::view-transition-old(root) {
+  z-index: -1;
+  opacity: 0.6;
+}
+
 /* 新主题从点击位置扩散（无论亮→暗还是暗→亮） */
 ::view-transition-new(root) {
   animation: circle-expand 0.3s ease-out;
-}
-
-/* 旧主题保持静止，不动画 */
-::view-transition-old(root) {
-  z-index: -1;
+  opacity: 0.85;
 }
 
 @keyframes circle-expand {
