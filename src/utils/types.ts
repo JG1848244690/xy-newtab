@@ -48,9 +48,6 @@ export interface SearchEngineOption {
   icon: string;
 }
 
-// 主题
-export type Theme = 'light' | 'dark';
-
 // 背景适配方式
 export type BackgroundSize = 'cover' | 'contain' | 'auto' | '100% 100%';
 
@@ -68,7 +65,6 @@ export interface BackgroundSetting {
 
 // 设置
 export interface Settings {
-  theme: Theme;
   searchEngine: SearchEngineType;
   iconsPerRow: number;
   layout: LayoutType; // 布局类型

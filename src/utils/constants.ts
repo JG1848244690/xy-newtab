@@ -47,7 +47,6 @@ export const SEARCH_ENGINES: SearchEngineOption[] = [
 
 // 默认设置
 export const DEFAULT_SETTINGS: Settings = {
-  theme: 'dark',
   searchEngine: 'bing',
   iconsPerRow: 8,
   layout: 'group',

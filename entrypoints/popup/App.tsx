@@ -2,25 +2,14 @@ import { EXTENSION_NAME } from '@/src/utils/constants';
 import { useState } from 'react';
 import { ExternalLink, Plus, BookOpen } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
-import { ThemeToggle } from '@/src/components/ThemeToggle';
 import { cn } from '@/src/lib/utils';
-import { useTheme } from '@/src/hooks/useTheme';
 
 function App() {
   const [activeTab, setActiveTab] = useState<'shortcuts' | 'settings'>('shortcuts');
-  const { theme, setTheme, mounted } = useTheme();
 
   const openNewTab = () => {
     browser.tabs.create({});
   };
-
-  if (!mounted) {
-    return (
-      <div className="w-80 min-h-96 bg-background flex items-center justify-center">
-        <div className="animate-pulse">加载中...</div>
-      </div>
-    );
-  }
 
   return (
     <div className="w-80 min-h-96 bg-background text-foreground">
@@ -28,7 +17,6 @@ function App() {
       <div className="flex items-center justify-between p-4 border-b border-border">
         <h1 className="text-lg font-bold">{EXTENSION_NAME}</h1>
         <div className="flex items-center gap-1">
-          <ThemeToggle theme={theme} onThemeChange={setTheme} />
           <Button
             variant="ghost"
             size="icon"
@@ -93,7 +81,7 @@ function App() {
                 onClick={openNewTab}
                 className="w-full"
               >
-                <ExternalLink className="w-3 h-3 mr-2" />
+                <ExternalLink className="w-3 w-3 mr-2" />
                 打开新标签页导入
               </Button>
             </div>
@@ -102,11 +90,6 @@ function App() {
 
         {activeTab === 'settings' && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm">主题</span>
-              <ThemeToggle theme={theme} onThemeChange={setTheme} />
-            </div>
-
             <div className="text-xs text-muted-foreground p-3 bg-muted/50 rounded-lg">
               更多设置请在 <strong>新标签页</strong> 右上角点击设置图标
             </div>

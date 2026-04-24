@@ -3,7 +3,6 @@ import { Settings, ListTodo } from 'lucide-react';
 import { storage } from '@wxt-dev/storage';
 import { SearchBar } from '@/src/components/SearchBar';
 import { GroupLayout } from '@/src/components/GroupLayout';
-import { ThemeToggle } from '@/src/components/ThemeToggle';
 import { SettingsSheet } from '@/src/components/SettingsSheet';
 import { TodoSheet } from '@/src/components/TodoSheet';
 import { Button } from '@/src/components/ui/button';
@@ -23,7 +22,7 @@ function App() {
   const { shortcuts, addShortcut, addShortcuts, updateShortcut, removeShortcut, removeShortcuts, importShortcuts } = useShortcuts();
   const { groups, addGroup, updateGroup, removeGroup, toggleGroupExpand, addShortcutToGroup, moveShortcutsToGroup, getUngroupedShortcutIds, importGroups, reorderGroups, reorderShortcutsInGroup } = useGroups();
   const { engine, engineOption, engineOptions, setEngine, search } = useSearchEngine();
-  const { theme, setTheme, mounted } = useTheme();
+  const { mounted } = useTheme();
   const { todayTodos, stats, addTodo, toggleTodo, removeTodo, clearCompleted } = useTodos();
   const [background, setBackground] = useState<BackgroundSetting | undefined>(DEFAULT_SETTINGS.background);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -164,7 +163,6 @@ function App() {
           >
             <Settings className="h-4 w-4" />
           </Button>
-          <ThemeToggle theme={theme} onThemeChange={setTheme} />
         </div>
 
         {/* 主要内容 */}
