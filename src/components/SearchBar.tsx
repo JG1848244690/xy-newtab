@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/src/components/ui/select';
-import { useSearchHistory, type SearchHistoryItem } from '@/src/hooks/useSearchHistory';
+import { useSearchHistory } from '@/src/hooks/useSearchHistory';
 import type { SearchEngineType, SearchEngineOption, Shortcut } from '@/src/utils/types';
 import { cn } from '@/src/lib/utils';
 
@@ -23,7 +23,6 @@ interface SearchBarProps {
   shortcuts?: Shortcut[];
 }
 
-// 补全建议项类型
 interface SuggestionItem {
   id: string;
   text: string;
@@ -32,7 +31,11 @@ interface SuggestionItem {
   url?: string;
 }
 
-// 搜索引擎建议 API 配置
+interface SuggestionGroup {
+  title: string;
+  items: SuggestionItem[];
+}
+
 const SUGGESTION_APIS = {
   baidu: {
     url: (q: string) => `https://suggestion.baidu.com/su?wd=${encodeURIComponent(q)}&cb=jsonp_callback`,
@@ -59,21 +62,21 @@ export function SearchBar({
   const [query, setQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
-  const [suggestions, setSuggestions] = useState<SuggestionItem[]>([]);
+  const [suggestionGroups, setSuggestionGroups] = useState<SuggestionGroup[]>([]);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
+  const suggestionsListRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const jsonpCallbackRef = useRef<string>('');
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   const { history, addHistory, clearHistory, removeHistoryItem } = useSearchHistory();
 
-  // JSONP 获取百度建议
   const fetchBaiduSuggestions = useCallback((keyword: string): Promise<string[]> => {
     return new Promise((resolve) => {
-      // 清理之前的 JSONP
       if (jsonpCallbackRef.current) {
         const oldScript = document.getElementById(jsonpCallbackRef.current);
         if (oldScript) oldScript.remove();
@@ -102,7 +105,6 @@ export function SearchBar({
     });
   }, []);
 
-  // 获取搜索引擎建议
   const fetchSearchSuggestions = useCallback(async (keyword: string): Promise<string[]> => {
     if (!keyword.trim()) return [];
 
@@ -111,115 +113,97 @@ export function SearchBar({
 
     try {
       if (apiConfig.jsonp) {
-        // JSONP 方式（百度）
         return await fetchBaiduSuggestions(keyword);
       } else {
-        // CORS 方式（Bing/Google - 可能需要代理）
         const response = await fetch(apiConfig.url(keyword));
         const data = await response.json();
-
-        // Bing 返回格式: ["keyword", ["sug1", "sug2", ...]]
-        // Google 返回格式: ["keyword", ["sug1", "sug2", ...]]
         if (Array.isArray(data) && Array.isArray(data[1])) {
-          return data[1].slice(0, 5);
+          return data[1].slice(0, 10);
         }
         return [];
       }
     } catch {
-      // API 失败时静默返回空数组
       return [];
     }
   }, [engine, fetchBaiduSuggestions]);
 
-  // 生成建议列表
-  const generateSuggestions = useCallback(() => {
-    const items: SuggestionItem[] = [];
+  const generateSuggestionGroups = useCallback((): SuggestionGroup[] => {
+    const groups: SuggestionGroup[] = [];
     const lowerQuery = query.toLowerCase().trim();
-    const addedTexts = new Set<string>();
 
-    // 1. 搜索历史匹配
     const historyMatches = lowerQuery
       ? history.filter((h) => h.query.toLowerCase().includes(lowerQuery))
       : history.slice(0, 5);
 
-    historyMatches.slice(0, 3).forEach((h) => {
-      if (!addedTexts.has(h.query.toLowerCase())) {
-        items.push({
+    if (historyMatches.length > 0) {
+      groups.push({
+        title: '历史记录',
+        items: historyMatches.slice(0, 5).map((h) => ({
           id: `history-${h.query}`,
           text: h.query,
-          type: 'history',
-          icon: <Clock className="w-3.5 h-3.5 text-muted-foreground" />,
-        });
-        addedTexts.add(h.query.toLowerCase());
-      }
-    });
-
-    // 2. 快捷方式名称匹配
-    if (lowerQuery) {
-      const shortcutMatches = shortcuts.filter(
-        (s) =>
-          s.name.toLowerCase().includes(lowerQuery) ||
-          s.url.toLowerCase().includes(lowerQuery)
-      );
-
-      shortcutMatches.slice(0, 2).forEach((s) => {
-        if (!addedTexts.has(s.name.toLowerCase())) {
-          items.push({
-            id: `shortcut-${s.id}`,
-            text: s.name,
-            type: 'shortcut',
-            icon: <Globe className="w-3.5 h-3.5 text-primary" />,
-            url: s.url,
-          });
-          addedTexts.add(s.name.toLowerCase());
-        }
+          type: 'history' as const,
+          icon: <Clock className="w-4 h-4 text-muted-foreground" />,
+        })),
       });
     }
 
-    return items;
+    if (lowerQuery && shortcuts.length > 0) {
+      const shortcutMatches = shortcuts
+        .filter(
+          (s) =>
+            s.name.toLowerCase().includes(lowerQuery) ||
+            s.url.toLowerCase().includes(lowerQuery)
+        )
+        .slice(0, 3);
+
+      if (shortcutMatches.length > 0) {
+        groups.push({
+          title: '快捷方式',
+          items: shortcutMatches.map((s) => ({
+            id: `shortcut-${s.id}`,
+            text: s.name,
+            type: 'shortcut' as const,
+            icon: <Globe className="w-4 h-4 text-primary" />,
+            url: s.url,
+          })),
+        });
+      }
+    }
+
+    return groups;
   }, [query, history, shortcuts]);
 
-  // 更新建议列表（包含 API 建议）
   const updateSuggestions = useCallback(async () => {
-    const baseSuggestions = generateSuggestions();
+    const groups = generateSuggestionGroups();
     const lowerQuery = query.toLowerCase().trim();
-    const addedTexts = new Set(baseSuggestions.map((s) => s.text.toLowerCase()));
+    const newGroups = [...groups];
 
-    // 添加本地建议
-    setSuggestions(baseSuggestions);
-
-    // 获取搜索引擎建议
     if (lowerQuery.length >= 1) {
       setIsLoadingSuggestions(true);
       try {
         const apiSuggestions = await fetchSearchSuggestions(query);
 
-        // 合并 API 建议
-        const apiItems: SuggestionItem[] = [];
-        apiSuggestions.forEach((suggestion) => {
-          if (!addedTexts.has(suggestion.toLowerCase())) {
-            apiItems.push({
-              id: `suggestion-${suggestion}`,
-              text: suggestion,
-              type: 'suggestion',
-              icon: <TrendingUp className="w-3.5 h-3.5 text-orange-500" />,
-            });
-            addedTexts.add(suggestion.toLowerCase());
-          }
-        });
+        if (apiSuggestions.length > 0) {
+          const insertIndex = groups.length > 0 && groups[0].title === '历史记录' ? 1 : 0;
 
-        // 将 API 建议插入到列表中（放在历史之后，快捷方式之前）
-        const historyItems = baseSuggestions.filter((s) => s.type === 'history');
-        const shortcutItems = baseSuggestions.filter((s) => s.type === 'shortcut');
-
-        setSuggestions([...historyItems, ...apiItems.slice(0, 3), ...shortcutItems]);
+          newGroups.splice(insertIndex, 0, {
+            title: '搜索建议',
+            items: apiSuggestions.slice(0, 5).map((s) => ({
+              id: `suggestion-${s}`,
+              text: s,
+              type: 'suggestion' as const,
+              icon: <TrendingUp className="w-4 h-4 text-orange-500" />,
+            })),
+          });
+        }
       } finally {
         setIsLoadingSuggestions(false);
       }
     }
-  }, [query, generateSuggestions, fetchSearchSuggestions]);
 
-  // 防抖更新建议
+    setSuggestionGroups(newGroups);
+  }, [query, generateSuggestionGroups, fetchSearchSuggestions]);
+
   useEffect(() => {
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
@@ -238,7 +222,11 @@ export function SearchBar({
     };
   }, [query, showSuggestions, updateSuggestions]);
 
-  // 计算下拉菜单位置
+  // 清空 item refs 当建议列表变化时
+  useEffect(() => {
+    itemRefs.current.clear();
+  }, [suggestionGroups]);
+
   useEffect(() => {
     if (showSuggestions && containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
@@ -248,9 +236,8 @@ export function SearchBar({
         width: rect.width,
       });
     }
-  }, [showSuggestions, suggestions]);
+  }, [showSuggestions, suggestionGroups]);
 
-  // 执行搜索
   const handleSearch = (searchQuery?: string) => {
     const finalQuery = searchQuery || query;
     if (!finalQuery.trim()) return;
@@ -261,7 +248,6 @@ export function SearchBar({
     setQuery(finalQuery);
   };
 
-  // 点击建议项
   const handleSuggestionClick = (item: SuggestionItem) => {
     if (item.type === 'shortcut' && item.url) {
       window.open(item.url, '_blank');
@@ -272,49 +258,106 @@ export function SearchBar({
     }
   };
 
-  // 键盘导航
+  const getGlobalIndex = (groupIndex: number, itemIndex: number): number => {
+    let total = 0;
+    for (let i = 0; i < groupIndex; i++) {
+      total += suggestionGroups[i].items.length;
+    }
+    return total + itemIndex;
+  };
+
+  const findItemByGlobalIndex = (globalIndex: number) => {
+    let currentIndex = 0;
+    for (const group of suggestionGroups) {
+      for (let i = 0; i < group.items.length; i++) {
+        if (currentIndex === globalIndex) {
+          return { group, item: group.items[i], itemIndex: i };
+        }
+        currentIndex++;
+      }
+    }
+    return null;
+  };
+
+  // 滚动选中的项到可见区域
+  const scrollToSelectedItem = (index: number) => {
+    const doScroll = () => {
+      const itemElement = itemRefs.current.get(index);
+      if (itemElement && suggestionsListRef.current) {
+        const container = suggestionsListRef.current;
+        const itemTop = itemElement.offsetTop;
+        const itemHeight = itemElement.offsetHeight;
+        const containerScrollTop = container.scrollTop;
+        const containerHeight = container.clientHeight;
+
+        // 如果项在可视区域上方
+        if (itemTop < containerScrollTop) {
+          container.scrollTo({ top: itemTop, behavior: 'instant' });
+        }
+        // 如果项在可视区域下方
+        else if (itemTop + itemHeight > containerScrollTop + containerHeight) {
+          container.scrollTo({ top: itemTop - containerHeight + itemHeight, behavior: 'instant' });
+        }
+      }
+    };
+
+    // 如果 ref 还没设置好，延迟重试
+    if (!itemRefs.current.has(index)) {
+      setTimeout(() => doScroll(), 10);
+    } else {
+      doScroll();
+    }
+  };
+
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (!showSuggestions || suggestions.length === 0) {
+    const totalItems = suggestionGroups.reduce((sum, g) => sum + g.items.length, 0);
+
+    if (totalItems === 0) {
       if (e.key === 'Enter') {
         handleSearch();
       }
       return;
     }
 
+    // 确保 selectedIndex 在有效范围内
+    const safeIndex = Math.min(selectedIndex, totalItems - 1);
+    let newIndex = safeIndex;
+
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
-        setSelectedIndex((prev) =>
-          prev < suggestions.length - 1 ? prev + 1 : 0
-        );
+        newIndex = safeIndex < totalItems - 1 ? safeIndex + 1 : 0;
         break;
       case 'ArrowUp':
         e.preventDefault();
-        setSelectedIndex((prev) =>
-          prev > 0 ? prev - 1 : suggestions.length - 1
-        );
+        newIndex = safeIndex > 0 ? safeIndex - 1 : totalItems - 1;
         break;
       case 'Enter':
         e.preventDefault();
-        if (selectedIndex >= 0) {
-          handleSuggestionClick(suggestions[selectedIndex]);
+        if (safeIndex >= 0) {
+          const found = findItemByGlobalIndex(safeIndex);
+          if (found) {
+            handleSuggestionClick(found.item);
+          }
         } else {
           handleSearch();
         }
-        break;
+        return;
       case 'Escape':
         setShowSuggestions(false);
         setSelectedIndex(-1);
-        break;
+        return;
     }
+
+    setSelectedIndex(newIndex);
+    // 延迟滚动，确保 DOM 已更新
+    setTimeout(() => scrollToSelectedItem(newIndex), 0);
   };
 
-  // 输入变化时重置选中
   useEffect(() => {
     setSelectedIndex(-1);
   }, [query]);
 
-  // 点击外部关闭建议
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -331,7 +374,6 @@ export function SearchBar({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // 删除历史记录项
   const handleRemoveHistory = (e: React.MouseEvent, queryText: string) => {
     e.stopPropagation();
     removeHistoryItem(queryText);
@@ -339,136 +381,188 @@ export function SearchBar({
 
   return (
     <>
-      <div ref={containerRef} className="w-full">
-        <div className="flex items-center gap-2 p-2 rounded-2xl
-          bg-white/60 dark:bg-card/60 backdrop-blur-xl
-          border border-white/40 dark:border-border/50
-          shadow-lg shadow-black/5 dark:shadow-black/20
-          hover:shadow-xl hover:shadow-black/10 dark:hover:shadow-black/30
-          transition-all duration-300">
-        {/* 搜索引擎选择 */}
-        <Select value={engine} onValueChange={(value) => onEngineChange(value as SearchEngineType)}>
-          <SelectTrigger className="w-[100px] border-0 bg-transparent focus:ring-0 shrink-0 hover:bg-accent/50 rounded-xl transition-colors">
-            <SelectValue>
-              <span className="text-sm truncate">{engineOption.name}</span>
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {engineOptions.map((option) => (
-              <SelectItem key={option.id} value={option.id}>
-                {option.icon} {option.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {/* 分隔线 */}
-        <div className="w-px h-8 bg-border/50 shrink-0" />
-
-        {/* 搜索输入框 */}
-        <div className="flex-1 min-w-0 relative">
-          <Input
-            ref={inputRef}
-            type="text"
-            placeholder="搜索..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onFocus={() => setShowSuggestions(true)}
-            onKeyDown={handleKeyDown}
-            className={cn(
-              "w-full border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0",
-              "text-base placeholder:text-muted-foreground pr-6"
-            )}
-          />
-          {isLoadingSuggestions && (
-            <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
-          )}
-        </div>
-
-        {/* 搜索按钮 */}
-        <Button
-          onClick={() => handleSearch()}
-          disabled={!query.trim()}
-          className="rounded-xl px-6 shrink-0
-            bg-primary/90 hover:bg-primary
-            shadow-md shadow-primary/20
-            transition-all duration-300
-            hover:shadow-lg hover:shadow-primary/30
-            disabled:opacity-50 disabled:shadow-none"
-        >
-          <Search className="w-4 h-4 mr-2" />
-          搜索
-        </Button>
-      </div>
-    </div>
-
-      {/* 自动补全下拉菜单 - 使用 Portal 渲染到 body */}
-      {showSuggestions && suggestions.length > 0 && createPortal(
+      <div ref={containerRef} className="w-full relative">
         <div
-          ref={suggestionsRef}
-          className="fixed z-[9999]
-            bg-white/95 dark:bg-card/95 backdrop-blur-xl
-            border border-border/50 rounded-xl shadow-2xl
-            overflow-hidden animate-in fade-in-0 zoom-in-95 duration-150"
-          style={{
-            top: dropdownPosition.top,
-            left: dropdownPosition.left,
-            width: dropdownPosition.width,
-          }}
+          className={cn(
+            "flex items-center gap-2 p-2 rounded-2xl transition-all duration-200",
+            "bg-white/80 dark:bg-card/80 backdrop-blur-xl",
+            "border border-white/40 dark:border-border/50",
+            "shadow-lg shadow-black/5 dark:shadow-black/20",
+            showSuggestions && query
+              ? "ring-2 ring-primary/30 shadow-xl"
+              : "hover:shadow-xl hover:shadow-black/10 dark:hover:shadow-black/30"
+          )}
         >
-          {suggestions.map((item, index) => (
-            <div
-              key={item.id}
-              onClick={() => handleSuggestionClick(item)}
-              className={cn(
-                "flex items-center justify-between px-3 py-2 cursor-pointer transition-colors group",
-                index === selectedIndex
-                  ? "bg-primary/10 text-primary"
-                  : "hover:bg-muted/50"
-              )}
-            >
-              <div className="flex items-center gap-2 min-w-0 flex-1">
-                {item.icon}
-                <span className="text-sm truncate">{item.text}</span>
-                {item.type === 'shortcut' && (
-                  <span className="text-xs text-muted-foreground truncate flex-shrink-0 max-w-[120px]">
-                    {item.url}
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-1 shrink-0 ml-2">
-                {item.type === 'history' && (
-                  <button
-                    onClick={(e) => handleRemoveHistory(e, item.text)}
-                    className="p-1 hover:bg-muted rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="删除"
-                  >
-                    <X className="w-3 h-3 text-muted-foreground hover:text-foreground" />
-                  </button>
-                )}
-                <ArrowRight className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-            </div>
-          ))}
+          <Select value={engine} onValueChange={(value) => onEngineChange(value as SearchEngineType)}>
+            <SelectTrigger className="w-[100px] border-0 bg-transparent focus:ring-0 shrink-0 hover:bg-accent/50 rounded-xl transition-colors">
+              <SelectValue>
+                <span className="text-sm truncate">{engineOption.name}</span>
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent className="z-[10000]">
+              {engineOptions.map((option) => (
+                <SelectItem key={option.id} value={option.id}>
+                  {option.icon} {option.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-          {/* 底部操作栏 */}
-          <div className="flex items-center justify-between px-3 py-1.5 border-t border-border/50 bg-muted/30 text-xs text-muted-foreground">
-            <span>↑↓ 选择 · Enter 确认 · Esc 关闭</span>
-            {history.length > 0 && (
-              <button
-                onClick={() => {
-                  clearHistory();
-                  setSuggestions([]);
-                }}
-                className="hover:text-destructive transition-colors"
-              >
-                清空历史
-              </button>
+          <div className="w-px h-8 bg-border/50 shrink-0" />
+
+          <div className="flex-1 min-w-0 relative">
+            <Input
+              ref={inputRef}
+              type="text"
+              placeholder="搜索或直接访问网址..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onFocus={() => setShowSuggestions(true)}
+              onKeyDown={handleKeyDown}
+              className={cn(
+                "w-full border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0",
+                "text-base placeholder:text-muted-foreground pr-6"
+              )}
+            />
+            {isLoadingSuggestions && (
+              <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
             )}
           </div>
-        </div>,
-        document.body
-      )}
+
+          <Button
+            onClick={() => handleSearch()}
+            disabled={!query.trim()}
+            className="rounded-xl px-6 shrink-0
+              bg-primary/90 hover:bg-primary
+              shadow-md shadow-primary/20
+              transition-all duration-300
+              hover:shadow-lg hover:shadow-primary/30
+              disabled:opacity-50 disabled:shadow-none"
+          >
+            <Search className="w-4 h-4 mr-2" />
+            搜索
+          </Button>
+        </div>
+
+        {showSuggestions && suggestionGroups.length > 0 && createPortal(
+          <div
+            ref={suggestionsRef}
+            className="fixed z-[10001]
+              bg-white/95 dark:bg-card/95 backdrop-blur-xl
+              border border-border/50 rounded-xl shadow-2xl
+              overflow-hidden animate-in fade-in-0 slide-in-from-top-2 duration-200"
+            style={{
+              top: dropdownPosition.top,
+              left: dropdownPosition.left,
+              width: dropdownPosition.width,
+              maxHeight: '400px',
+            }}
+          >
+            <div ref={suggestionsListRef} className="overflow-y-auto max-h-[360px]">
+              {suggestionGroups.map((group, groupIndex) => (
+                <div key={group.title}>
+                  <div className="px-3 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider bg-muted/30">
+                    {group.title}
+                  </div>
+
+                  {group.items.map((item, itemIndex) => {
+                    const globalIndex = getGlobalIndex(groupIndex, itemIndex);
+                    const isSelected = selectedIndex === globalIndex;
+
+                    return (
+                      <div
+                        key={item.id}
+                        ref={(el) => {
+                          if (el) itemRefs.current.set(globalIndex, el);
+                        }}
+                        onClick={() => handleSuggestionClick(item)}
+                        onMouseEnter={() => {
+                          setSelectedIndex(globalIndex);
+                          scrollToSelectedItem(globalIndex);
+                        }}
+                        className={cn(
+                          "flex items-center justify-between px-3 py-2.5 cursor-pointer transition-all duration-100",
+                          isSelected ? "bg-primary/10 text-primary" : "hover:bg-muted/50"
+                        )}
+                      >
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <div className={cn(
+                            "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
+                            isSelected ? "bg-primary/20" : "bg-muted"
+                          )}>
+                            {item.icon}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm font-medium truncate">{item.text}</div>
+                            {item.url && (
+                              <div className="text-xs text-muted-foreground truncate">
+                                {item.url.replace(/^https?:\/\//, '').split('/')[0]}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1 shrink-0 ml-2">
+                          {item.type === 'history' && (
+                            <button
+                              onClick={(e) => handleRemoveHistory(e, item.text)}
+                              className={cn(
+                                "p-1.5 rounded-md transition-colors",
+                                isSelected ? "hover:bg-primary/20" : "hover:bg-muted"
+                              )}
+                              title="删除"
+                            >
+                              <X className="w-3.5 h-3.5 text-muted-foreground" />
+                            </button>
+                          )}
+                          <div className={cn(
+                            "p-1.5 rounded-md transition-colors",
+                            isSelected ? "bg-primary/20" : ""
+                          )}>
+                            <ArrowRight className={cn(
+                              "w-3.5 h-3.5 transition-all",
+                              isSelected ? "text-primary translate-x-0.5" : "text-muted-foreground"
+                            )} />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-between px-3 py-2 border-t border-border/50 bg-muted/30 text-xs text-muted-foreground">
+              <div className="flex items-center gap-4">
+                <span className="flex items-center gap-1">
+                  <kbd className="px-1.5 py-0.5 rounded bg-muted text-[10px] font-mono">↑↓</kbd>
+                  导航
+                </span>
+                <span className="flex items-center gap-1">
+                  <kbd className="px-1.5 py-0.5 rounded bg-muted text-[10px] font-mono">Enter</kbd>
+                  确认
+                </span>
+                <span className="flex items-center gap-1">
+                  <kbd className="px-1.5 py-0.5 rounded bg-muted text-[10px] font-mono">Esc</kbd>
+                  关闭
+                </span>
+              </div>
+              {history.length > 0 && (
+                <button
+                  onClick={() => {
+                    clearHistory();
+                    setSuggestionGroups([]);
+                  }}
+                  className="hover:text-destructive transition-colors"
+                >
+                  清空历史
+                </button>
+              )}
+            </div>
+          </div>,
+          document.body
+        )}
+      </div>
     </>
   );
 }
