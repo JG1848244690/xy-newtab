@@ -107,10 +107,14 @@ export function ShortcutDialog({ open, onOpenChange, shortcut, onSave, quickMode
     onOpenChange(false);
   };
 
-  // 快捷模式：URL输入框回车直接提交
-  const handleUrlKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && name.trim()) {
-      handleSubmit();
+  // 快捷模式：输入框回车直接提交
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      // URL 或名称有内容就能提交
+      if (url.trim() || name.trim()) {
+        handleSubmit();
+      }
     }
   };
 
@@ -132,20 +136,21 @@ export function ShortcutDialog({ open, onOpenChange, shortcut, onSave, quickMode
                 placeholder="粘贴网址..."
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                onKeyDown={handleUrlKeyDown}
+                onKeyDown={handleKeyDown}
                 className="flex-1 h-10"
               />
               <Input
                 placeholder="名称"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                onKeyDown={handleKeyDown}
                 className="w-28 h-10"
               />
               <Button
                 type="button"
                 size="sm"
                 onClick={() => handleSubmit()}
-                disabled={!name.trim() || !url.trim()}
+                disabled={!url.trim()}
                 className="h-10 px-4"
               >
                 添加
