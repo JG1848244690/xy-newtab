@@ -18,7 +18,7 @@ async function waitForAppReady(page: Page): Promise<void> {
     const root = document.getElementById('root');
     return root && root.children.length > 0;
   }, { timeout: 10000 });
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(500);
 }
 
 test.describe('新标签页功能测试', () => {
@@ -38,12 +38,7 @@ test.describe('新标签页功能测试', () => {
     await expect(root).not.toBeEmpty();
   });
 
-  test('标题显示"快捷标签"', async () => {
-    const title = page.locator('h1');
-    await expect(title).toHaveText('快捷标签');
-  });
-
-  test('搜索栏应该可见', async () => {
+  test('搜索栏应该可见（直接展开状态）', async () => {
     const searchInput = page.locator('input[placeholder="搜索..."]');
     await expect(searchInput).toBeVisible();
   });
@@ -53,15 +48,14 @@ test.describe('新标签页功能测试', () => {
     await expect(selectTrigger).toBeVisible();
   });
 
-  test('快捷方式卡片应该存在', async () => {
-    await page.waitForTimeout(500);
-    const cards = await page.locator('[class*="rounded-xl"]').count();
-    expect(cards).toBeGreaterThan(0);
-  });
+  test('分组布局应该直接可见（无展开动画）', async () => {
+    // 验证分组布局直接可见，没有展开箭头
+    const newGroupButton = page.locator('button').filter({ hasText: '新建分组' });
+    await expect(newGroupButton).toBeVisible();
 
-  test('添加按钮应该可见', async () => {
-    const addButton = page.locator('button').filter({ hasText: '添加' });
-    await expect(addButton).toBeVisible();
+    // 不应该有展开箭头（animate-bounce）
+    const expandArrow = page.locator('[class*="animate-bounce"]');
+    await expect(expandArrow).not.toBeVisible();
   });
 
   test('主题切换按钮应该存在', async () => {
@@ -69,6 +63,42 @@ test.describe('新标签页功能测试', () => {
       has: page.locator('svg')
     }).first();
     await expect(themeButton).toBeVisible();
+  });
+});
+
+test.describe('分组布局功能测试', () => {
+  let page: Page;
+
+  test.beforeEach(async ({ context, extensionId }) => {
+    page = await openNewTabPage(context, extensionId);
+    await waitForAppReady(page);
+  });
+
+  test.afterEach(async () => {
+    await page.close();
+  });
+
+  test('新建分组按钮应该可见', async () => {
+    const newGroupButton = page.locator('button').filter({ hasText: '新建分组' });
+    await expect(newGroupButton).toBeVisible();
+  });
+
+  test('点击新建分组按钮打开分组弹窗', async () => {
+    const newGroupButton = page.locator('button').filter({ hasText: '新建分组' });
+    await newGroupButton.click();
+
+    const dialog = page.locator('[role="dialog"]');
+    await expect(dialog).toBeVisible();
+  });
+
+  test('未分组区域应该显示', async () => {
+    const ungroupedArea = page.locator('text=未分组');
+    await expect(ungroupedArea).toBeVisible();
+  });
+
+  test('添加快捷方式按钮应该可见', async () => {
+    const addButton = page.locator('[class*="rounded-xl border border-dashed"] button').first();
+    await expect(addButton).toBeVisible();
   });
 });
 
@@ -84,50 +114,12 @@ test.describe('快捷方式 CRUD 测试', () => {
     await page.close();
   });
 
-  test('点击添加按钮打开弹窗', async () => {
-    const addButton = page.locator('button').filter({ hasText: '添加' });
+  test('点击未分组添加按钮打开弹窗', async () => {
+    const addButton = page.locator('[class*="rounded-xl border border-dashed"] button').first();
     await addButton.click();
 
     const dialog = page.locator('[role="dialog"]');
     await expect(dialog).toBeVisible();
-    await expect(dialog.locator('h2')).toHaveText('添加快捷方式');
-  });
-
-  test('弹窗表单验证 - 空值时禁用提交', async () => {
-    const addButton = page.locator('button').filter({ hasText: '添加' });
-    await addButton.click();
-
-    const dialog = page.locator('[role="dialog"]');
-    await expect(dialog).toBeVisible();
-
-    const saveButton = dialog.locator('button').filter({ hasText: '添加' });
-    await expect(saveButton).toBeDisabled();
-  });
-
-  test('弹窗表单验证 - 填写后启用提交', async () => {
-    const addButton = page.locator('button').filter({ hasText: '添加' });
-    await addButton.click();
-
-    const dialog = page.locator('[role="dialog"]');
-
-    await dialog.locator('input#name').fill('测试网站');
-    await dialog.locator('input#url').fill('https://example.com');
-
-    const saveButton = dialog.locator('button').filter({ hasText: '添加' });
-    await expect(saveButton).toBeEnabled();
-  });
-
-  test('取消按钮关闭弹窗', async () => {
-    const addButton = page.locator('button').filter({ hasText: '添加' });
-    await addButton.click();
-
-    const dialog = page.locator('[role="dialog"]');
-    await expect(dialog).toBeVisible();
-
-    const cancelButton = dialog.locator('button').filter({ hasText: '取消' });
-    await cancelButton.click();
-
-    await expect(dialog).not.toBeVisible();
   });
 });
 

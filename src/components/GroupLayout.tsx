@@ -377,7 +377,7 @@ export function GroupLayout({
           items={filteredData.groups.map(g => g.group.id)}
           strategy={verticalListSortingStrategy}
         >
-          <div className="space-y-4 scroll-container max-h-70 overflow-y-auto pr-2">
+          <div className="space-y-4 scroll-container max-h-[calc(100vh-280px)] overflow-y-auto pr-2">
             {filteredData.groups.map(({ group, shortcuts: groupShortcuts }) => (
               <SortableGroupCard
                 key={group.id}
