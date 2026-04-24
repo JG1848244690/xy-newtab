@@ -243,11 +243,11 @@ export function ShortcutGroupCard({
       "bg-white/10 dark:bg-black/10 backdrop-blur-xl",
       "shadow-lg shadow-black/5 dark:shadow-black/20",
       isDragging && "opacity-50",
-      colorClass || 'from-muted/50 to-muted/30 border-border/50'
+      colorClass || 'from-muted/50 to-muted/30 border-white/20 dark:border-black/10'
     )}>
       {/* 分组头部 - sticky 吸顶 */}
       <div className={cn(
-        "sticky top-0 z-10 flex items-center justify-between p-3 border-b border-border/50 backdrop-blur-sm",
+        "sticky top-0 z-10 flex items-center justify-between p-3 backdrop-blur-sm rounded-t-xl",
         "bg-white/5 dark:bg-black/5"
       )}>
         <div className="flex items-center gap-1">
