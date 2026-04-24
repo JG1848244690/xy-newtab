@@ -248,7 +248,7 @@ export function ShortcutGroupCard({
       {/* 分组头部 - sticky 吸顶 */}
       <div className={cn(
         "sticky top-0 z-10 flex items-center justify-between p-3 border-b border-border/50 backdrop-blur-sm",
-        "bg-white/20 dark:bg-black/20"
+        "bg-white/40 dark:bg-black/40"
       )}>
         <div className="flex items-center gap-1">
           {/* 拖拽手柄 */}
