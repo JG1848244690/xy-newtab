@@ -240,7 +240,7 @@ export function ShortcutGroupCard({
   return (
     <div className={cn(
       "rounded-xl border bg-gradient-to-br transition-opacity",
-      "bg-white/60 dark:bg-card/60 backdrop-blur-xl",
+      "bg-white/30 dark:bg-black/30 backdrop-blur-xl",
       "shadow-lg shadow-black/5 dark:shadow-black/20",
       isDragging && "opacity-50",
       colorClass || 'from-muted/50 to-muted/30 border-border/50'
@@ -248,7 +248,7 @@ export function ShortcutGroupCard({
       {/* 分组头部 - sticky 吸顶 */}
       <div className={cn(
         "sticky top-0 z-10 flex items-center justify-between p-3 border-b border-border/50 backdrop-blur-sm",
-        "bg-white/40 dark:bg-card/40"
+        "bg-white/20 dark:bg-black/20"
       )}>
         <div className="flex items-center gap-1">
           {/* 拖拽手柄 */}

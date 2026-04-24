@@ -131,8 +131,8 @@ function App() {
       <div className="min-h-screen bg-transparent transition-colors duration-300 relative z-10">
         {/* 顶部工具栏 */}
         <div className="fixed top-4 right-4 z-10 flex items-center gap-2
-          bg-white/60 dark:bg-card/60 backdrop-blur-xl
-          border border-white/40 dark:border-border/50
+          bg-white/40 dark:bg-black/40 backdrop-blur-xl
+          border border-white/40 dark:border-black/20
           rounded-2xl p-2 shadow-lg shadow-black/5 dark:shadow-black/20">
           {/* 待办输入框 - 诱导用户添加 */}
           <form onSubmit={handleTodoSubmit} className="flex items-center">

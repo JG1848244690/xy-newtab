@@ -385,8 +385,8 @@ export function SearchBar({
         <div
           className={cn(
             "flex items-center gap-2 p-2 rounded-2xl transition-all duration-200",
-            "bg-white/80 dark:bg-card/80 backdrop-blur-xl",
-            "border border-white/40 dark:border-border/50",
+            "bg-white/40 dark:bg-black/40 backdrop-blur-xl",
+            "border border-white/40 dark:border-black/20",
             "shadow-lg shadow-black/5 dark:shadow-black/20",
             showSuggestions && query
               ? "ring-2 ring-primary/30 shadow-xl"

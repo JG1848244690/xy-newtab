@@ -330,7 +330,7 @@ export function GroupLayout({
               placeholder="搜索快捷方式..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-8 h-9 bg-white/60 dark:bg-card/60 backdrop-blur-xl border border-white/40 dark:border-border/50"
+              className="pl-9 pr-8 h-9 bg-white/30 dark:bg-black/30 backdrop-blur-xl border border-white/40 dark:border-black/20"
             />
             {searchQuery && (
               <button
@@ -404,8 +404,8 @@ export function GroupLayout({
 
         {/* 未分组的快捷方式 */}
         {(filteredData.ungroupedShortcuts.length > 0 || (isUngroupedSelectMode && !debouncedQuery.trim())) && (
-          <div className="rounded-xl border border-dashed border-border/50 bg-white/60 dark:bg-card/60 backdrop-blur-xl shadow-lg shadow-black/5 dark:shadow-black/20">
-            <div className="sticky top-0 z-10 flex items-center justify-between p-3 border-b border-border/50 bg-white/40 dark:bg-card/40 backdrop-blur-sm">
+          <div className="rounded-xl border border-dashed border-border/50 bg-white/30 dark:bg-black/30 backdrop-blur-xl shadow-lg shadow-black/5 dark:shadow-black/20">
+            <div className="sticky top-0 z-10 flex items-center justify-between p-3 border-b border-border/50 bg-white/20 dark:bg-black/20 backdrop-blur-sm">
               <div className="flex items-center gap-2">
                 {isUngroupedSelectMode ? (
                   <>
