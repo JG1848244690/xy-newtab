@@ -2,7 +2,7 @@
   "name": "my-test-extension",
   "description": "WXT 浏览器扩展项目",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.1",
   "type": "module",
   "scripts": {
     "dev": "wxt",
