@@ -388,7 +388,7 @@ export function ShortcutGroupCard({
               onDragEnd={handleDragEnd}
             >
               <SortableContext items={sortableIds} strategy={rectSortingStrategy}>
-                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-3">
+                <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
                   {shortcuts.map((shortcut) => {
                     const sortableId = `${group.id}-${shortcut.id}`;
                     return (
