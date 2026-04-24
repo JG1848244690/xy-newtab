@@ -128,7 +128,7 @@ function App() {
       )}
 
       {/* 主内容 */}
-      <div className="min-h-screen bg-background/80 transition-colors duration-300 relative z-10">
+      <div className="min-h-screen bg-transparent transition-colors duration-300 relative z-10">
         {/* 顶部工具栏 */}
         <div className="fixed top-4 right-4 z-10 flex items-center gap-2
           bg-white/60 dark:bg-card/60 backdrop-blur-xl
