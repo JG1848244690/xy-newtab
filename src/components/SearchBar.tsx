@@ -384,8 +384,8 @@ export function SearchBar({
       <div ref={containerRef} className="w-full relative">
         <div
           className={cn(
-            "flex items-center gap-2 p-2 rounded-2xl transition-all duration-200",
-            "bg-white/20 dark:bg-black/20 backdrop-blur-xl",
+            "flex items-center gap-2 p-2 rounded-xl transition-all duration-200",
+            "bg-white/10 dark:bg-black/10 backdrop-blur-xl",
             "border border-white/20 dark:border-black/10",
             "shadow-lg shadow-black/5 dark:shadow-black/20",
             showSuggestions && query
@@ -448,7 +448,7 @@ export function SearchBar({
           <div
             ref={suggestionsRef}
             className="fixed z-[10001]
-              bg-white/20 dark:bg-black/20 backdrop-blur-xl
+              bg-white/10 dark:bg-black/10 backdrop-blur-xl
               border border-white/20 dark:border-black/10 rounded-xl shadow-2xl
               overflow-hidden animate-in fade-in-0 slide-in-from-top-2 duration-200"
             style={{

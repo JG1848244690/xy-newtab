@@ -9,7 +9,7 @@ interface LayoutTabsProps {
 
 export function LayoutTabs({ layout, onLayoutChange }: LayoutTabsProps) {
   return (
-    <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-lg">
+    <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-xl">
       <button
         onClick={() => onLayoutChange('group')}
         className={cn(

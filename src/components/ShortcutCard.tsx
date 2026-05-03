@@ -74,7 +74,7 @@ export function ShortcutCard({
       title={`${shortcut.name}\n${shortcut.url}`}
       className={cn(
         "flex flex-col items-center p-2 rounded-xl cursor-pointer transition-all duration-300 group relative",
-        "bg-white/10 dark:bg-black/10 backdrop-blur-md",
+        "bg-white/10 dark:bg-black/10 backdrop-blur-xl",
         "border border-white/20 dark:border-black/10",
         "hover:bg-white/20 dark:hover:bg-black/20",
         "hover:border-primary/30 dark:hover:border-primary/30",

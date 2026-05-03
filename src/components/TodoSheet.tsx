@@ -93,7 +93,7 @@ export function TodoSheet({
                   <li
                     key={todo.id}
                     className={cn(
-                      "group flex items-center gap-3 p-3 rounded-lg transition-colors",
+                      "group flex items-center gap-3 p-3 rounded-xl transition-colors",
                       "hover:bg-accent/50",
                       todo.completed && "opacity-60"
                     )}
