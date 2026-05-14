@@ -13,7 +13,6 @@ export const STORAGE_KEY = {
   SETTINGS: 'settings',
   SHORTCUTS: 'shortcuts',
   GROUPS: 'groups',
-  TODOS: 'todos',
   SEARCH_HISTORY: 'searchHistory',
 } as const;
 
