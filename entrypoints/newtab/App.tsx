@@ -20,8 +20,9 @@ function App() {
   const { groups, addGroup, updateGroup, removeGroup, toggleGroupExpand, addShortcutToGroup, moveShortcutsToGroup, getUngroupedShortcutIds, importGroups, reorderGroups, reorderShortcutsInGroup } = useGroups();
   const { engine, engineOption, engineOptions, setEngine, search } = useSearchEngine();
   const { mounted } = useTheme();
-  const [background, setBackground] = useState<BackgroundSetting | undefined>(DEFAULT_SETTINGS.background);
+  const [background, setBackground] = useState<BackgroundSetting | undefined>(undefined);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [backgroundLoaded, setBackgroundLoaded] = useState(false);
 
   // 加载背景设置
   useEffect(() => {
@@ -29,6 +30,7 @@ function App() {
       if (settings?.background) {
         setBackground(settings.background);
       }
+      setBackgroundLoaded(true);
     });
 
     // 监听设置变化，实时更新背景
@@ -59,8 +61,8 @@ function App() {
     ]);
   };
 
-  // 等待主题加载完成
-  if (!mounted) {
+  // 等待主题和背景设置加载完成
+  if (!mounted || !backgroundLoaded) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-pulse">加载中...</div>
