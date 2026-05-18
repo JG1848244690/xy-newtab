@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Search, Globe, ExternalLink, Settings as SettingsIcon, ChevronDown, ChevronRight, FolderOpen } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Search, Globe, ExternalLink, Settings as SettingsIcon, Keyboard, Plus, FolderOpen, Check, Loader2 } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { storage } from '@wxt-dev/storage';
@@ -11,24 +11,43 @@ const SHORTCUTS_KEY = `local:${STORAGE_KEY.SHORTCUTS}` as const;
 const GROUPS_KEY = `local:${STORAGE_KEY.GROUPS}` as const;
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'search' | 'settings'>('search');
+  const [activeTab, setActiveTab] = useState<'search' | 'add' | 'settings'>('search');
   const [shortcuts, setShortcuts] = useState<Shortcut[]>([]);
   const [groups, setGroups] = useState<ShortcutGroup[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  // 加载数据
+  // 快捷添加状态
+  const [currentUrl, setCurrentUrl] = useState('');
+  const [currentTitle, setCurrentTitle] = useState('');
+  const [selectedGroupId, setSelectedGroupId] = useState<string>('');
+  const [shortcutName, setShortcutName] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  // 加载数据和当前标签页
   useEffect(() => {
     Promise.all([
       storage.getItem<Shortcut[]>(SHORTCUTS_KEY),
       storage.getItem<ShortcutGroup[]>(GROUPS_KEY),
-    ]).then(([savedShortcuts, savedGroups]) => {
+      browser.tabs.query({ active: true, currentWindow: true }),
+    ]).then(([savedShortcuts, savedGroups, tabs]) => {
       setShortcuts(savedShortcuts || []);
       setGroups(savedGroups || []);
       setLoading(false);
+
+      // 获取当前标签页信息
+      if (tabs[0] && tabs[0].url) {
+        const url = tabs[0].url;
+        const title = tabs[0].title || '';
+        setCurrentUrl(url);
+        setCurrentTitle(title);
+        setShortcutName(title);
+      }
     });
 
-    // 监听数据变化
     const unwatchShortcuts = storage.watch<Shortcut[]>(SHORTCUTS_KEY, (newVal) => {
       setShortcuts(newVal || []);
     });
@@ -42,6 +61,41 @@ function App() {
     };
   }, []);
 
+  // 保存快捷方式
+  const handleAddShortcut = async () => {
+    if (!currentUrl || !shortcutName.trim()) return;
+
+    setSaving(true);
+    try {
+      const newShortcut: Shortcut = {
+        id: Date.now().toString(),
+        name: shortcutName.trim(),
+        url: currentUrl,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+
+      // 保存到 shortcuts
+      const updatedShortcuts = [...shortcuts, newShortcut];
+      await storage.setItem(SHORTCUTS_KEY, updatedShortcuts);
+
+      // 如果选择了分组，添加到分组
+      if (selectedGroupId) {
+        const updatedGroups = groups.map(g => 
+          g.id === selectedGroupId 
+            ? { ...g, shortcutIds: [...g.shortcutIds, newShortcut.id], updatedAt: Date.now() }
+            : g
+        );
+        await storage.setItem(GROUPS_KEY, updatedGroups);
+      }
+
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // 打开网站
   const openUrl = (url: string) => {
     const finalUrl = url.startsWith('http') ? url : `https://${url}`;
@@ -51,11 +105,9 @@ function App() {
   // 搜索
   const handleSearch = (query: string) => {
     if (!query.trim()) return;
-    // 判断是否是 URL
     if (query.includes('.') && !query.includes(' ')) {
       openUrl(query);
     } else {
-      // 使用默认搜索引擎搜索
       browser.tabs.create({ url: `https://www.bing.com/search?q=${encodeURIComponent(query)}` });
     }
   };
@@ -65,66 +117,179 @@ function App() {
     return shortcuts.find(s => s.id === id);
   };
 
-  const filteredGroups = groups.map(group => ({
-    ...group,
-    shortcuts: group.shortcutIds
-      .map(id => getShortcutById(id))
-      .filter((s): s is Shortcut => s !== undefined)
-      .filter(s => 
-        !searchQuery || 
-        s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        s.url.toLowerCase().includes(searchQuery.toLowerCase())
-      ),
-  })).filter(group => group.shortcuts.length > 0);
-
-  // 未分组的快捷方式
-  const groupedShortcutIds = new Set(groups.flatMap(g => g.shortcutIds));
-  const ungroupedShortcuts = shortcuts
-    .filter(s => !groupedShortcutIds.has(s.id))
+  const filteredShortcuts = groups
+    .flatMap(group => group.shortcutIds.map(id => getShortcutById(id)).filter((s): s is Shortcut => s !== undefined))
+    .concat(shortcuts.filter(s => !groups.some(g => g.shortcutIds.includes(s.id))))
     .filter(s => 
       !searchQuery || 
       s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       s.url.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    )
+    .slice(0, 5);
+
+  // 打开选中的快捷方式
+  const openSelected = (index: number) => {
+    if (index >= 0 && index < filteredShortcuts.length) {
+      openUrl(filteredShortcuts[index].url);
+    }
+  };
+
+  // 键盘事件
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key >= '1' && e.key <= '5') {
+      e.preventDefault();
+      openSelected(parseInt(e.key) - 1);
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIndex(prev => prev < filteredShortcuts.length - 1 ? prev + 1 : 0);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex(prev => prev > 0 ? prev - 1 : filteredShortcuts.length - 1);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (selectedIndex >= 0) {
+        openSelected(selectedIndex);
+      } else if (searchQuery.trim()) {
+        handleSearch(searchQuery);
+      }
+    } else if (e.key === 'Escape') {
+      setSearchQuery('');
+      setSelectedIndex(-1);
+      inputRef.current?.focus();
+    }
+  };
 
   // 设置组件
   const SettingsTab = () => {
-    const [background, setBackground] = useState<{ type: string }>({ type: 'none' });
-
-    useEffect(() => {
-      storage.getItem<{ background?: { type: string } }>(`local:${STORAGE_KEY.SETTINGS}`).then(settings => {
-        if (settings?.background) {
-          setBackground(settings.background);
-        }
-      });
-    }, []);
+    const openShortcutsSettings = () => {
+      browser.tabs.create({ url: 'chrome://extensions/shortcuts' });
+    };
 
     return (
-      <div className="space-y-4">
+      <div className="space-y-3">
+        {/* 快捷键设置 */}
+        <div className="border border-white/20 dark:border-black/10 rounded-lg p-3 space-y-2">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <Keyboard className="w-4 h-4" />
+            快捷键设置
+          </div>
+          <p className="text-xs text-muted-foreground">
+            设置全局快捷键快速打开搜索面板
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={openShortcutsSettings}
+            className="w-full gap-2"
+          >
+            前往设置快捷键
+            <ExternalLink className="w-3 h-3" />
+          </Button>
+        </div>
+
+        {/* 更多设置 */}
         <div className="text-xs text-muted-foreground p-3 bg-muted/50 rounded-lg">
           更多设置（背景、布局等）请在 <strong>新标签页</strong> 中点击右上角设置图标进行配置
         </div>
 
+  
+      </div>
+    );
+  };
+
+  // 快捷添加组件
+  const AddTab = () => {
+    return (
+      <div className="p-3 space-y-3">
+        {/* 当前页面信息 */}
+        <div className="space-y-2">
+          <label className="text-xs text-muted-foreground">当前网址</label>
+          <div className="text-xs p-2 bg-muted/50 rounded-lg truncate">
+            {currentUrl || '无法获取当前网址'}
+          </div>
+        </div>
+
+        {/* 名称输入 */}
+        <div className="space-y-2">
+          <label className="text-xs text-muted-foreground">名称</label>
+          <Input
+            value={shortcutName}
+            onChange={(e) => setShortcutName(e.target.value)}
+            placeholder="输入快捷方式名称"
+            className="h-9"
+          />
+        </div>
+
+        {/* 分组选择 */}
+        <div className="space-y-2">
+          <label className="text-xs text-muted-foreground">选择分组（可选）</label>
+          <div className="grid grid-cols-2 gap-1.5">
+            <button
+              onClick={() => setSelectedGroupId('')}
+              className={cn(
+                "flex items-center gap-1.5 p-2 rounded-lg border text-xs transition-colors",
+                !selectedGroupId 
+                  ? "border-primary bg-primary/10 text-primary" 
+                  : "border-white/20 dark:border-black/10 hover:bg-accent/50"
+              )}
+            >
+              <Globe className="w-3 h-3" />
+              不分组
+            </button>
+            {groups.map(group => (
+              <button
+                key={group.id}
+                onClick={() => setSelectedGroupId(group.id)}
+                className={cn(
+                  "flex items-center gap-1.5 p-2 rounded-lg border text-xs transition-colors truncate",
+                  selectedGroupId === group.id 
+                    ? "border-primary bg-primary/10 text-primary" 
+                    : "border-white/20 dark:border-black/10 hover:bg-accent/50"
+                )}
+              >
+                <FolderOpen className="w-3 h-3 shrink-0" />
+                <span className="truncate">{group.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 保存按钮 */}
         <Button
-          onClick={() => browser.tabs.create({ url: browser.runtime.getURL('newtab.html') })}
+          onClick={handleAddShortcut}
+          disabled={!shortcutName.trim() || saving || saved}
           className="w-full gap-2"
         >
-          <ExternalLink className="w-4 h-4" />
-          打开新标签页
+          {saved ? (
+            <>
+              <Check className="w-4 h-4" />
+              已添加
+            </>
+          ) : saving ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              保存中...
+            </>
+          ) : (
+            <>
+              <Plus className="w-4 h-4" />
+              添加到快捷方式
+            </>
+          )}
         </Button>
       </div>
     );
   };
 
   return (
-    <div className="w-[380px] h-[480px] bg-background text-foreground flex flex-col">
+    <div className="w-[380px] h-[400px] bg-background text-foreground flex flex-col relative">
       {/* 头部 */}
       <div className="flex items-center justify-between p-3 border-b border-white/20 dark:border-black/10">
         <h1 className="text-base font-bold">序言</h1>
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => browser.tabs.create({ url: browser.runtime.getURL('newtab.html') })}
+          onClick={() => browser.tabs.create({ url: browser.runtime.getURL('/newtab.html') })}
           title="打开新标签页"
           className="h-7 w-7"
         >
@@ -146,6 +311,17 @@ function App() {
           快捷搜索
         </button>
         <button
+          onClick={() => setActiveTab('add')}
+          className={cn(
+            'flex-1 py-2 text-sm transition-colors',
+            activeTab === 'add'
+              ? 'text-primary border-b-2 border-primary font-medium'
+              : 'text-muted-foreground hover:text-foreground'
+          )}
+        >
+          快捷添加
+        </button>
+        <button
           onClick={() => setActiveTab('settings')}
           className={cn(
             'flex-1 py-2 text-sm transition-colors',
@@ -159,144 +335,88 @@ function App() {
       </div>
 
       {/* 内容区 */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto pb-8">
         {activeTab === 'search' && (
-          <div className="p-3 space-y-3">
+          <div className="p-3 space-y-2">
             {/* 搜索框 */}
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
+                ref={inputRef}
                 type="text"
                 placeholder="搜索快捷方式或网址..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && searchQuery.trim()) {
-                    handleSearch(searchQuery);
-                  }
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setSelectedIndex(-1);
                 }}
-                className="pl-9 h-9"
+                onKeyDown={handleKeyDown}
+                className="pl-9 h-10"
                 autoFocus
               />
             </div>
 
-            {/* 快捷方式列表 */}
+            {/* 搜索结果 */}
+            {searchQuery && filteredShortcuts.length > 0 && (
+              <div className="space-y-1">
+                {filteredShortcuts.map((shortcut, index) => (
+                  <button
+                    key={shortcut.id}
+                    onClick={() => openUrl(shortcut.url)}
+                    onMouseEnter={() => setSelectedIndex(index)}
+                    className={cn(
+                      "w-full flex items-center gap-3 p-2 rounded-lg transition-colors text-left",
+                      index === selectedIndex ? "bg-accent" : "hover:bg-accent/50"
+                    )}
+                  >
+                    <span className="w-5 h-5 rounded bg-primary/20 text-primary text-xs font-medium flex items-center justify-center shrink-0">
+                      {index + 1}
+                    </span>
+                    <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate">{shortcut.name}</div>
+                      <div className="text-xs text-muted-foreground truncate">
+                        {shortcut.url.replace(/^https?:\/\//, '').split('/')[0]}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+                <div className="text-xs text-muted-foreground px-2 py-1">
+                  按 <kbd className="px-1 py-0.5 rounded bg-muted text-[10px] font-mono">1-5</kbd> 快速打开
+                </div>
+              </div>
+            )}
+
+            {/* 空状态 */}
             {loading ? (
               <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">
                 加载中...
               </div>
-            ) : filteredGroups.length === 0 && ungroupedShortcuts.length === 0 ? (
+            ) : !searchQuery && (
               <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                <Globe className="w-8 h-8 mb-2 opacity-50" />
-                <p className="text-sm">暂无快捷方式</p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="mt-2"
-                  onClick={() => browser.tabs.create({ url: browser.runtime.getURL('newtab.html') })}
-                >
-                  去添加
-                </Button>
+                <Search className="w-8 h-8 mb-2 opacity-50" />
+                <p className="text-sm">输入关键词搜索快捷方式</p>
               </div>
-            ) : (
-              <>
-                {/* 未分组的快捷方式 */}
-                {ungroupedShortcuts.length > 0 && (
-                  <div className="space-y-1">
-                    <div className="grid grid-cols-4 gap-1.5">
-                      {ungroupedShortcuts.map(shortcut => (
-                        <button
-                          key={shortcut.id}
-                          onClick={() => openUrl(shortcut.url)}
-                          className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-accent/50 transition-colors group"
-                          title={shortcut.url}
-                        >
-                          <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
-                            <Globe className="w-4 h-4 text-muted-foreground" />
-                          </div>
-                          <span className="text-xs truncate w-full text-center">{shortcut.name}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* 分组列表 */}
-                {filteredGroups.map(group => (
-                  <GroupItem
-                    key={group.id}
-                    group={group}
-                    onOpenUrl={openUrl}
-                  />
-                ))}
-              </>
             )}
           </div>
         )}
 
+        {activeTab === 'add' && <AddTab />}
+
         {activeTab === 'settings' && <SettingsTab />}
       </div>
-    </div>
-  );
-}
 
-// 分组组件
-function GroupItem({ group, onOpenUrl }: { group: ShortcutGroup & { shortcuts: Shortcut[] }, onOpenUrl: (url: string) => void }) {
-  const [isExpanded, setIsExpanded] = useState(true);
-
-  const groupColorMap: Record<string, string> = {
-    blue: 'border-blue-500/30',
-    green: 'border-green-500/30',
-    purple: 'border-purple-500/30',
-    orange: 'border-orange-500/30',
-    red: 'border-red-500/30',
-    cyan: 'border-cyan-500/30',
-  };
-
-  const colorClass = group.color ? groupColorMap[group.color] || '' : '';
-
-  return (
-    <div className={cn(
-      "rounded-lg border bg-white/10 dark:bg-black/10 backdrop-blur-xl",
-      colorClass || 'border-white/20 dark:border-black/10'
-    )}>
-      {/* 分组头部 */}
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between p-2 hover:bg-muted/30 transition-colors rounded-t-lg"
-      >
-        <div className="flex items-center gap-1.5">
-          {isExpanded ? (
-            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
-          ) : (
-            <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
-          )}
-          <FolderOpen className="w-3.5 h-3.5 text-muted-foreground" />
-          <span className="text-sm font-medium">{group.name}</span>
-          <span className="text-xs text-muted-foreground">({group.shortcuts.length})</span>
-        </div>
-      </button>
-
-      {/* 分组内容 */}
-      {isExpanded && (
-        <div className="p-2 pt-0">
-          <div className="grid grid-cols-4 gap-1.5">
-            {group.shortcuts.map(shortcut => (
-              <button
-                key={shortcut.id}
-                onClick={() => onOpenUrl(shortcut.url)}
-                className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-accent/50 transition-colors group"
-                title={shortcut.url}
-              >
-                <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
-                  <Globe className="w-4 h-4 text-muted-foreground" />
-                </div>
-                <span className="text-xs truncate w-full text-center">{shortcut.name}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* 底部主站链接 */}
+      <div className="absolute bottom-0 left-0 right-0 py-2 text-center border-t border-white/10 dark:border-black/10 bg-background/80 backdrop-blur-sm">
+        <a 
+          href="https://kskbl.com.cn" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="text-xs text-primary hover:underline"
+        >
+          序言-xy
+        </a>
+      </div>
     </div>
   );
 }

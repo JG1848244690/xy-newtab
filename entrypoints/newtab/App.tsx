@@ -107,7 +107,7 @@ function App() {
       {/* 背景遮罩 */}
       {background?.type === 'image' && background.imageUrl && (
         <div
-          className="fixed inset-0 z-0 transition-colors duration-300"
+          className="fixed inset-0 z-0"
           style={getOverlayStyle()}
         />
       )}
