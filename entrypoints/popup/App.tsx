@@ -26,6 +26,7 @@ function App() {
   const [shortcutName, setShortcutName] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const addInputRef = useRef<HTMLInputElement>(null);
 
   // 加载数据和当前标签页
   useEffect(() => {
@@ -136,7 +137,7 @@ function App() {
 
   // 键盘事件
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key >= '1' && e.key <= '5') {
+    if (e.key >= '1' && e.key <= '5' && e.ctrlKey) {
       e.preventDefault();
       openSelected(parseInt(e.key) - 1);
     } else if (e.key === 'ArrowDown') {
@@ -199,6 +200,10 @@ function App() {
 
   // 快捷添加组件
   const AddTab = () => {
+    useEffect(() => {
+      addInputRef.current?.focus();
+    }, []);
+
     return (
       <div className="p-3 space-y-3">
         {/* 当前页面信息 */}
@@ -213,10 +218,12 @@ function App() {
         <div className="space-y-2">
           <label className="text-xs text-muted-foreground">名称</label>
           <Input
+            ref={addInputRef}
             value={shortcutName}
             onChange={(e) => setShortcutName(e.target.value)}
             placeholder="输入快捷方式名称"
             className="h-9"
+            autoFocus
           />
         </div>
 
@@ -382,7 +389,7 @@ function App() {
                   </button>
                 ))}
                 <div className="text-xs text-muted-foreground px-2 py-1">
-                  按 <kbd className="px-1 py-0.5 rounded bg-muted text-[10px] font-mono">1-5</kbd> 快速打开
+                  按ctrl+ <kbd className="px-1 py-0.5 rounded bg-muted text-[10px] font-mono">1-5</kbd> 快速打开
                 </div>
               </div>
             )}

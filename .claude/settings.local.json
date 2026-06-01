@@ -57,7 +57,9 @@
       "Bash(git remote *)",
       "Bash(git push *)",
       "Bash(gh auth *)",
-      "Bash(curl *)"
+      "Bash(curl *)",
+      "Bash(git fetch *)",
+      "Bash(git checkout *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\xy\\.claude\\skills"
