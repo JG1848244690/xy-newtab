@@ -55,7 +55,6 @@ export function ShortcutDialog({ open, onOpenChange, shortcut, onSave, quickMode
   const [url, setUrl] = useState('');
   const [icon, setIcon] = useState('');
   const [urlInputKey, setUrlInputKey] = useState(0); // 用于重置输入框聚焦
-  const urlInputRef = { current: null as HTMLInputElement | null };
   const isEditing = !!shortcut;
 
   // 当打开弹窗时，初始化表单数据
