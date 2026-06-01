@@ -5,7 +5,7 @@ export default defineConfig({
   modules: ['@wxt-dev/module-react'],
 
   vite: () => ({
-    plugins: [tailwindcss() as unknown as Plugin],
+    plugins: [tailwindcss()],
   }),
 
   manifest: {
