@@ -205,7 +205,7 @@ export function ShortcutGrid({
 
         {/* 网格容器 - 固定高度，内部滚动 */}
         <div
-          className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-4 max-h-70 overflow-y-auto p-1 pt-2 scroll-container"
+          className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2 max-h-70 overflow-y-auto p-1 pt-2 scroll-container"
         >
           {filteredShortcuts.map((shortcut) => (
             <div key={shortcut.id} className="relative">
@@ -214,7 +214,7 @@ export function ShortcutGrid({
                   <Checkbox
                     checked={selectedIds.has(shortcut.id)}
                     onCheckedChange={() => toggleSelect(shortcut.id)}
-                    className="bg-background border-border"
+                    className="bg-background border-white/20 dark:border-black/10"
                   />
                 </div>
               )}

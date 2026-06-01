@@ -129,7 +129,7 @@ export function ImportExportDialog({
 
         <div className="grid gap-4 py-4">
           {/* 导出按钮 */}
-          <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
+          <div className="flex items-center justify-between p-4 rounded-xl border bg-muted/30">
             <div>
               <p className="font-medium">导出数据</p>
               <p className="text-sm text-muted-foreground">
@@ -143,7 +143,7 @@ export function ImportExportDialog({
           </div>
 
           {/* 从 Chrome 书签导入 */}
-          <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
+          <div className="flex items-center justify-between p-4 rounded-xl border bg-muted/30">
             <div>
               <p className="font-medium">从 Chrome 书签导入</p>
               <p className="text-sm text-muted-foreground">
@@ -191,7 +191,7 @@ export function ImportExportDialog({
 
             {/* 预览数据 */}
             {previewData && (
-              <div className="p-3 rounded-lg border bg-muted/30 space-y-3">
+              <div className="p-3 rounded-xl border bg-muted/30 space-y-3">
                 <div className="flex items-center gap-2 text-sm">
                   <Check className="w-4 h-4 text-green-500" />
                   <span>
@@ -228,7 +228,7 @@ export function ImportExportDialog({
 
             {/* 成功提示 */}
             {successMsg && (
-              <div className="flex items-center gap-2 p-3 rounded-lg border border-green-500/50 bg-green-500/10 text-sm text-green-600 dark:text-green-400">
+              <div className="flex items-center gap-2 p-3 rounded-xl border border-green-500/50 bg-green-500/10 text-sm text-green-600 dark:text-green-400">
                 <Check className="w-4 h-4 flex-shrink-0" />
                 {successMsg}
               </div>
@@ -236,7 +236,7 @@ export function ImportExportDialog({
 
             {/* 错误提示 */}
             {error && (
-              <div className="flex items-center gap-2 p-3 rounded-lg border border-destructive/50 bg-destructive/10 text-sm text-destructive">
+              <div className="flex items-center gap-2 p-3 rounded-xl border border-destructive/50 bg-destructive/10 text-sm text-destructive">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 {error}
               </div>

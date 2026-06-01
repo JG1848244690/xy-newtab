@@ -330,7 +330,7 @@ export function GroupLayout({
               placeholder="搜索快捷方式..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-8 h-9"
+              className="pl-9 pr-8 h-9 bg-white/10 dark:bg-black/10 backdrop-blur-xl border border-white/20 dark:border-black/10"
             />
             {searchQuery && (
               <button
@@ -377,7 +377,7 @@ export function GroupLayout({
           items={filteredData.groups.map(g => g.group.id)}
           strategy={verticalListSortingStrategy}
         >
-          <div className="space-y-4 scroll-container max-h-70 overflow-y-auto pr-2">
+          <div className="space-y-4 scroll-container max-h-[calc(100vh-280px)] overflow-y-auto pr-2">
             {filteredData.groups.map(({ group, shortcuts: groupShortcuts }) => (
               <SortableGroupCard
                 key={group.id}
@@ -404,8 +404,8 @@ export function GroupLayout({
 
         {/* 未分组的快捷方式 */}
         {(filteredData.ungroupedShortcuts.length > 0 || (isUngroupedSelectMode && !debouncedQuery.trim())) && (
-          <div className="rounded-xl border border-dashed border-border bg-muted/20">
-            <div className="sticky top-0 z-10 flex items-center justify-between p-3 border-b border-border/50 bg-muted/80 backdrop-blur-sm">
+          <div className="rounded-xl border border-dashed border-white/20 dark:border-black/10 bg-white/10 dark:bg-black/10 backdrop-blur-xl shadow-lg shadow-black/5 dark:shadow-black/20">
+            <div className="sticky top-0 z-10 flex items-center justify-between p-3 border-b border-white/20 dark:border-black/10 bg-white/5 dark:bg-black/5 backdrop-blur-sm">
               <div className="flex items-center gap-2">
                 {isUngroupedSelectMode ? (
                   <>
@@ -492,7 +492,7 @@ export function GroupLayout({
               </div>
             </div>
             <div className="p-3">
-              <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-3">
+              <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
                 {filteredData.ungroupedShortcuts.map((shortcut) => (
                   <div key={shortcut.id} className="relative">
                     {isUngroupedSelectMode && (
@@ -500,7 +500,7 @@ export function GroupLayout({
                         <Checkbox
                           checked={ungroupedSelectedIds.has(shortcut.id)}
                           onCheckedChange={() => toggleUngroupedSelect(shortcut.id)}
-                          className="bg-background border-border"
+                          className="bg-background border-white/20 dark:border-black/10"
                         />
                       </div>
                     )}

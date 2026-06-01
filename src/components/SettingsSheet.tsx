@@ -150,9 +150,9 @@ export function SettingsSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         className="w-80 sm:max-w-80 overflow-y-auto
-          bg-white/70 dark:bg-background/80
+          bg-white/20 dark:bg-black/20
           backdrop-blur-xl
-          border-l border-white/20 dark:border-border/50
+          border-l border-white/20 dark:border-black/10
           shadow-2xl shadow-black/10 dark:shadow-black/50
           data-[state=open]:animate-in data-[state=closed]:animate-out
           data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right
@@ -312,7 +312,7 @@ export function SettingsSheet({
 
                 {/* 当前图片预览 */}
                 {imageUrl && !PRESET_IMAGES.some(p => p.url === imageUrl) && (
-                  <div className="relative aspect-video rounded-lg overflow-hidden border border-border">
+                  <div className="relative aspect-video rounded-lg overflow-hidden border border-white/20 dark:border-black/10">
                     <img
                       src={imageUrl}
                       alt="当前背景"

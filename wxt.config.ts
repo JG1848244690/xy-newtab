@@ -5,7 +5,7 @@ export default defineConfig({
   modules: ['@wxt-dev/module-react'],
 
   vite: () => ({
-    plugins: [tailwindcss() as unknown as Plugin],
+    plugins: [tailwindcss()],
   }),
 
   manifest: {
@@ -20,5 +20,14 @@ export default defineConfig({
       'https://icons.duckduckgo.com/*',
       'https://icon.horse/*',
     ],
+    commands: {
+      _execute_action: {
+        suggested_key: {
+          default: 'Ctrl+Y',
+          mac: 'Command+Y',
+        },
+        description: '打开快捷搜索面板',
+      },
+    },
   },
 });

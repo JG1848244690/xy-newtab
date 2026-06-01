@@ -73,13 +73,13 @@ export function ShortcutCard({
       onClick={handleClick}
       title={`${shortcut.name}\n${shortcut.url}`}
       className={cn(
-        "flex flex-col items-center p-4 rounded-2xl cursor-pointer transition-all duration-300 group relative h-25",
-        "bg-white/60 dark:bg-card/60 backdrop-blur-md",
-        "border border-white/40 dark:border-border/50",
-        "hover:bg-white/80 dark:hover:bg-card/80",
+        "flex flex-col items-center p-2 rounded-xl cursor-pointer transition-all duration-300 group relative",
+        "bg-white/10 dark:bg-black/10 backdrop-blur-xl",
+        "border border-white/20 dark:border-black/10",
+        "hover:bg-white/20 dark:hover:bg-black/20",
         "hover:border-primary/30 dark:hover:border-primary/30",
         "hover:shadow-lg hover:shadow-primary/5",
-        "hover:-translate-y-1 hover:scale-[1.02]",
+        "hover:-translate-y-0.5 hover:scale-[1.01]",
         "active:scale-[0.98]",
         isSelectMode && isSelected && "ring-2 ring-primary border-primary bg-primary/10"
       )}
@@ -121,28 +121,28 @@ export function ShortcutCard({
 
       {/* 图标 */}
       <div className={cn(
-        "w-12 h-12 rounded-xl flex items-center justify-center shadow-sm transition-all",
+        "w-9 h-9 rounded-lg flex items-center justify-center shadow-sm transition-all",
         "bg-linear-to-br from-blue-500/10 to-purple-500/10 dark:from-blue-500/20 dark:to-purple-500/20",
         isSelectMode && isSelected && "ring-1 ring-primary"
       )}>
         {isLoading ? (
-          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+          <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
         ) : faviconSrc ? (
           <img
             src={faviconSrc}
             alt={shortcut.name}
-            className="w-8 h-8 rounded-lg"
+            className="w-5 h-5 rounded"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               target.style.display = 'none';
               const parent = target.parentElement;
               if (parent) {
-                parent.innerHTML = `<span class="text-lg font-bold text-primary">${shortcut.name.charAt(0).toUpperCase()}</span>`;
+                parent.innerHTML = `<span class="text-sm font-bold text-primary">${shortcut.name.charAt(0).toUpperCase()}</span>`;
               }
             }}
           />
         ) : (
-          <span className="text-lg font-bold text-primary">
+          <span className="text-sm font-bold text-primary">
             {shortcut.name.charAt(0).toUpperCase()}
           </span>
         )}
@@ -150,7 +150,7 @@ export function ShortcutCard({
 
       {/* 名称 */}
       <span className={cn(
-        "mt-2 text-xs truncate max-w-full text-center",
+        "mt-1 text-[10px] truncate max-w-full text-center leading-tight",
         isSelectMode && isSelected ? "text-primary font-medium" : "text-card-foreground"
       )}>
         {shortcut.name}

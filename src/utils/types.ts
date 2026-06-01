@@ -25,16 +25,6 @@ export interface ShortcutGroup {
   updatedAt: number;
 }
 
-// 待办事项
-export interface Todo {
-  id: string;
-  content: string; // 待办内容
-  completed: boolean; // 是否完成
-  dueDate?: string; // 截止日期 (YYYY-MM-DD 格式)
-  createdAt: number;
-  updatedAt: number;
-}
-
 // 布局类型
 export type LayoutType = 'grid' | 'group';
 
@@ -47,9 +37,6 @@ export interface SearchEngineOption {
   url: string;
   icon: string;
 }
-
-// 主题
-export type Theme = 'light' | 'dark';
 
 // 背景适配方式
 export type BackgroundSize = 'cover' | 'contain' | 'auto' | '100% 100%';
@@ -68,7 +55,6 @@ export interface BackgroundSetting {
 
 // 设置
 export interface Settings {
-  theme: Theme;
   searchEngine: SearchEngineType;
   iconsPerRow: number;
   layout: LayoutType; // 布局类型

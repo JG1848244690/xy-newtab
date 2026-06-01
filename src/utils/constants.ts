@@ -13,7 +13,6 @@ export const STORAGE_KEY = {
   SETTINGS: 'settings',
   SHORTCUTS: 'shortcuts',
   GROUPS: 'groups',
-  TODOS: 'todos',
   SEARCH_HISTORY: 'searchHistory',
 } as const;
 
@@ -47,10 +46,9 @@ export const SEARCH_ENGINES: SearchEngineOption[] = [
 
 // 默认设置
 export const DEFAULT_SETTINGS: Settings = {
-  theme: 'dark',
   searchEngine: 'bing',
   iconsPerRow: 8,
-  layout: 'grid',
+  layout: 'group',
   background: { type: 'image', imageUrl: 'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=1920&q=80', size: 'cover', opacity: 1 },
 };
 

@@ -82,7 +82,7 @@ function SortableShortcutCard({
           <Checkbox
             checked={isSelected}
             onCheckedChange={onSelect}
-            className="bg-background border-border"
+            className="bg-background border-white/20 dark:border-black/10"
           />
         </div>
       )}
@@ -240,13 +240,15 @@ export function ShortcutGroupCard({
   return (
     <div className={cn(
       "rounded-xl border bg-gradient-to-br transition-opacity",
+      "bg-white/10 dark:bg-black/10 backdrop-blur-xl",
+      "shadow-lg shadow-black/5 dark:shadow-black/20",
       isDragging && "opacity-50",
-      colorClass || 'from-muted/50 to-muted/30 border-border'
+      colorClass || 'from-muted/50 to-muted/30 border-white/20 dark:border-black/10'
     )}>
       {/* 分组头部 - sticky 吸顶 */}
       <div className={cn(
-        "sticky top-0 z-10 flex items-center justify-between p-3 border-b border-border/50 backdrop-blur-sm",
-        stickyBg
+        "sticky top-0 z-10 flex items-center justify-between p-3 backdrop-blur-sm rounded-t-xl",
+        "bg-white/5 dark:bg-black/5"
       )}>
         <div className="flex items-center gap-1">
           {/* 拖拽手柄 */}
@@ -371,7 +373,7 @@ export function ShortcutGroupCard({
 
       {/* 选择模式提示 */}
       {isSelectMode && selectedIds.size > 0 && (
-        <div className="px-3 py-1 bg-primary/10 text-xs text-primary border-b border-border/50">
+        <div className="px-3 py-1 bg-primary/10 text-xs text-primary border-b border-white/20 dark:border-black/10">
           已选择 {selectedIds.size} 项
         </div>
       )}
@@ -386,7 +388,7 @@ export function ShortcutGroupCard({
               onDragEnd={handleDragEnd}
             >
               <SortableContext items={sortableIds} strategy={rectSortingStrategy}>
-                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-3">
+                <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
                   {shortcuts.map((shortcut) => {
                     const sortableId = `${group.id}-${shortcut.id}`;
                     return (
