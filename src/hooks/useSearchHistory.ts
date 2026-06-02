@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { storage } from '@wxt-dev/storage';
-import { STORAGE_KEY } from '@/src/utils/constants';
+import { LOCAL_STORAGE_KEY } from '@/src/utils/constants';
 
 // 搜索历史项
 export interface SearchHistoryItem {
@@ -9,7 +9,7 @@ export interface SearchHistoryItem {
   count: number; // 搜索次数
 }
 
-const HISTORY_KEY = `local:${STORAGE_KEY.SEARCH_HISTORY}` as const;
+const HISTORY_KEY = LOCAL_STORAGE_KEY.SEARCH_HISTORY;
 const MAX_HISTORY = 50; // 最多保存50条历史
 
 export function useSearchHistory() {

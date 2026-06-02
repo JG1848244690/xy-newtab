@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { storage } from '@wxt-dev/storage';
 import type { SearchEngineType, SearchEngineOption } from '@/src/utils/types';
-import { STORAGE_KEY, DEFAULT_SETTINGS, SEARCH_ENGINES } from '@/src/utils/constants';
+import { LOCAL_STORAGE_KEY, DEFAULT_SETTINGS, SEARCH_ENGINES } from '@/src/utils/constants';
 import { notifyNewtabNavigated } from '@/src/utils/navigationReset';
 
-const SETTINGS_KEY = `local:${STORAGE_KEY.SETTINGS}` as const;
+const SETTINGS_KEY = LOCAL_STORAGE_KEY.SETTINGS;
 
 /**
  * 搜索引擎切换 Hook

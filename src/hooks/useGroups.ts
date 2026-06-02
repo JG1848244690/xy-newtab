@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { storage } from '@wxt-dev/storage';
 import type { ShortcutGroup } from '@/src/utils/types';
-import { STORAGE_KEY, DEFAULT_GROUPS } from '@/src/utils/constants';
+import { LOCAL_STORAGE_KEY, DEFAULT_GROUPS } from '@/src/utils/constants';
 
 // 存储键（带 local: 前缀）
-const GROUPS_KEY = `local:${STORAGE_KEY.GROUPS}` as const;
+const GROUPS_KEY = LOCAL_STORAGE_KEY.GROUPS;
 
 export function useGroups() {
   const [groups, setGroups] = useState<ShortcutGroup[]>([]);

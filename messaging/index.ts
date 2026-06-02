@@ -1,5 +1,5 @@
 import { defineExtensionMessaging } from '@webext-core/messaging';
-import type { Shortcut, TabSession } from '@/src/utils/types';
+import type { Shortcut, TabSession, SyncResult } from '@/src/utils/types';
 
 // 定义消息协议：函数签名 = 参数类型 => 返回值类型
 interface ProtocolMap {
@@ -24,6 +24,14 @@ interface ProtocolMap {
   'tab-sessions/list': () => TabSession[];
   'tab-sessions/restore': (sessionId: string) => { success: boolean; error?: string };
   'tab-sessions/delete': (sessionId: string) => { success: boolean; error?: string };
+
+  // 标签页会话云同步（只同步 sessions）
+  'tab-sessions/sync-upload': () => SyncResult;
+  'tab-sessions/sync-download': () => SyncResult;
+
+  // 书签 + 分组云同步（shortcuts + groups，不含 sessions）
+  'bookmarks/sync-upload': () => SyncResult;
+  'bookmarks/sync-download': () => SyncResult;
 }
 
 // 创建 messenger

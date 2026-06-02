@@ -15,6 +15,18 @@ export const STORAGE_KEY = {
   GROUPS: 'groups',
   SEARCH_HISTORY: 'searchHistory',
   TAB_SESSIONS: 'tabSessions',
+  LAST_SYNC: 'tabSessions_lastSync',
+} as const;
+
+// local 命名空间下的完整 storage key（带 `local:` 前缀）
+// 集中管理避免散落硬编码，详见 docs/2026-06-02-cloud-sync-fix-plan.md P1-6
+export const LOCAL_STORAGE_KEY = {
+  SETTINGS: `local:${STORAGE_KEY.SETTINGS}`,
+  SHORTCUTS: `local:${STORAGE_KEY.SHORTCUTS}`,
+  GROUPS: `local:${STORAGE_KEY.GROUPS}`,
+  SEARCH_HISTORY: `local:${STORAGE_KEY.SEARCH_HISTORY}`,
+  TAB_SESSIONS: `local:${STORAGE_KEY.TAB_SESSIONS}`,
+  LAST_SYNC: `local:${STORAGE_KEY.LAST_SYNC}`,
 } as const;
 
 // 标签页会话限制

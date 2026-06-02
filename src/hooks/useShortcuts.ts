@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { storage } from '@wxt-dev/storage';
 import type { Shortcut } from '@/src/utils/types';
-import { STORAGE_KEY, DEFAULT_SHORTCUTS } from '@/src/utils/constants';
+import { LOCAL_STORAGE_KEY, DEFAULT_SHORTCUTS } from '@/src/utils/constants';
 
 // 存储键（带 local: 前缀）
-const SHORTCUTS_KEY = `local:${STORAGE_KEY.SHORTCUTS}` as const;
+const SHORTCUTS_KEY = LOCAL_STORAGE_KEY.SHORTCUTS;
 
 export function useShortcuts() {
   const [shortcuts, setShortcuts] = useState<Shortcut[]>([]);

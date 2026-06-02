@@ -3,13 +3,13 @@ import { Search, Globe, ExternalLink, Keyboard, Plus, FolderOpen, Check, Loader2
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { storage } from '@wxt-dev/storage';
-import { STORAGE_KEY } from '@/src/utils/constants';
+import { LOCAL_STORAGE_KEY } from '@/src/utils/constants';
 import type { Shortcut, ShortcutGroup } from '@/src/utils/types';
 import { cn } from '@/src/lib/utils';
 import SessionTab from './SessionTab';
 
-const SHORTCUTS_KEY = `local:${STORAGE_KEY.SHORTCUTS}` as const;
-const GROUPS_KEY = `local:${STORAGE_KEY.GROUPS}` as const;
+const SHORTCUTS_KEY = LOCAL_STORAGE_KEY.SHORTCUTS;
+const GROUPS_KEY = LOCAL_STORAGE_KEY.GROUPS;
 
 // 设置组件
 function SettingsTab() {

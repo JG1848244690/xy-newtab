@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { Download, Upload, AlertCircle, Check, Chrome, Loader2 } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Download, Upload, AlertCircle, Check, Chrome, Loader2, CloudUpload, CloudDownload } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -12,6 +12,8 @@ import { Button } from '@/src/components/ui/button';
 import type { Shortcut, ShortcutGroup, ExportData } from '@/src/utils/types';
 import { exportData, parseImportFile, mergeImportData, replaceImportData, type ImportMode } from '@/src/utils/importExport';
 import { sendMessage } from '@/messaging';
+import { storage } from '@wxt-dev/storage';
+import { LOCAL_STORAGE_KEY } from '@/src/utils/constants';
 
 interface ImportExportDialogProps {
   open: boolean;
@@ -35,7 +37,26 @@ export function ImportExportDialog({
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [isChromeImporting, setIsChromeImporting] = useState(false);
+  const [syncing, setSyncing] = useState<'upload' | 'download' | null>(null);
+  const [lastSyncAt, setLastSyncAt] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 打开弹窗时读取最后同步时间
+  useEffect(() => {
+    if (open) {
+      storage.getItem<number>(LOCAL_STORAGE_KEY.LAST_SYNC).then(v => setLastSyncAt(v ?? null));
+    }
+  }, [open]);
+
+  // 计算相对时间
+  const getRelativeTime = (timestamp: number) => {
+    const now = Date.now();
+    const diff = now - timestamp;
+    if (diff < 60000) return '刚刚';
+    if (diff < 3600000) return `${Math.floor(diff / 60000)} 分钟前`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)} 小时前`;
+    return `${Math.floor(diff / 86400000)} 天前`;
+  };
 
   const handleExport = () => {
     exportData(shortcuts, groups);
@@ -110,6 +131,57 @@ export function ImportExportDialog({
     }
   };
 
+  // 上传书签到云端
+  const handleSyncUpload = async () => {
+    setSyncing('upload');
+    setError(null);
+    setSuccessMsg(null);
+    try {
+      const result = await sendMessage('bookmarks/sync-upload', undefined);
+      if (result.success) {
+        const ts = result.lastSyncAt ?? Date.now();
+        setLastSyncAt(ts);
+        setSuccessMsg(`已上传 ${shortcuts.length} 个书签、${groups.length} 个分组到云端`);
+      } else {
+        setError(result.error || '上传失败');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '上传失败');
+    } finally {
+      setSyncing(null);
+    }
+  };
+
+  // 从云端下载书签
+  const handleSyncDownload = async () => {
+    // 二次确认: 下载会全量覆盖本地书签和分组
+    const totalLocal = shortcuts.length + groups.length;
+    const message = totalLocal > 0
+      ? `当前有 ${shortcuts.length} 个书签、${groups.length} 个分组，确定要从云端下载并覆盖吗？\n\n该操作只清空本地书签和分组,不影响会话存档。`
+      : '确定要从云端下载书签和分组吗？';
+
+    if (!window.confirm(message)) return;
+
+    setSyncing('download');
+    setError(null);
+    setSuccessMsg(null);
+    try {
+      const result = await sendMessage('bookmarks/sync-download', undefined);
+      if (result.success) {
+        const ts = result.lastSyncAt ?? Date.now();
+        setLastSyncAt(ts);
+        setSuccessMsg('已从云端下载，关闭弹窗查看最新数据');
+        // storage.watch 会自动触发 useShortcuts/useGroups 重载
+      } else {
+        setError(result.error || '下载失败');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '下载失败');
+    } finally {
+      setSyncing(null);
+    }
+  };
+
   const handleClose = () => {
     setPreviewData(null);
     setError(null);
@@ -128,6 +200,56 @@ export function ImportExportDialog({
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
+          {/* 书签 + 分组云同步 */}
+          <div className="p-4 rounded-xl border bg-muted/30 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">书签同步</p>
+                <p className="text-sm text-muted-foreground">
+                  通过 Google 账号跨设备同步书签和分组
+                </p>
+              </div>
+              {lastSyncAt && (
+                <span className="text-xs text-muted-foreground shrink-0">
+                  上次同步: {getRelativeTime(lastSyncAt)}
+                </span>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSyncUpload}
+                disabled={syncing !== null}
+                className="flex-1"
+              >
+                {syncing === 'upload' ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <CloudUpload className="w-4 h-4 mr-2" />
+                )}
+                上传到云端
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSyncDownload}
+                disabled={syncing !== null}
+                className="flex-1"
+              >
+                {syncing === 'download' ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <CloudDownload className="w-4 h-4 mr-2" />
+                )}
+                从云端下载
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              ⚠️ 会话存档请在浏览器工具栏图标中单独同步;云端总配额 100KB,数据量较大时可能上传失败。
+            </p>
+          </div>
+
           {/* 导出按钮 */}
           <div className="flex items-center justify-between p-4 rounded-xl border bg-muted/30">
             <div>

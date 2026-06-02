@@ -59,7 +59,9 @@
       "Bash(gh auth *)",
       "Bash(curl *)",
       "Bash(git fetch *)",
-      "Bash(git checkout *)"
+      "Bash(git checkout *)",
+      "Bash(npx wxt *)",
+      "Bash(Select-String -Pattern \"error|Error|TS[0-9]\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\xy\\.claude\\skills"

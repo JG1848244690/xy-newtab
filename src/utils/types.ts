@@ -39,6 +39,14 @@ export interface TabSession {
   tabs: TabInfo[];
 }
 
+// 云同步结果
+export interface SyncResult {
+  success: boolean;
+  error?: string;
+  lastSyncAt?: number;
+  count?: number; // 同步的会话数
+}
+
 // 布局类型
 export type LayoutType = 'grid' | 'group';
 

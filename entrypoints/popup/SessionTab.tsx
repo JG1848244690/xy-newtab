@@ -1,8 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Save, RotateCcw, Trash2, History, ExternalLink, Loader2, AlertCircle } from 'lucide-react';
+import { Save, RotateCcw, Trash2, History, ExternalLink, Loader2, AlertCircle, CloudUpload, CloudDownload } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
 import { sendMessage } from '@/messaging';
+import { storage } from '@wxt-dev/storage';
+import { LOCAL_STORAGE_KEY } from '@/src/utils/constants';
 import type { TabSession } from '@/src/utils/types';
+
+const LAST_SYNC_KEY = LOCAL_STORAGE_KEY.LAST_SYNC;
 
 function SessionTab() {
   const [sessions, setSessions] = useState<TabSession[]>([]);
@@ -10,12 +14,18 @@ function SessionTab() {
   const [saving, setSaving] = useState(false);
   const [restoringId, setRestoringId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState<'upload' | 'download' | null>(null);
+  const [lastSyncAt, setLastSyncAt] = useState<number | null>(null);
 
   // 加载会话列表
   const loadSessions = async () => {
     try {
-      const list = await sendMessage('tab-sessions/list', undefined);
+      const [list, lastSync] = await Promise.all([
+        sendMessage('tab-sessions/list', undefined),
+        storage.getItem<number>(LAST_SYNC_KEY),
+      ]);
       setSessions(list);
+      setLastSyncAt(lastSync ?? null);
     } catch (err) {
       console.error('[SessionTab] Failed to load sessions:', err);
       setError('加载会话失败');
@@ -35,7 +45,6 @@ function SessionTab() {
     try {
       const result = await sendMessage('tab-sessions/save', undefined);
       if (result.success && result.session) {
-        // 重新加载列表
         await loadSessions();
       } else {
         setError(result.error || '保存失败');
@@ -81,6 +90,53 @@ function SessionTab() {
     }
   };
 
+  // 上传会话到云端
+  const handleSyncUpload = async () => {
+    setSyncing('upload');
+    setError(null);
+    try {
+      const result = await sendMessage('tab-sessions/sync-upload', undefined);
+      if (result.success) {
+        setLastSyncAt(result.lastSyncAt ?? Date.now());
+      } else {
+        setError(result.error || '上传失败');
+      }
+    } catch (err) {
+      console.error('[SessionTab] Failed to sync upload:', err);
+      setError('上传失败');
+    } finally {
+      setSyncing(null);
+    }
+  };
+
+  // 从云端下载会话
+  const handleSyncDownload = async () => {
+    // 二次确认: 下载会覆盖本地会话
+    const localCount = sessions.length;
+    const message = localCount > 0
+      ? `当前有 ${localCount} 个本地会话，确定要从云端下载并覆盖吗？\n\n该操作只清空本地会话存档,不影响书签和分组。`
+      : '确定要从云端下载会话吗？';
+
+    if (!window.confirm(message)) return;
+
+    setSyncing('download');
+    setError(null);
+    try {
+      const result = await sendMessage('tab-sessions/sync-download', undefined);
+      if (result.success) {
+        setLastSyncAt(result.lastSyncAt ?? Date.now());
+        await loadSessions();
+      } else {
+        setError(result.error || '下载失败');
+      }
+    } catch (err) {
+      console.error('[SessionTab] Failed to sync download:', err);
+      setError('下载失败');
+    } finally {
+      setSyncing(null);
+    }
+  };
+
   // 计算相对时间
   const getRelativeTime = (timestamp: number) => {
     const now = Date.now();
@@ -112,6 +168,49 @@ function SessionTab() {
           </>
         )}
       </Button>
+
+      {/* 会话云同步区域 */}
+      <div className="border border-white/20 dark:border-black/10 rounded-lg p-2.5 space-y-2">
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <CloudUpload className="w-3 h-3" />
+          会话云同步（跨设备恢复存档）
+          {lastSyncAt && (
+            <span className="ml-auto text-[10px] opacity-60">
+              上次同步: {getRelativeTime(lastSyncAt)}
+            </span>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSyncUpload}
+            disabled={syncing !== null}
+            className="flex-1 gap-1.5 h-8 text-xs"
+          >
+            {syncing === 'upload' ? (
+              <Loader2 className="w-3 h-3 animate-spin" />
+            ) : (
+              <CloudUpload className="w-3 h-3" />
+            )}
+            上传到云端
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSyncDownload}
+            disabled={syncing !== null}
+            className="flex-1 gap-1.5 h-8 text-xs"
+          >
+            {syncing === 'download' ? (
+              <Loader2 className="w-3 h-3 animate-spin" />
+            ) : (
+              <CloudDownload className="w-3 h-3" />
+            )}
+            从云端下载
+          </Button>
+        </div>
+      </div>
 
       {/* 错误提示 */}
       {error && (

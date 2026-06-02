@@ -9,12 +9,12 @@ import { useShortcuts } from '@/src/hooks/useShortcuts';
 import { useGroups } from '@/src/hooks/useGroups';
 import { useSearchEngine } from '@/src/hooks/useSearchEngine';
 import { useTheme } from '@/src/hooks/useTheme';
-import { STORAGE_KEY, DEFAULT_SETTINGS } from '@/src/utils/constants';
+import { LOCAL_STORAGE_KEY, DEFAULT_SETTINGS } from '@/src/utils/constants';
 import { NEWTAB_NAVIGATED_EVENT } from '@/src/utils/navigationReset';
 import type { BackgroundSetting } from '@/src/utils/types';
 
 // 完整的存储键
-const SETTINGS_KEY = `local:${STORAGE_KEY.SETTINGS}` as const;
+const SETTINGS_KEY = LOCAL_STORAGE_KEY.SETTINGS;
 
 function App() {
   const { shortcuts, addShortcut, addShortcuts, updateShortcut, removeShortcut, removeShortcuts, importShortcuts } = useShortcuts();
