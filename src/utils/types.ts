@@ -25,6 +25,20 @@ export interface ShortcutGroup {
   updatedAt: number;
 }
 
+// 标签页会话存储
+export interface TabInfo {
+  url: string;
+  title: string;
+}
+
+export interface TabSession {
+  id: string;
+  title: string;
+  createdAt: number;
+  tabCount: number;
+  tabs: TabInfo[];
+}
+
 // 布局类型
 export type LayoutType = 'grid' | 'group';
 

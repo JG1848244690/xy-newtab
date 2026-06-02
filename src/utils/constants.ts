@@ -14,6 +14,13 @@ export const STORAGE_KEY = {
   SHORTCUTS: 'shortcuts',
   GROUPS: 'groups',
   SEARCH_HISTORY: 'searchHistory',
+  TAB_SESSIONS: 'tabSessions',
+} as const;
+
+// 标签页会话限制
+export const SESSION_LIMITS = {
+  MAX_SESSIONS: 5,         // 最多保存 5 个存档
+  MAX_TABS_PER_SESSION: 30, // 每个存档最多 30 个标签页
 } as const;
 
 // 默认快捷方式

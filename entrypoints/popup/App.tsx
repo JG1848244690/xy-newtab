@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, Globe, ExternalLink, Keyboard, Plus, FolderOpen, Check, Loader2 } from 'lucide-react';
+import { Search, Globe, ExternalLink, Keyboard, Plus, FolderOpen, Check, Loader2, History } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { storage } from '@wxt-dev/storage';
 import { STORAGE_KEY } from '@/src/utils/constants';
 import type { Shortcut, ShortcutGroup } from '@/src/utils/types';
 import { cn } from '@/src/lib/utils';
+import SessionTab from './SessionTab';
 
 const SHORTCUTS_KEY = `local:${STORAGE_KEY.SHORTCUTS}` as const;
 const GROUPS_KEY = `local:${STORAGE_KEY.GROUPS}` as const;
@@ -149,7 +150,7 @@ function AddTab({
 }
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'search' | 'add' | 'settings'>('search');
+  const [activeTab, setActiveTab] = useState<'search' | 'add' | 'settings' | 'sessions'>('search');
   const [shortcuts, setShortcuts] = useState<Shortcut[]>([]);
   const [groups, setGroups] = useState<ShortcutGroup[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -330,6 +331,18 @@ function App() {
           快捷添加
         </button>
         <button
+          onClick={() => setActiveTab('sessions')}
+          className={cn(
+            'flex-1 py-2 text-sm transition-colors flex items-center justify-center gap-1',
+            activeTab === 'sessions'
+              ? 'text-primary border-b-2 border-primary font-medium'
+              : 'text-muted-foreground hover:text-foreground'
+          )}
+        >
+          <History className="w-3.5 h-3.5" />
+          会话
+        </button>
+        <button
           onClick={() => setActiveTab('settings')}
           className={cn(
             'flex-1 py-2 text-sm transition-colors',
@@ -424,6 +437,7 @@ function App() {
         )}
 
         {activeTab === 'settings' && <SettingsTab />}
+        {activeTab === 'sessions' && <SessionTab />}
       </div>
 
       {/* 底部主站链接 */}
