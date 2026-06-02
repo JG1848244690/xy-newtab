@@ -10,6 +10,7 @@ import { useGroups } from '@/src/hooks/useGroups';
 import { useSearchEngine } from '@/src/hooks/useSearchEngine';
 import { useTheme } from '@/src/hooks/useTheme';
 import { STORAGE_KEY, DEFAULT_SETTINGS } from '@/src/utils/constants';
+import { NEWTAB_NAVIGATED_EVENT } from '@/src/utils/navigationReset';
 import type { BackgroundSetting } from '@/src/utils/types';
 
 // 完整的存储键
@@ -23,6 +24,7 @@ function App() {
   const [background, setBackground] = useState<BackgroundSetting | undefined>(undefined);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [backgroundLoaded, setBackgroundLoaded] = useState(false);
+  const [resetNonce, setResetNonce] = useState(0);
 
   // 加载背景设置
   useEffect(() => {
@@ -44,6 +46,13 @@ function App() {
     );
 
     return unwatch;
+  }, []);
+
+  // 在新标签页触发“跳转到目标网址”后，重置本页面的 UI 状态
+  useEffect(() => {
+    const handleNavigated = () => setResetNonce((n) => n + 1);
+    window.addEventListener(NEWTAB_NAVIGATED_EVENT, handleNavigated);
+    return () => window.removeEventListener(NEWTAB_NAVIGATED_EVENT, handleNavigated);
   }, []);
 
   // 保存背景设置
@@ -136,6 +145,7 @@ function App() {
           {/* 搜索区域 */}
           <div className="w-full max-w-3xl relative z-50 mb-6">
             <SearchBar
+              key={`search-${resetNonce}`}
               engine={engine}
               engineOption={engineOption}
               engineOptions={engineOptions}
@@ -148,6 +158,7 @@ function App() {
           {/* 分组布局 */}
           <div className="w-full max-w-4xl flex-1 mt-16">
             <GroupLayout
+              key={`groups-${resetNonce}`}
               groups={groups}
               shortcuts={shortcuts}
               onToggleGroupExpand={toggleGroupExpand}

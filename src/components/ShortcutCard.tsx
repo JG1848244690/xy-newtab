@@ -10,6 +10,7 @@ import {
 import type { Shortcut } from '@/src/utils/types';
 import { getFaviconWithFallback, generateInitialFallback } from '@/src/utils/faviconCache';
 import { cn } from '@/src/lib/utils';
+import { notifyNewtabNavigated } from '@/src/utils/navigationReset';
 
 interface ShortcutCardProps {
   shortcut: Shortcut;
@@ -65,6 +66,7 @@ export function ShortcutCard({
       onSelect?.();
     } else {
       window.open(shortcut.url, '_blank');
+      notifyNewtabNavigated();
     }
   };
 

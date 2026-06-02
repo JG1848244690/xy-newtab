@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { storage } from '@wxt-dev/storage';
 import type { SearchEngineType, SearchEngineOption } from '@/src/utils/types';
 import { STORAGE_KEY, DEFAULT_SETTINGS, SEARCH_ENGINES } from '@/src/utils/constants';
+import { notifyNewtabNavigated } from '@/src/utils/navigationReset';
 
 const SETTINGS_KEY = `local:${STORAGE_KEY.SETTINGS}` as const;
 
@@ -37,6 +38,7 @@ export function useSearchEngine() {
     if (!query.trim()) return;
     const searchUrl = engineOption.url + encodeURIComponent(query.trim());
     window.open(searchUrl, '_blank');
+    notifyNewtabNavigated();
   }, [engineOption]);
 
   // 获取所有搜索引擎选项

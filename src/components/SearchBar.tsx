@@ -13,6 +13,7 @@ import {
 import { useSearchHistory } from '@/src/hooks/useSearchHistory';
 import type { SearchEngineType, SearchEngineOption, Shortcut } from '@/src/utils/types';
 import { cn } from '@/src/lib/utils';
+import { notifyNewtabNavigated } from '@/src/utils/navigationReset';
 
 interface SearchBarProps {
   engine: SearchEngineType;
@@ -251,6 +252,7 @@ export function SearchBar({
   const handleSuggestionClick = (item: SuggestionItem) => {
     if (item.type === 'shortcut' && item.url) {
       window.open(item.url, '_blank');
+      notifyNewtabNavigated();
       setShowSuggestions(false);
     } else {
       setQuery(item.text);
