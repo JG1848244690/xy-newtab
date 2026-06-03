@@ -609,4 +609,66 @@ export default defineBackground(() => {
   // 书签 + 分组同步（newtab ImportExportDialog 用）
   onMessage('bookmarks/sync-upload', () => withSyncLock(() => doSyncUpload('bookmark')));
   onMessage('bookmarks/sync-download', () => withSyncLock(() => doSyncDownload('bookmark')));
+
+  // 调试：读取并打印云端原始数据 + 解析后的内容
+  onMessage('bookmarks/sync-debug', async () => {
+    const syncData = browser.storage.sync;
+    const all = await syncData.get(null);
+    const bytes = await syncData.getBytesInUse();
+
+    console.groupCollapsed(
+      `%c[Cloud Debug] ${Object.keys(all).length} keys, ${bytes} bytes`,
+      'color:#0af;font-weight:bold'
+    );
+    console.log('Raw keys:', Object.keys(all));
+    console.log('cloud_meta_bookmark:', all[CLOUD_META_BOOKMARK_KEY]);
+    console.log('cloud_meta_session:', all[CLOUD_META_SESSION_KEY]);
+
+    // 解析 bookmark main chunk
+    const meta = all[CLOUD_META_BOOKMARK_KEY] as
+      | { chunkCount?: number; updatedAt?: number }
+      | undefined;
+    if (meta?.chunkCount && meta.chunkCount > 0) {
+      const chunks: string[] = [];
+      for (let i = 0; i < meta.chunkCount; i++) {
+        chunks.push((all[`${CLOUD_DATA_PREFIX}main_${i}`] as string) ?? '<missing>');
+      }
+      const json = chunks.join('');
+      console.log(`bookmark main (${meta.chunkCount} chunks, ${json.length} bytes):`, json);
+      try {
+        console.log('parsed bookmark:', JSON.parse(json));
+      } catch (e) {
+        console.warn('parse failed:', e);
+      }
+    } else {
+      console.log('bookmark main: <none>');
+    }
+
+    // 列出会话
+    const sessionMeta = all[CLOUD_META_SESSION_KEY] as
+      | { sessionIds?: string[] }
+      | undefined;
+    if (sessionMeta?.sessionIds?.length) {
+      console.log('session ids:', sessionMeta.sessionIds);
+    } else {
+      console.log('sessions: <none>');
+    }
+
+    console.groupEnd();
+    return {
+      success: true,
+      keys: Object.keys(all),
+      bytes,
+      meta,
+      rawBookmarkMain: meta?.chunkCount
+        ? (() => {
+            const parts: string[] = [];
+            for (let i = 0; i < (meta.chunkCount ?? 0); i++) {
+              parts.push((all[`${CLOUD_DATA_PREFIX}main_${i}`] as string) ?? '');
+            }
+            return parts.join('');
+          })()
+        : null,
+    };
+  });
 });

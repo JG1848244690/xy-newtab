@@ -61,7 +61,8 @@
       "Bash(git fetch *)",
       "Bash(git checkout *)",
       "Bash(npx wxt *)",
-      "Bash(Select-String -Pattern \"error|Error|TS[0-9]\")"
+      "Bash(Select-String -Pattern \"error|Error|TS[0-9]\")",
+      "Bash(pnpm typecheck *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\xy\\.claude\\skills"

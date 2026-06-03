@@ -32,6 +32,15 @@ interface ProtocolMap {
   // 书签 + 分组云同步（shortcuts + groups，不含 sessions）
   'bookmarks/sync-upload': () => SyncResult;
   'bookmarks/sync-download': () => SyncResult;
+
+  // 调试：读取云端原始数据
+  'bookmarks/sync-debug': () => {
+    success: boolean;
+    keys: string[];
+    bytes: number;
+    meta: { chunkCount?: number; updatedAt?: number } | undefined;
+    rawBookmarkMain: string | null;
+  };
 }
 
 // 创建 messenger
