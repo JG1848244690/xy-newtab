@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Download, Upload, AlertCircle, Check, Chrome, Loader2, CloudUpload, CloudDownload } from 'lucide-react';
+import { Download, Upload, AlertCircle, Check, Chrome, Loader2, CloudUpload, CloudDownload, Bug } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -39,6 +39,7 @@ export function ImportExportDialog({
   const [isChromeImporting, setIsChromeImporting] = useState(false);
   const [syncing, setSyncing] = useState<'upload' | 'download' | null>(null);
   const [lastSyncAt, setLastSyncAt] = useState<number | null>(null);
+  const [debugData, setDebugData] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 打开弹窗时读取最后同步时间
@@ -171,7 +172,7 @@ export function ImportExportDialog({
         const ts = result.lastSyncAt ?? Date.now();
         setLastSyncAt(ts);
         setSuccessMsg('已从云端下载，关闭弹窗查看最新数据');
-        // storage.watch 会自动触发 useShortcuts/useGroups 重载
+        // useShortcuts/useGroups 的 storage.watch 会自动同步 React state
       } else {
         setError(result.error || '下载失败');
       }
@@ -182,10 +183,44 @@ export function ImportExportDialog({
     }
   };
 
+  // 调试：拉取并显示云端原始数据
+  const handleSyncDebug = async () => {
+    setError(null);
+    setSuccessMsg(null);
+    try {
+      const result = await sendMessage('bookmarks/sync-debug', undefined);
+      const parsed = result.rawBookmarkMain
+        ? (() => {
+            try {
+              return JSON.parse(result.rawBookmarkMain);
+            } catch {
+              return { _parseError: true, raw: result.rawBookmarkMain };
+            }
+          })()
+        : null;
+      setDebugData(
+        JSON.stringify(
+          {
+            success: result.success,
+            bytes: result.bytes,
+            keys: result.keys,
+            bookmarkMeta: result.meta,
+            bookmarkParsed: parsed,
+          },
+          null,
+          2
+        )
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '调试失败');
+    }
+  };
+
   const handleClose = () => {
     setPreviewData(null);
     setError(null);
     setSuccessMsg(null);
+    setDebugData(null);
     onOpenChange(false);
   };
 
@@ -248,6 +283,20 @@ export function ImportExportDialog({
             <p className="text-xs text-muted-foreground">
               ⚠️ 会话存档请在浏览器工具栏图标中单独同步;云端总配额 100KB,数据量较大时可能上传失败。
             </p>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSyncDebug}
+              className="w-full text-muted-foreground"
+            >
+              <Bug className="w-4 h-4 mr-2" />
+              查看云端原始数据(调试)
+            </Button>
+            {debugData && (
+              <pre className="text-[10px] leading-snug bg-muted/50 p-2 rounded-md max-h-48 overflow-auto whitespace-pre-wrap break-all">
+                {debugData}
+              </pre>
+            )}
           </div>
 
           {/* 导出按钮 */}

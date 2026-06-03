@@ -20,6 +20,15 @@ export function useShortcuts() {
         storage.setItem(SHORTCUTS_KEY, [...DEFAULT_SHORTCUTS]);
       }
     });
+
+    // 监听 storage 变化（云端下载/外部写入触发）
+    const unwatch = storage.watch<Shortcut[]>(SHORTCUTS_KEY, (newShortcuts) => {
+      if (newShortcuts) {
+        setShortcuts(newShortcuts);
+      }
+    });
+
+    return unwatch;
   }, []);
 
   // 保存快捷方式

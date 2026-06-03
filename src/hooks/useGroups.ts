@@ -18,6 +18,15 @@ export function useGroups() {
         setGroups(DEFAULT_GROUPS);
       }
     });
+
+    // 监听 storage 变化（云端下载/外部写入触发）
+    const unwatch = storage.watch<ShortcutGroup[]>(GROUPS_KEY, (newGroups) => {
+      if (newGroups) {
+        setGroups(newGroups);
+      }
+    });
+
+    return unwatch;
   }, []);
 
   // 保存分组
