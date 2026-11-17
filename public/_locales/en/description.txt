@@ -1,15 +1,34 @@
-Speed Dial for your Chrome new tab. Replace the default page with a clean, fast, customizable dashboard of your own bookmarks. Built by xy for people who want their new tab back: grouped shortcuts, wallpapers, and nothing else competing for attention. No ads, no trackers, no clutter.
+Replace your Chrome new tab page with your own grouped bookmark shortcuts and wallpapers.
 
-Add any page to your new tab in one keystroke. Press the global shortcut (Ctrl+Y on Windows, Command+Y on Mac) and the popup opens straight to Add: the current URL is already filled in, you type a name, optionally pick a group, and save. No context switch, no copy paste. Inside the popup, Ctrl+1 through Ctrl+5 open your first five matches, so the sites you actually use are one keystroke away from anywhere in Chrome.
+FEATURES
 
-Organize the way you think. Create groups, give them a name, an icon, and a color, then drag shortcuts between them. Switch a whole group's visibility, reorder by drag and drop, or select several shortcuts at once to move, copy, or delete them in a batch. Two layouts ship in the box: a grouped card layout for browsing, and a bottom dock for people who like their shortcuts out of the way until they need one.
+• Grouped shortcuts — create groups, give each one a name, icon and color, then drag sites between them.
+• Two layouts — a grouped card layout for browsing, or a dock along the bottom edge.
+• Wallpapers — solid colors, curated images, your own picture, or a local video that plays quietly behind your shortcuts.
+• Fast adding — press Ctrl+Y (Cmd+Y on Mac) while on any page and the popup opens with the URL already filled in.
+• Batch editing — select several shortcuts at once to move, copy or delete them.
+• Light and dark themes, following your system or your choice.
+• English and Chinese interface.
 
-Make it yours. Pick a solid color, a curated wallpaper, your own image, or a local video that plays quietly behind your shortcuts. Adjust size and opacity so any background stays readable. Light and dark themes follow your system or your click. The interface is available in English and Chinese, and the layout stays comfortable from a small laptop screen to an ultrawide.
+HOW TO USE
 
-Bring your bookmarks with you. Import your existing Chrome bookmarks in one click, or back up everything to a JSON file and restore it on another machine. Everything you create lives on your own device — export the JSON when you switch computers, and import it on the new one.
+1. Install the extension and open a new tab — it replaces the default page.
+2. Click the plus button inside a group, or press Ctrl+Y on any page to add the current site.
+3. Drag shortcuts or groups to reorder them. Use the gear icon for layout, wallpaper and language.
+4. Back up from Import / Export, or pull in your existing Chrome bookmarks with one click.
 
-Privacy by default, and by design. Your bookmarks, groups, settings, and wallpapers never leave your computer. There is no account and nothing to sign in to. No ads, no trackers, no analytics fingerprinting, and no data sold or shared with third parties. The only outbound request the extension ever makes is fetching a site's icon from a public favicon service, and that request carries nothing but the domain name.
+PRIVACY
 
-Designed for real use. Power users with hundreds of bookmarks get folders, drag and drop, and batch operations. Minimalists get a clean new tab with only the chrome they need. Anyone tired of new tab pages stuffed with affiliate links and upsells gets a focused alternative that looks good the moment you install it.
+No account, no sign-in, no cloud sync and no server of ours. Your shortcuts, groups, settings and wallpapers stay on your computer. The only outbound request the extension makes is fetching a site's icon from a public favicon service, and that request carries nothing but the domain name. No ads, no trackers, no analytics.
 
-Built by xy. This started as my own daily-driver Speed Dial. It stays small and focused: one job, a new tab page done right.
+PERMISSIONS
+
+• "Read and change your bookmarks" — used only when you click Import from Chrome bookmarks, to read the bookmarks you already have and add them to your new tab.
+• "Read your browsing history" (current-tab access) — granted only when you click the extension icon, to prefill the current page's address and title in the Add form.
+• Website access is limited to four favicon services, used solely to display site icons.
+
+SUPPORT
+
+Questions, bugs or suggestions: privacy@kskbl.com.cn
+
+Version 1.0.3 — adds video wallpapers and the dock layout, keeps everything on your device.
