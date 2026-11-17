@@ -1,7 +1,9 @@
 /**
  * 手动云同步 —— 「首次合并拉取 + 手动覆盖按钮 + 红点提示」
  *
- * 模型(改造自旧的"自动无感 push",去掉了后台自动推送,接口量降一个数量级):
+ * 同步范围:只同步快捷方式 + 分组(书签数据)。
+ *
+ * 模型:
  *   1. 首次拉取 pullAndMerge:newtab 挂载且距上次 >30min → GET 云端 →
  *      与本地 merge → 写本地。不丢本地数据。
  *   2. 手动上传 uploadLocal:本地整包 PUT 云端(覆盖云)。409 → merge 重试一次。
@@ -17,28 +19,15 @@
 
 import { storage } from '@wxt-dev/storage';
 import { createStorageCell } from '@/src/lib/storage';
-import {
-  downloadBookmarks,
-  uploadBookmarks,
-  downloadSessions,
-  uploadSessions,
-  SyncAuthError,
-} from './syncApi';
+import { downloadBookmarks, uploadBookmarks, SyncAuthError } from './syncApi';
 import { readSessionToken, clearLoginLocally } from './googleAuth';
-import { LOCAL_STORAGE_KEY, SESSION_LIMITS } from '@/src/utils/constants';
-import {
-  markDirty,
-  clearDirty,
-  writePullAt,
-  type SyncScope,
-} from './syncDirty';
-import type { Shortcut, ShortcutGroup, TabSession } from '@/src/utils/types';
+import { LOCAL_STORAGE_KEY } from '@/src/utils/constants';
+import { markDirty, clearDirty, writePullAt } from './syncDirty';
+import type { Shortcut, ShortcutGroup } from '@/src/utils/types';
 
 // ============================================================
 // Types
 // ============================================================
-
-export type { SyncScope };
 
 export interface SyncOpResult {
   success: boolean;
@@ -83,7 +72,7 @@ export async function setupSyncInit(): Promise<void> {
 }
 
 // ============================================================
-// 合并:bookmarks(per-item last-write-wins by updatedAt)
+// 合并:per-item last-write-wins by updatedAt
 // ============================================================
 
 export function mergeBookmarks(
@@ -126,23 +115,6 @@ export function mergeBookmarks(
 }
 
 // ============================================================
-// 合并:sessions(per-item last-write-wins by createdAt,截断 MAX_SESSIONS)
-// ============================================================
-
-export function mergeSessions(local: TabSession[], server: TabSession[] | null): TabSession[] {
-  const byId = new Map<string, TabSession>();
-  for (const s of local) byId.set(s.id, s);
-  for (const s of server ?? []) {
-    const ex = byId.get(s.id);
-    if (!ex || s.createdAt > ex.createdAt) {
-      byId.set(s.id, s);
-    }
-  }
-  const sorted = [...byId.values()].sort((a, b) => b.createdAt - a.createdAt);
-  return sorted.slice(0, SESSION_LIMITS.MAX_SESSIONS);
-}
-
-// ============================================================
 // 本地读写(直接 storage,绕过 store action → 不触发 markDirty)
 // ============================================================
 
@@ -160,14 +132,6 @@ async function writeLocalBookmarks(payload: BookmarksPayload): Promise<void> {
     storage.setItem(LOCAL_STORAGE_KEY.SHORTCUTS, payload.shortcuts),
     storage.setItem(LOCAL_STORAGE_KEY.GROUPS, payload.groups),
   ]);
-}
-
-async function readLocalSessions(): Promise<TabSession[]> {
-  return (await storage.getItem<TabSession[]>(LOCAL_STORAGE_KEY.TAB_SESSIONS)) ?? [];
-}
-
-async function writeLocalSessions(sessions: TabSession[]): Promise<void> {
-  await storage.setItem(LOCAL_STORAGE_KEY.TAB_SESSIONS, sessions);
 }
 
 const sameJson = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.stringify(b);
@@ -194,49 +158,23 @@ async function pullAndMergeBookmarks(): Promise<SyncOpResult> {
   if (serverPayload === null) {
     // 云端空:本地也空 → 一致;本地非空 → 本地领先,标脏提示上传
     if (merged.shortcuts.length === 0 && merged.groups.length === 0) {
-      await clearDirty('bookmarks');
+      await clearDirty();
     } else {
-      await markDirty('bookmarks');
+      await markDirty();
     }
+  } else if (sameJson(merged, serverPayload)) {
+    await clearDirty();
   } else {
-    if (sameJson(merged, serverPayload)) {
-      await clearDirty('bookmarks');
-    } else {
-      await markDirty('bookmarks');
-    }
+    await markDirty();
   }
 
   return { success: true };
 }
 
-async function pullAndMergeSessions(): Promise<SyncOpResult> {
-  const local = await readLocalSessions();
-
-  const dl = await downloadSessions<{ sessions: TabSession[] }>();
-  const serverSessions = dl.ok ? (dl.snapshot.payload?.sessions ?? []) : null;
-
-  const merged = mergeSessions(local, serverSessions);
-
-  if (!sameJson(merged, local)) {
-    await writeLocalSessions(merged);
-  }
-
-  if (serverSessions === null) {
-    if (merged.length === 0) await clearDirty('sessions');
-    else await markDirty('sessions');
-  } else {
-    if (sameJson(merged, serverSessions)) await clearDirty('sessions');
-    else await markDirty('sessions');
-  }
-
-  return { success: true };
-}
-
-export async function pullAndMerge(scope: SyncScope): Promise<SyncOpResult> {
+export async function pullAndMerge(): Promise<SyncOpResult> {
   if (!(await readSessionToken())) return { success: false, error: '未登录' };
   try {
-    const r =
-      scope === 'bookmarks' ? await pullAndMergeBookmarks() : await pullAndMergeSessions();
+    const r = await pullAndMergeBookmarks();
     // 无论 merge 结果如何,这次"尝试拉取"都算发生过了 → 刷新节流时间戳
     await writePullAt(Date.now());
     return r;
@@ -245,7 +183,7 @@ export async function pullAndMerge(scope: SyncScope): Promise<SyncOpResult> {
       await clearLoginLocally().catch(() => {});
       return { success: false, error: '登录已失效,请重新登录' };
     }
-    console.warn(`[sync] pullAndMerge(${scope}) error:`, err);
+    console.warn('[sync] pullAndMerge error:', err);
     return { success: false, error: err instanceof Error ? err.message : String(err) };
   }
 }
@@ -254,72 +192,40 @@ export async function pullAndMerge(scope: SyncScope): Promise<SyncOpResult> {
 // 2. 手动上传:本地 → 云(409 冲突 → merge 重试一次)
 // ============================================================
 
-async function uploadLocalBookmarks(): Promise<SyncOpResult> {
-  const local = await readLocalBookmarks();
-  const result = await uploadBookmarks<BookmarksPayload>(local);
-
-  if (result.ok) {
-    await clearDirty('bookmarks');
-    return { success: true };
-  }
-
-  // 409:云端在此期间被别的设备更新了 → 拿云端当前值 merge 后重试一次
-  if ('conflict' in result) {
-    const serverPayload = (result.conflict.currentPayload ?? {
-      shortcuts: [],
-      groups: [],
-    }) as BookmarksPayload;
-    const merged = mergeBookmarks(local, serverPayload);
-    if (!sameJson(merged, local)) await writeLocalBookmarks(merged);
-    const retry = await uploadBookmarks<BookmarksPayload>(merged, result.conflict.currentVersion);
-    if (retry.ok) {
-      await clearDirty('bookmarks');
-      return { success: true };
-    }
-    return { success: false, error: '云端有更新,请先下载再上传' };
-  }
-
-  return { success: false, error: result.error };
-}
-
-async function uploadLocalSessions(): Promise<SyncOpResult> {
-  const local = await readLocalSessions();
-  const result = await uploadSessions<{ sessions: TabSession[] }>({ sessions: local });
-
-  if (result.ok) {
-    await clearDirty('sessions');
-    return { success: true };
-  }
-
-  if ('conflict' in result) {
-    const serverSessions =
-      ((result.conflict.currentPayload as { sessions?: TabSession[] } | null)?.sessions) ?? [];
-    const merged = mergeSessions(local, serverSessions);
-    if (!sameJson(merged, local)) await writeLocalSessions(merged);
-    const retry = await uploadSessions<{ sessions: TabSession[] }>(
-      { sessions: merged },
-      result.conflict.currentVersion,
-    );
-    if (retry.ok) {
-      await clearDirty('sessions');
-      return { success: true };
-    }
-    return { success: false, error: '云端有更新,请先下载再上传' };
-  }
-
-  return { success: false, error: result.error };
-}
-
-export async function uploadLocal(scope: SyncScope): Promise<SyncOpResult> {
+export async function uploadLocal(): Promise<SyncOpResult> {
   if (!(await readSessionToken())) return { success: false, error: '未登录' };
   try {
-    return scope === 'bookmarks' ? await uploadLocalBookmarks() : await uploadLocalSessions();
+    const local = await readLocalBookmarks();
+    const result = await uploadBookmarks<BookmarksPayload>(local);
+
+    if (result.ok) {
+      await clearDirty();
+      return { success: true };
+    }
+
+    // 409:云端在此期间被别的设备更新了 → 拿云端当前值 merge 后重试一次
+    if ('conflict' in result) {
+      const serverPayload = (result.conflict.currentPayload ?? {
+        shortcuts: [],
+        groups: [],
+      }) as BookmarksPayload;
+      const merged = mergeBookmarks(local, serverPayload);
+      if (!sameJson(merged, local)) await writeLocalBookmarks(merged);
+      const retry = await uploadBookmarks<BookmarksPayload>(merged, result.conflict.currentVersion);
+      if (retry.ok) {
+        await clearDirty();
+        return { success: true };
+      }
+      return { success: false, error: '云端有更新,请先下载再上传' };
+    }
+
+    return { success: false, error: result.error };
   } catch (err) {
     if (err instanceof SyncAuthError) {
       await clearLoginLocally().catch(() => {});
       return { success: false, error: '登录已失效,请重新登录' };
     }
-    console.warn(`[sync] uploadLocal(${scope}) error:`, err);
+    console.warn('[sync] uploadLocal error:', err);
     return { success: false, error: err instanceof Error ? err.message : String(err) };
   }
 }
@@ -328,40 +234,26 @@ export async function uploadLocal(scope: SyncScope): Promise<SyncOpResult> {
 // 3. 手动下载:云 → 本地(整包覆盖)
 // ============================================================
 
-async function downloadCloudBookmarks(): Promise<SyncOpResult> {
-  const dl = await downloadBookmarks<BookmarksPayload>();
-  if (!dl.ok) {
-    return { success: false, error: '云端还没有书签数据,请先上传' };
-  }
-  const payload = dl.snapshot.payload;
-  await writeLocalBookmarks({
-    shortcuts: payload?.shortcuts ?? [],
-    groups: payload?.groups ?? [],
-  });
-  await clearDirty('bookmarks');
-  return { success: true };
-}
-
-async function downloadCloudSessions(): Promise<SyncOpResult> {
-  const dl = await downloadSessions<{ sessions: TabSession[] }>();
-  if (!dl.ok) {
-    return { success: false, error: '云端还没有会话数据,请先上传' };
-  }
-  await writeLocalSessions(dl.snapshot.payload?.sessions ?? []);
-  await clearDirty('sessions');
-  return { success: true };
-}
-
-export async function downloadCloud(scope: SyncScope): Promise<SyncOpResult> {
+export async function downloadCloud(): Promise<SyncOpResult> {
   if (!(await readSessionToken())) return { success: false, error: '未登录' };
   try {
-    return scope === 'bookmarks' ? await downloadCloudBookmarks() : await downloadCloudSessions();
+    const dl = await downloadBookmarks<BookmarksPayload>();
+    if (!dl.ok) {
+      return { success: false, error: '云端还没有书签数据,请先上传' };
+    }
+    const payload = dl.snapshot.payload;
+    await writeLocalBookmarks({
+      shortcuts: payload?.shortcuts ?? [],
+      groups: payload?.groups ?? [],
+    });
+    await clearDirty();
+    return { success: true };
   } catch (err) {
     if (err instanceof SyncAuthError) {
       await clearLoginLocally().catch(() => {});
       return { success: false, error: '登录已失效,请重新登录' };
     }
-    console.warn(`[sync] downloadCloud(${scope}) error:`, err);
+    console.warn('[sync] downloadCloud error:', err);
     return { success: false, error: err instanceof Error ? err.message : String(err) };
   }
 }

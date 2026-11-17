@@ -5,13 +5,11 @@
 import { initShortcutsStore } from './shortcuts';
 import { initGroupsStore } from './groups';
 import { initSettingsStore } from './settings';
-import { initHistoryStore } from './history';
 
 export async function initAllStores(): Promise<void> {
   await Promise.all([
     initShortcutsStore(),
     initGroupsStore(),
     initSettingsStore(),
-    initHistoryStore(),
   ]);
 }

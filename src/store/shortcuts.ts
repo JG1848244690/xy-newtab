@@ -44,7 +44,7 @@ const scheduleWrite = (value: Shortcut[], silent: boolean = false): void => {
   // 用户 mutation → 标脏亮红点。silent 模式(syncAuto 覆盖本地)跳过,
   // 避免「下载完成后本地=云端」反而标脏的 bug。
   if (!silent) {
-    void markDirty('bookmarks');
+    void markDirty();
   }
   if (writeTimer) return;
   writeTimer = setTimeout(() => {

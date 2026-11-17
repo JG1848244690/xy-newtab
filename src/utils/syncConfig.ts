@@ -31,7 +31,6 @@ export const SYNC_API = {
   GOOGLE_LOGOUT: '/sync/auth/logout',
   ME: '/sync/auth/me',
   BOOKMARKS: '/sync/bookmarks',
-  SESSIONS: '/sync/sessions',
 } as const;
 
 // 本地存储 key
@@ -39,8 +38,6 @@ export const SYNC_LOCAL_KEYS = {
   SESSION_TOKEN: 'local:sync.sessionToken',
   USER: 'local:sync.user',
   BOOKMARKS_VERSION: 'local:sync.bookmarksVersion',
-  SESSIONS_VERSION: 'local:sync.sessionsVersion',
   BOOKMARKS_DIRTY: 'local:sync.bookmarksDirty',
-  SESSIONS_DIRTY: 'local:sync.sessionsDirty',
   LAST_PULL_AT: 'local:sync.lastPullAt',
 } as const;

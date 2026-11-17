@@ -5,7 +5,6 @@ import {
   type StoredVideo,
 } from '@/src/utils/videoStorage';
 import { DockLayout } from '@/src/components/DockLayout';
-import { SearchBar } from '@/src/components/SearchBar';
 import { GroupLayout } from '@/src/components/GroupLayout';
 import { SettingsSheet } from '@/src/components/SettingsSheet';
 import { Button } from '@/src/components/ui/button';
@@ -17,7 +16,7 @@ import { useStoresReady } from '@/src/lib/useStoresReady';
 import { useStoreState } from '@/src/lib/store';
 import { settingsStore } from '@/src/store/settings';
 import { sendMessage } from '@/messaging';
-import { NEWTAB_NAVIGATED_EVENT, notifyNewtabNavigated } from '@/src/utils/navigationReset';
+import { NEWTAB_NAVIGATED_EVENT } from '@/src/utils/navigationReset';
 import { readLastPullAt } from '@/src/utils/syncDirty';
 import { useDirty } from '@/src/hooks/useSync';
 import type { BackgroundSetting } from '@/src/utils/types';
@@ -48,13 +47,13 @@ function App() {
     reorderShortcutsInGroup,
     copyShortcutsToGroup,
   } = useGroupsStore();
-  const { engine, engineOption, engineOptions, setEngine, setBackground, layout } = useSettingsStore();
+  const { setBackground, layout } = useSettingsStore();
   const background = useStoreState(settingsStore, (s) => s.background);
 
   const { mounted } = useTheme();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [resetNonce, setResetNonce] = useState(0);
-  const bookmarksDirty = useDirty('bookmarks');
+  const bookmarksDirty = useDirty();
 
   // 视频背景:ref 控制 video 元素(visibilitychange 时直接操作 DOM,不走 React 重渲染)
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -133,12 +132,6 @@ function App() {
       if (unloadTimer !== null) clearTimeout(unloadTimer);
     };
   }, []);
-
-  const handleSearch = useCallback((q: string) => {
-    if (!q.trim()) return;
-    window.open(engineOption.url + encodeURIComponent(q.trim()), '_blank');
-    notifyNewtabNavigated();
-  }, [engineOption]);
 
   // 拦截:系统 dock 分组不能被删(dock 布局依赖它)
   const removeGroup = useCallback(
@@ -265,19 +258,6 @@ function App() {
         </div>
 
         <div className="min-h-screen flex flex-col items-center px-8 pt-8">
-          {/* 主搜索框:两种布局都显示在顶部 */}
-          <div className="w-full max-w-3xl relative z-50 mb-6">
-            <SearchBar
-              key={'search-' + resetNonce}
-              engine={engine}
-              engineOption={engineOption}
-              engineOptions={engineOptions}
-              onEngineChange={setEngine}
-              onSearch={handleSearch}
-              shortcuts={shortcuts}
-            />
-          </div>
-
           <div className={cn(
             "w-full flex-1",
             layout === 'dock' ? "max-w-none" : "max-w-4xl mt-16"

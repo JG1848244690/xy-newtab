@@ -38,7 +38,6 @@ export async function initSettingsStore(): Promise<void> {
       const current = settingsStore.get();
       // settings 是浅对象，字段比较足够
       if (
-        current.searchEngine === next.searchEngine &&
         current.iconsPerRow === next.iconsPerRow &&
         current.layout === next.layout &&
         current.background === next.background &&

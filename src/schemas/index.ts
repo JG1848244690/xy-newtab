@@ -1,5 +1,5 @@
 /**
- * Shortcut / Group / Session 的 schema 定义
+ * Shortcut / Group 的 schema 定义
  *
  * 用途：
  * 1. 从 storage 读出来的数据校验（防止老数据 / 异常写入崩溃）
@@ -8,10 +8,9 @@
  */
 
 import { v } from './validator';
-import type { Shortcut, ShortcutGroup, TabSession, TabInfo, Settings, BackgroundSetting } from '@/src/utils/types';
+import type { Shortcut, ShortcutGroup, Settings, BackgroundSetting } from '@/src/utils/types';
 import { SUPPORTED_LOCALES } from '@/src/i18n';
 
-const STORAGE_KEYS = ['google', 'bing', 'baidu'] as const;
 const LAYOUTS = ['grid', 'group', 'dock'] as const;
 const BG_TYPES = ['none', 'color', 'image', 'video'] as const;
 const BG_SIZES = ['cover', 'contain', 'auto', '100% 100%'] as const;
@@ -37,19 +36,6 @@ export const groupSchema = v.object({
   updatedAt: v.number(),
 });
 
-const tabInfoSchema = v.object({
-  url: v.string(),
-  title: v.string(),
-});
-
-export const sessionSchema = v.object({
-  id: v.string(),
-  title: v.string(),
-  createdAt: v.number(),
-  tabCount: v.number(),
-  tabs: v.array(tabInfoSchema),
-});
-
 const backgroundSchema = v.object({
   type: v.oneOf(BG_TYPES),
   color: v.optional(v.string()),
@@ -62,7 +48,6 @@ const backgroundSchema = v.object({
 });
 
 export const settingsSchema = v.object({
-  searchEngine: v.oneOf(STORAGE_KEYS),
   iconsPerRow: v.number(),
   layout: v.oneOf(LAYOUTS),
   background: v.optional(backgroundSchema),
@@ -70,4 +55,4 @@ export const settingsSchema = v.object({
 });
 
 export { v, safeRead } from './validator';
-export type { Shortcut, ShortcutGroup, TabSession, TabInfo, Settings, BackgroundSetting };
+export type { Shortcut, ShortcutGroup, Settings, BackgroundSetting };

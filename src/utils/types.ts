@@ -25,21 +25,6 @@ export interface ShortcutGroup {
   updatedAt: number;
 }
 
-// 标签页会话存储
-export interface TabInfo {
-  url: string;
-  title: string;
-}
-
-export interface TabSession {
-  id: string;
-  title: string;
-  createdAt: number;
-  tabCount: number;
-  tabs: TabInfo[];
-}
-
-// 云同步结果
 // 云同步结果
 export interface SyncConflict {
   error: "version mismatch";
@@ -59,18 +44,8 @@ export interface SyncResult {
 // 布局类型
 // - grid: 简单平铺网格(暂未用,留作 ShortcutGrid 模式)
 // - group: 当前的分组卡片列表(默认)
-// - dock: 底部 macOS 风格 dock 栏,中间留出搜索框
+// - dock: 底部 macOS 风格 dock 栏
 export type LayoutType = 'grid' | 'group' | 'dock';
-
-// 搜索引擎
-export type SearchEngineType = 'google' | 'bing' | 'baidu';
-
-export interface SearchEngineOption {
-  id: SearchEngineType;
-  name: string;
-  url: string;
-  icon: string;
-}
 
 // 背景适配方式
 export type BackgroundSize = 'cover' | 'contain' | 'auto' | '100% 100%';
@@ -92,7 +67,6 @@ export interface BackgroundSetting {
 
 // 设置
 export interface Settings {
-  searchEngine: SearchEngineType;
   iconsPerRow: number;
   layout: LayoutType; // 布局类型
   background?: BackgroundSetting; // 背景设置

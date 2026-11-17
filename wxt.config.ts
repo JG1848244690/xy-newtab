@@ -30,25 +30,28 @@ export default defineConfig({
         }
       : {}),
 
-    // launchWebAuthFlow 只需要 identity 权限(不要 identity.email,那是 getAuthToken 才需要)
-    permissions: ['storage', 'tabs', 'bookmarks', 'identity'],
+    // launchWebAuthFlow 只需要 identity 权限（不要 identity.email，那是 getAuthToken 才需要）
+    // activeTab：popup 打开时读取当前标签页 URL/标题用于「快捷添加」，仅在用户点击图标后授权，
+    // 比 tabs 更小（不再常驻读取所有标签页）
+    permissions: ['storage', 'activeTab', 'bookmarks', 'identity'],
     host_permissions: [
       'https://www.google.com/*',
       'https://*.google.com/*',
-      'https://*.gstatic.com/*',
-      'https://favicon.im/*',
       'https://icons.duckduckgo.com/*',
       'https://icon.horse/*',
-      // xy-tab 后端:nginx /api/* 反代到容器内 :9999
+      // xy-tab 后端：nginx /api/* 反代到容器内 :9999
       'https://kskbl.com.cn/*',
     ],
+    action: {
+      default_title: '__MSG_extName__',
+    },
     commands: {
       _execute_action: {
         suggested_key: {
           default: 'Ctrl+Y',
           mac: 'Command+Y',
         },
-        description: '打开快捷搜索面板',
+        description: '打开快捷面板',
       },
     },
   }),

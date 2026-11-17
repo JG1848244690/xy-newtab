@@ -2,12 +2,11 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useShortcutsStore } from '@/src/hooks/useShortcutsStore';
 import { useGroupsStore } from '@/src/hooks/useGroupsStore';
 import { useStoresReady } from '@/src/lib/useStoresReady';
-import { Search, Globe, ExternalLink, Keyboard, Plus, FolderOpen, Check, Loader2, History } from 'lucide-react';
+import { Search, Globe, ExternalLink, Keyboard, Plus, FolderOpen, Check, Loader2 } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import type { Shortcut, ShortcutGroup } from '@/src/utils/types';
 import { cn } from '@/src/lib/utils';
-import SessionTab from './SessionTab';
 import { useI18n } from '@/src/i18n';
 
 // 设置组件
@@ -156,7 +155,7 @@ function App() {
   const { shortcuts, addShortcut } = useShortcutsStore();
   const { groups, addShortcutToGroup } = useGroupsStore();
 
-  const [activeTab, setActiveTab] = useState<'search' | 'add' | 'settings' | 'sessions'>('search');
+  const [activeTab, setActiveTab] = useState<'search' | 'add' | 'settings'>('search');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -201,16 +200,6 @@ function App() {
     browser.tabs.create({ url: finalUrl });
   };
 
-  // 搜索
-  const handleSearch = (query: string) => {
-    if (!query.trim()) return;
-    if (query.includes('.') && !query.includes(' ')) {
-      openUrl(query);
-    } else {
-      browser.tabs.create({ url: `https://www.bing.com/search?q=${encodeURIComponent(query)}` });
-    }
-  };
-
   const getShortcutById = (id: string): Shortcut | undefined => {
     return shortcuts.find(s => s.id === id);
   };
@@ -245,8 +234,8 @@ function App() {
       e.preventDefault();
       if (selectedIndex >= 0) {
         openSelected(selectedIndex);
-      } else if (searchQuery.trim()) {
-        handleSearch(searchQuery);
+      } else if (filteredShortcuts.length > 0) {
+        openSelected(0);
       }
     } else if (e.key === 'Escape') {
       setSearchQuery('');
@@ -294,18 +283,6 @@ function App() {
           )}
         >
           {t('popup.tabs.add')}
-        </button>
-        <button
-          onClick={() => setActiveTab('sessions')}
-          className={cn(
-            'flex-1 py-2 text-sm transition-colors flex items-center justify-center gap-1',
-            activeTab === 'sessions'
-              ? 'text-primary border-b-2 border-primary font-medium'
-              : 'text-muted-foreground hover:text-foreground'
-          )}
-        >
-          <History className="w-3.5 h-3.5" />
-          {t('popup.tabs.sessions')}
         </button>
         <button
           onClick={() => setActiveTab('settings')}
@@ -402,7 +379,6 @@ function App() {
         )}
 
         {activeTab === 'settings' && <SettingsTab />}
-        {activeTab === 'sessions' && <SessionTab />}
       </div>
 
       {/* 底部主站链接 */}

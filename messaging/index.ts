@@ -1,7 +1,6 @@
 ﻿import { defineExtensionMessaging } from '@webext-core/messaging';
-import type { Shortcut, TabSession } from '@/src/utils/types';
+import type { Shortcut } from '@/src/utils/types';
 import type { SyncUser } from '@/src/utils/googleAuth';
-import type { SyncScope } from '@/src/utils/syncDirty';
 
 /** 手动同步操作的统一返回结构 */
 export type SyncOpResult = { success: boolean; error?: string };
@@ -24,19 +23,13 @@ interface ProtocolMap {
   // 从 Chrome 新标签页导入书签
   'shortcuts/import-from-newtab': () => { shortcuts: { name: string; url: string }[]; success: boolean; error?: string };
 
-  // 标签页会话管理
-  'tab-sessions/save': () => { success: boolean; session?: TabSession; error?: string };
-  'tab-sessions/list': () => TabSession[];
-  'tab-sessions/restore': (sessionId: string) => { success: boolean; error?: string };
-  'tab-sessions/delete': (sessionId: string) => { success: boolean; error?: string };
-
-  // === 云同步(手动模型) ===
+  // === 云同步(手动模型,只同步书签+分组) ===
   // 新标签页打开时:首次/距上次拉取超 30min → 拉取云端 + merge 到本地(由 newtab/App.tsx 节流)
   'sync/on-new-tab': () => SyncOpResult;
   // 手动上传:本地整包 → 云端(覆盖云)
-  'sync/upload': (scope: SyncScope) => SyncOpResult;
+  'sync/upload': () => SyncOpResult;
   // 手动下载:云端 → 本地(覆盖本地)
-  'sync/download': (scope: SyncScope) => SyncOpResult;
+  'sync/download': () => SyncOpResult;
 
   // === 云同步登录相关 ===
   // 读取当前登录的用户(从本地缓存读,不调网络)

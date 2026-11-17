@@ -2,7 +2,7 @@
  * 简体中文词典
  *
  * 命名空间按业务域划分,与组件 import 顺序一致便于查找:
- *   common → search → shortcuts → groups → layout → settings → importExport → searchEngine
+ *   common → shortcuts → groups → layout → settings → importExport → popup
  *
  * 插值:使用 {name} 占位符,t 函数做简单替换(不引 ICU,够用)。
  */
@@ -31,21 +31,6 @@ export const zh_CN: TranslationTree = {
     noResults: '无匹配结果',
     duplicate: '重复',
     drop: '丢弃',
-  },
-
-  search: {
-    placeholder: '搜索或直接访问网址…',
-    search: '搜索',
-    groups: {
-      history: '历史记录',
-      shortcuts: '快捷方式',
-      suggestions: '搜索建议',
-    },
-    nav: '导航',
-    enter: '确认',
-    esc: '关闭',
-    clearHistory: '清空历史',
-    remove: '删除',
   },
 
   shortcuts: {
@@ -223,10 +208,6 @@ export const zh_CN: TranslationTree = {
     confirmImport: '确认导入',
   },
 
-  searchEngine: {
-    baidu: '百度',
-  },
-
   popup: {
     appName: '序言',
     footerBrand: '序言-xy',
@@ -234,7 +215,6 @@ export const zh_CN: TranslationTree = {
     tabs: {
       search: '快捷搜索',
       add: '快捷添加',
-      sessions: '会话',
       settings: '设置',
     },
     search: {
@@ -261,43 +241,6 @@ export const zh_CN: TranslationTree = {
       moreHintPrefix: '更多设置(背景、布局等)请在',
       newTabLabel: '新标签页',
       moreHintSuffix: '中点击右上角设置图标进行配置。',
-    },
-    session: {
-      saveCurrent: '保存当前标签页',
-      saving: '保存中…',
-      cloudSyncTitle: '会话云同步',
-      cloudSyncDirty: '有未同步到云端的本地会话',
-      loggedOutHint: '未登录,云同步不可用',
-      loginButton: 'Google 登录',
-      loginLoading: '登录中…',
-      uploadToCloud: '上传到云',
-      downloadFromCloud: '从云下载',
-      uploaded: '已上传到云端',
-      downloaded: '已从云端下载',
-      downloadConfirm: '从云端下载将用云端会话覆盖本地,确定?',
-      logoutConfirm: '确定要退出登录吗?登出后云同步将不可用。',
-      uploadFail: '上传失败',
-      downloadFail: '下载失败',
-      loginFail: '登录失败',
-      logoutFail: '登出失败',
-      loadFail: '加载会话失败',
-      restoreFail: '恢复失败',
-      saveFail: '保存失败',
-      deleteFail: '删除失败',
-      noSessions: '暂无保存的会话',
-      noSessionsHint: '点击上方按钮保存当前标签页',
-      justNow: '刚刚',
-      minutesAgo: '{n} 分钟前',
-      hoursAgo: '{n} 小时前',
-      daysAgo: '{n} 天前',
-      tabs: '{n} 个标签页',
-      tabsLimit: '上限',
-      tabsLimitTitle: '已达到 30 个标签页上限',
-      moreTabs: '还有 {n} 个标签页…',
-      restore: '恢复',
-      restoring: '恢复中…',
-      delete: '删除',
-      logout: '退出',
     },
   },
 };

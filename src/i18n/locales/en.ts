@@ -2,7 +2,7 @@
  * English dictionary
  *
  * 命名空间按业务域划分,与组件 import 顺序一致便于查找:
- *   common → search → shortcuts → groups → layout → settings → importExport → searchEngine
+ *   common → shortcuts → groups → layout → settings → importExport → popup
  *
  * 插值:使用 {name} 占位符,t 函数做简单替换(不引 ICU,够用)。
  */
@@ -31,21 +31,6 @@ export const en: TranslationTree = {
     noResults: 'No matches',
     duplicate: 'Duplicate',
     drop: 'Drop',
-  },
-
-  search: {
-    placeholder: 'Search or enter a URL…',
-    search: 'Search',
-    groups: {
-      history: 'History',
-      shortcuts: 'Shortcuts',
-      suggestions: 'Suggestions',
-    },
-    nav: 'Navigate',
-    enter: 'Confirm',
-    esc: 'Close',
-    clearHistory: 'Clear history',
-    remove: 'Remove',
   },
 
   shortcuts: {
@@ -223,10 +208,6 @@ export const en: TranslationTree = {
     confirmImport: 'Confirm import',
   },
 
-  searchEngine: {
-    baidu: 'Baidu',
-  },
-
   popup: {
     appName: 'NewTab',
     footerBrand: 'NewTab -xy',
@@ -234,7 +215,6 @@ export const en: TranslationTree = {
     tabs: {
       search: 'Search',
       add: 'Add',
-      sessions: 'Sessions',
       settings: 'Settings',
     },
     search: {
@@ -261,43 +241,6 @@ export const en: TranslationTree = {
       moreHintPrefix: 'More settings (background, layout, etc.) live in the',
       newTabLabel: 'new tab page',
       moreHintSuffix: '— open it and click the gear icon at the top right.',
-    },
-    session: {
-      saveCurrent: 'Save current tabs',
-      saving: 'Saving…',
-      cloudSyncTitle: 'Cloud sync for sessions',
-      cloudSyncDirty: 'Local sessions have not been synced yet',
-      loggedOutHint: 'Sign in to enable cloud sync',
-      loginButton: 'Sign in with Google',
-      loginLoading: 'Signing in…',
-      uploadToCloud: 'Upload to cloud',
-      downloadFromCloud: 'Download from cloud',
-      uploaded: 'Uploaded to the cloud',
-      downloaded: 'Downloaded from the cloud',
-      downloadConfirm: 'Downloading from the cloud will overwrite local sessions. Continue?',
-      logoutConfirm: 'Sign out? Cloud sync will be disabled until you sign in again.',
-      uploadFail: 'Upload failed',
-      downloadFail: 'Download failed',
-      loginFail: 'Sign in failed',
-      logoutFail: 'Sign out failed',
-      loadFail: 'Failed to load sessions',
-      restoreFail: 'Restore failed',
-      saveFail: 'Save failed',
-      deleteFail: 'Delete failed',
-      noSessions: 'No saved sessions yet',
-      noSessionsHint: 'Tap the button above to save your current tabs',
-      justNow: 'just now',
-      minutesAgo: '{n} min ago',
-      hoursAgo: '{n} h ago',
-      daysAgo: '{n} d ago',
-      tabs: '{n} tabs',
-      tabsLimit: 'Limit reached',
-      tabsLimitTitle: 'Hit the 30-tab cap per session',
-      moreTabs: '{n} more tabs…',
-      restore: 'Restore',
-      restoring: 'Restoring…',
-      delete: 'Delete',
-      logout: 'Sign out',
     },
   },
 };

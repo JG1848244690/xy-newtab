@@ -11,7 +11,6 @@ import { clearLoginLocally } from './googleAuth';
 
 const sessionTokenCell = createStorageCell<string>(SYNC_LOCAL_KEYS.SESSION_TOKEN);
 const bookmarksVersionCell = createStorageCell<number>(SYNC_LOCAL_KEYS.BOOKMARKS_VERSION);
-const sessionsVersionCell = createStorageCell<number>(SYNC_LOCAL_KEYS.SESSIONS_VERSION);
 
 // ============================================================
 // Types
@@ -117,56 +116,5 @@ export async function uploadBookmarks<TPayload = unknown>(
 
   const snapshot = (await res.json()) as SyncSnapshot<TPayload>;
   await bookmarksVersionCell.write(snapshot.version);
-  return { ok: true, snapshot };
-}
-
-// ============================================================
-// Tab Sessions
-// ============================================================
-
-export async function downloadSessions<TPayload = unknown>(): Promise<DownloadResult<TPayload>> {
-  const res = await fetch(`${SYNC_API_BASE_URL}${SYNC_API.SESSIONS}`, {
-    method: 'GET',
-    headers: { ...(await authHeader()) },
-  });
-
-  if (res.status === 401) await handleUnauthorized();
-  if (res.status === 404) return { ok: false, notFound: true };
-  if (!res.ok) throw new Error(`下载会话失败 (${res.status})`);
-
-  const snapshot = (await res.json()) as SyncSnapshot<TPayload>;
-  await sessionsVersionCell.write(snapshot.version);
-  return { ok: true, snapshot };
-}
-
-export async function uploadSessions<TPayload = unknown>(
-  payload: TPayload,
-  expectedVersion?: number,
-): Promise<UploadResult<TPayload>> {
-  const ev = expectedVersion ?? (await sessionsVersionCell.read()) ?? 0;
-
-  const res = await fetch(`${SYNC_API_BASE_URL}${SYNC_API.SESSIONS}`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(await authHeader()),
-    },
-    body: JSON.stringify({ payload, expectedVersion: ev }),
-  });
-
-  if (res.status === 401) await handleUnauthorized();
-
-  if (res.status === 409) {
-    const body = (await res.json()) as SyncConflict<TPayload>;
-    return { ok: false, conflict: body };
-  }
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    return { ok: false, error: text || `上传失败 (${res.status})` };
-  }
-
-  const snapshot = (await res.json()) as SyncSnapshot<TPayload>;
-  await sessionsVersionCell.write(snapshot.version);
   return { ok: true, snapshot };
 }

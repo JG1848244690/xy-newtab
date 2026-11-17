@@ -9,7 +9,4 @@ export const STORAGE_KEYS = {
   shortcuts: 'shortcuts',
   groups: 'groups',
   settings: 'settings',
-  searchHistory: 'searchHistory',
-  tabSessions: 'tabSessions',
-  lastSync: 'tabSessions_lastSync',
 } as const;

@@ -1,14 +1,14 @@
 /**
  * 云同步相关的 React hooks
  *
- * - useSyncAuth: 登录态(user / login / logout / loading / error),SessionTab 和 ImportExportDialog 复用
- * - useDirty(scope): 订阅脏标记(红点),跨 context 实时更新
+ * - useSyncAuth: 登录态(user / login / logout / loading / error),ImportExportDialog / GroupLayout 复用
+ * - useDirty(): 订阅脏标记(红点),跨 context 实时更新
  */
 
 import { useState, useCallback, useEffect } from 'react';
 import { sendMessage } from '@/messaging';
 import type { SyncUser } from '@/src/utils/googleAuth';
-import { readDirty, watchDirty, type SyncScope } from '@/src/utils/syncDirty';
+import { readDirty, watchDirty } from '@/src/utils/syncDirty';
 
 // ============================================================
 // 登录态
@@ -66,21 +66,21 @@ export function useSyncAuth() {
 // 脏标记(红点)
 // ============================================================
 
-/** 订阅某个 scope 的脏标记,本地变更→true,同步成功→false(跨 context 实时) */
-export function useDirty(scope: SyncScope): boolean {
+/** 订阅脏标记(红点),本地变更→true,同步成功→false(跨 context 实时) */
+export function useDirty(): boolean {
   const [dirty, setDirty] = useState(false);
 
   useEffect(() => {
     let active = true;
-    readDirty(scope).then((d) => {
+    readDirty().then((d) => {
       if (active) setDirty(d);
     });
-    const unsub = watchDirty(scope, (d) => setDirty(d));
+    const unsub = watchDirty((d) => setDirty(d));
     return () => {
       active = false;
       unsub();
     };
-  }, [scope]);
+  }, []);
 
   return dirty;
 }

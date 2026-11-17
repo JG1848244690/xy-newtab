@@ -3,7 +3,7 @@
  * 所有可复用或可配置的值集中管理
  */
 
-import type { SearchEngineOption, Settings, ShortcutGroup, BackgroundSize } from './types';
+import type { Settings, ShortcutGroup, BackgroundSize } from './types';
 
 // 扩展名称
 export const EXTENSION_NAME = '序言';
@@ -13,9 +13,6 @@ export const STORAGE_KEY = {
   SETTINGS: 'settings',
   SHORTCUTS: 'shortcuts',
   GROUPS: 'groups',
-  SEARCH_HISTORY: 'searchHistory',
-  TAB_SESSIONS: 'tabSessions',
-  LAST_SYNC: 'tabSessions_lastSync',
 } as const;
 
 // local 命名空间下的完整 storage key（带 `local:` 前缀）
@@ -24,15 +21,6 @@ export const LOCAL_STORAGE_KEY = {
   SETTINGS: `local:${STORAGE_KEY.SETTINGS}`,
   SHORTCUTS: `local:${STORAGE_KEY.SHORTCUTS}`,
   GROUPS: `local:${STORAGE_KEY.GROUPS}`,
-  SEARCH_HISTORY: `local:${STORAGE_KEY.SEARCH_HISTORY}`,
-  TAB_SESSIONS: `local:${STORAGE_KEY.TAB_SESSIONS}`,
-  LAST_SYNC: `local:${STORAGE_KEY.LAST_SYNC}`,
-} as const;
-
-// 标签页会话限制
-export const SESSION_LIMITS = {
-  MAX_SESSIONS: 5,         // 最多保存 5 个存档
-  MAX_TABS_PER_SESSION: 30, // 每个存档最多 30 个标签页
 } as const;
 
 // 默认快捷方式
@@ -60,16 +48,8 @@ export const GROUP_COLORS = [
   { name: '青色', value: 'cyan' },
 ] as const;
 
-// 搜索引擎选项(name 走 i18n,组件内通过 t('searchEngine.baidu') 等渲染)
-export const SEARCH_ENGINES: SearchEngineOption[] = [
-  { id: 'google', name: 'Google', url: 'https://www.google.com/search?q=', icon: '🔍' },
-  { id: 'bing', name: 'Bing', url: 'https://www.bing.com/search?q=', icon: '🔎' },
-  { id: 'baidu', name: 'baidu', url: 'https://www.baidu.com/s?wd=', icon: '🌐' },
-];
-
 // 默认设置
 export const DEFAULT_SETTINGS: Settings = {
-  searchEngine: 'bing',
   iconsPerRow: 8,
   layout: 'group',
   background: { type: 'image', imageUrl: 'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=1920&q=80', size: 'cover', opacity: 1 },
@@ -117,6 +97,7 @@ export const UI_CONFIG = {
   DEFAULT_ICONS_PER_ROW: 8,
   MIN_ICONS_PER_ROW: 4,
   MAX_ICONS_PER_ROW: 12,
+  /** 本地快捷方式筛选的防抖延迟(ms) */
   SEARCH_DEBOUNCE_DELAY: 300,
 } as const;
 

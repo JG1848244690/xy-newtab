@@ -42,7 +42,7 @@ export function ImportExportDialog({
 
   // 云同步(书签)
   const { user, login, logout, loading: authLoading, error: authError } = useSyncAuth();
-  const bookmarksDirty = useDirty('bookmarks');
+  const bookmarksDirty = useDirty();
   const [syncBusy, setSyncBusy] = useState<null | 'upload' | 'download'>(null);
   const [syncMsg, setSyncMsg] = useState<string | null>(null);
   const [syncErr, setSyncErr] = useState<string | null>(null);
@@ -125,7 +125,7 @@ export function ImportExportDialog({
     setSyncMsg(null);
     setSyncErr(null);
     try {
-      const res = await sendMessage('sync/upload', 'bookmarks');
+      const res = await sendMessage('sync/upload', undefined);
       if (res.success) {
         setSyncMsg(t('importExport.uploadSuccess'));
       } else {
@@ -144,7 +144,7 @@ export function ImportExportDialog({
     setSyncMsg(null);
     setSyncErr(null);
     try {
-      const res = await sendMessage('sync/download', 'bookmarks');
+      const res = await sendMessage('sync/download', undefined);
       if (res.success) {
         setSyncMsg(t('importExport.downloadSuccess'));
       } else {

@@ -41,7 +41,7 @@ let pendingValue: ShortcutGroup[] | null = null;
 const scheduleWrite = (value: ShortcutGroup[], silent: boolean = false): void => {
   pendingValue = value;
   if (!silent) {
-    void markDirty('bookmarks');
+    void markDirty();
   }
   if (writeTimer) return;
   writeTimer = setTimeout(() => {

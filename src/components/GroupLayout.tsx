@@ -404,7 +404,7 @@ export function GroupLayout({
   const handleUploadToCloud = async () => {
     setCloudOpStatus({ type: 'pending', op: 'upload' });
     try {
-      const res = await sendMessage('sync/upload', 'bookmarks');
+      const res = await sendMessage('sync/upload', undefined);
       if (res?.success) {
         setCloudOpStatus({ type: 'success', op: 'upload' });
       } else {
@@ -428,7 +428,7 @@ export function GroupLayout({
   const handleDownloadFromCloud = async () => {
     setCloudOpStatus({ type: 'pending', op: 'download' });
     try {
-      const res = await sendMessage('sync/download', 'bookmarks');
+      const res = await sendMessage('sync/download', undefined);
       if (res?.success) {
         setCloudOpStatus({ type: 'success', op: 'download' });
       } else {

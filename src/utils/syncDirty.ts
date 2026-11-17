@@ -2,7 +2,7 @@
  * 脏标记(Dirty flag)+ 首次拉取时间戳
  *
  * 作用:
- *   - bookmarksDirty / sessionsDirty:本地是否有未同步到云端的变更。
+ *   - dirty:本地是否有未同步到云端的变更。
  *     UI 订阅后显示「红点」提示用户去手动同步;同步成功后清掉。
  *   - lastPullAt:首次拉取的节流时间戳。newtab 每次挂载都读它,
  *     距上次拉取不足 30min 就跳过,避免接口被打爆。
@@ -18,36 +18,30 @@
 import { createStorageCell } from '@/src/lib/storage';
 import { SYNC_LOCAL_KEYS } from './syncConfig';
 
-export type SyncScope = 'bookmarks' | 'sessions';
-
-const bookmarksDirtyCell = createStorageCell<boolean>(SYNC_LOCAL_KEYS.BOOKMARKS_DIRTY);
-const sessionsDirtyCell = createStorageCell<boolean>(SYNC_LOCAL_KEYS.SESSIONS_DIRTY);
+const dirtyCell = createStorageCell<boolean>(SYNC_LOCAL_KEYS.BOOKMARKS_DIRTY);
 const lastPullAtCell = createStorageCell<number>(SYNC_LOCAL_KEYS.LAST_PULL_AT);
 
-const dirtyCell = (scope: SyncScope) =>
-  scope === 'bookmarks' ? bookmarksDirtyCell : sessionsDirtyCell;
-
 /** 标脏:本地有未同步变更(用户增删改后调用) */
-export async function markDirty(scope: SyncScope): Promise<void> {
-  await dirtyCell(scope).write(true).catch(() => {});
+export async function markDirty(): Promise<void> {
+  await dirtyCell.write(true).catch(() => {});
 }
 
 /** 清脏:本地与云端已一致(上传/下载成功后调用) */
-export async function clearDirty(scope: SyncScope): Promise<void> {
-  await dirtyCell(scope).write(false).catch(() => {});
+export async function clearDirty(): Promise<void> {
+  await dirtyCell.write(false).catch(() => {});
 }
 
 /** 读当前脏标记 */
-export async function readDirty(scope: SyncScope): Promise<boolean> {
-  return (await dirtyCell(scope).read()) ?? false;
+export async function readDirty(): Promise<boolean> {
+  return (await dirtyCell.read()) ?? false;
 }
 
 /**
  * 订阅脏标记变化(UI 红点用)。返回取消订阅函数。
  * 底层 storage.onChanged 跨 context 触发:background 清脏 → newtab/popup 红点立即灭。
  */
-export function watchDirty(scope: SyncScope, cb: (dirty: boolean) => void): () => void {
-  return dirtyCell(scope).watch((next) => cb(next ?? false));
+export function watchDirty(cb: (dirty: boolean) => void): () => void {
+  return dirtyCell.watch((next) => cb(next ?? false));
 }
 
 /** 读上次首次拉取的时间戳(ms),没有则 undefined */
