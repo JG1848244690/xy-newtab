@@ -19,26 +19,28 @@ pnpm test:e2e       # Playwright，会启动真实 Chrome 窗口（headless:fals
 
 ## 架构
 
-- `entrypoints/`：`background.ts`（消息路由 + 云同步 + 书签导入）、`popup/`（快捷添加 + 本地快捷方式筛选）、`newtab/`（主界面）
+- `entrypoints/`：`background.ts`（消息路由 + 书签导入 + favicon 代理）、`popup/`（快捷添加 + 本地快捷方式筛选）、`newtab/`（主界面）
 - `src/store/`：自研订阅式 store（`src/lib/store.ts`），持久化走 `createStorageCell`（`src/lib/storage.ts`）
 - `src/hooks/`：store 的薄壳 hook，组件只从这里取数据
 - `src/services/`：纯函数业务逻辑（无副作用）
 - `src/components/`：UI，文案一律走 `useI18n()` 的 `t()`，不要硬编码中文
-- `src/schemas/`：storage / 云端 / 导入数据的运行时校验
+- `src/schemas/`：storage / 导入数据的运行时校验
 - `messaging/index.ts`：跨 context 消息协议（`@webext-core/messaging`），新增消息必须同时登记类型
 - 主题：CSS 变量 + `theme-init.js`（防闪烁），不要引入新的主题方案
 
-## 云同步（可选功能）
+## 数据边界（重要）
 
-- 后端是独立仓库 `tasks-api` 的 `xy-newtab` 分支，生产地址 `https://kskbl.com.cn/api`
-- 手动模型：`pullAndMerge`（newtab 挂载，30min 节流）/ `uploadLocal` / `downloadCloud`
-- 脏标记 `src/utils/syncDirty.ts` → UI 红点；同步成功清脏
-- **只同步 shortcuts + groups**，不含标签页会话
-- 未登录时所有本地功能必须照常可用
+**这个扩展完全本地运行**：没有账号、没有云同步、没有自建后端、没有统计/遥测。
+唯一的对外请求是取网站图标（Google / DuckDuckGo / icon.horse，只发域名）。
+
+- 数据存 `chrome.storage.local`（快捷方式/分组/设置）与 IndexedDB（背景图/视频/favicon 缓存）
+- 备份与迁移：JSON 导出导入、一键从 Chrome 书签导入
+- **不要**重新引入任何服务端、登录、上传下载逻辑；这会让商店审核和隐私政策复杂化
 
 ## 权限约定（商店审核敏感）
 
-`wxt.config.ts` 里的 manifest 权限保持最小化：`storage` / `activeTab` / `bookmarks` / `identity`。
+`wxt.config.ts` 里的 manifest 权限保持最小化：`storage` / `activeTab` / `bookmarks`，
+host_permissions 只保留三家 favicon 源。
 新增权限或 host_permissions 前先确认真的必要，并在提交说明里写清用途。
 
 ## 商店相关

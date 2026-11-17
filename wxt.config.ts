@@ -10,7 +10,7 @@ export default defineConfig({
 
   manifest: ({ browser }) => ({
     // Web Store 多语言展示:default_locale 决定 fallback,其它语种用 _locales/<lang>/messages.json
-    // 仅 manifest 层 i18n,扩展内 UI 文案暂未接入 i18n(后续按需迭代)。
+    // 扩展内 UI 文案走 src/i18n(en / zh_CN),与这里各自独立。
     name: '__MSG_extName__',
     description: '__MSG_extDescription__',
     default_locale: 'en',
@@ -19,10 +19,9 @@ export default defineConfig({
     // 填公钥跟填私钥算出的 ID 一致。配套商店 ID: lanccjojcmdklbhnbmbfemiabnpbgoga
     // 来源:Web Store 后台 "View public key" 复制的 PEM 格式公钥。
     // 本地 build + unpacked / zip 加载 → ID = lanccjojcmdklbhnbmbfemiabnpbgoga
-    // (与商店分配的 ID 一致,OAuth redirect_uri 不再 mismatch)
     //
-    // 上传 Web Store 时:商店会拒绝 manifest.key 字段,所以上传前需要手动剔除
-    //(本地 build → 解压 zip → 删 manifest.json 的 key 字段 → 重打 zip → 上传)。
+    // 上传 Web Store 时:商店可能拒绝 manifest.key 字段。如果上传报错,删掉
+    // manifest.json 里的 key 再重打 zip 即可(本仓库历史上带 key 上传是通过的)。
     // Edge 不接受 manifest.key(Edge Add-ons 政策),仅 chrome 构建注入。
     ...(browser === 'chrome'
       ? {
@@ -30,17 +29,16 @@ export default defineConfig({
         }
       : {}),
 
-    // launchWebAuthFlow 只需要 identity 权限（不要 identity.email，那是 getAuthToken 才需要）
-    // activeTab：popup 打开时读取当前标签页 URL/标题用于「快捷添加」，仅在用户点击图标后授权，
-    // 比 tabs 更小（不再常驻读取所有标签页）
-    permissions: ['storage', 'activeTab', 'bookmarks', 'identity'],
+    // 扩展纯本地运行：无账号、无云同步、无自建后端
+    // activeTab：popup 打开时读取当前标签页 URL/标题用于「快捷添加」，仅在用户点击图标后授权
+    // bookmarks：一键导入 Chrome 书签
+    permissions: ['storage', 'activeTab', 'bookmarks'],
     host_permissions: [
+      // 仅用于取网站图标（favicon）——没有任何数据回传
       'https://www.google.com/*',
       'https://*.google.com/*',
       'https://icons.duckduckgo.com/*',
       'https://icon.horse/*',
-      // xy-tab 后端：nginx /api/* 反代到容器内 :9999
-      'https://kskbl.com.cn/*',
     ],
     action: {
       default_title: '__MSG_extName__',

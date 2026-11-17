@@ -10,11 +10,12 @@
 - **背景自定义** - 纯色、精选壁纸、本地图片、本地视频（存 IndexedDB）
 - **主题适配** - 支持浅色/深色主题自动切换
 - **导入导出** - JSON 备份还原 / 一键导入 Chrome 书签
-- **云同步（可选）** - Google 登录后手动上传/下载书签与分组
 - **多语言** - English / 简体中文
 - **Favicon 缓存** - 自动缓存网站图标，加载更快
 
 > 说明：本扩展**不提供**网页搜索框，也不修改你的默认搜索引擎。搜索请直接使用 Chrome 地址栏。
+>
+> 数据**完全本地**：没有账号、没有云同步、没有后端服务器。备份和迁移靠导出/导入 JSON。
 
 ## 技术栈
 
@@ -53,7 +54,7 @@ src/
 │   ├── BackgroundDialog.tsx    # 背景设置弹窗
 │   ├── DockLayout.tsx          # dock 布局
 │   ├── GroupLayout.tsx         # 分组布局
-│   ├── ImportExportDialog.tsx  # 导入导出 / 云同步
+│   ├── ImportExportDialog.tsx  # 导入导出 / Chrome 书签导入
 │   ├── MigrateDialog.tsx       # 迁移 / 复制到分组
 │   ├── SettingsSheet.tsx       # 设置面板
 │   ├── ShortcutCard.tsx        # 快捷方式卡片
@@ -65,10 +66,10 @@ src/
 ├── schemas/          # 运行时数据校验
 ├── i18n/             # 自研极简 i18n（en / zh_CN）
 ├── lib/              # store / storage 基建
-└── utils/            # 常量、类型、favicon、云同步、导入导出
+└── utils/            # 常量、类型、favicon、导入导出
 
 entrypoints/
-├── background.ts     # 后台脚本（消息路由 / 云同步 / 书签导入）
+├── background.ts     # 后台脚本（消息路由 / 书签导入 / favicon 代理）
 ├── popup/            # 弹出面板（快捷搜索本地快捷方式、快捷添加、设置）
 └── newtab/           # 新标签页
 ```

@@ -16,7 +16,7 @@ export const STORAGE_KEY = {
 } as const;
 
 // local 命名空间下的完整 storage key（带 `local:` 前缀）
-// 集中管理避免散落硬编码，详见 docs/2026-06-02-cloud-sync-fix-plan.md P1-6
+// 集中管理避免散落硬编码
 export const LOCAL_STORAGE_KEY = {
   SETTINGS: `local:${STORAGE_KEY.SETTINGS}`,
   SHORTCUTS: `local:${STORAGE_KEY.SHORTCUTS}`,
@@ -35,7 +35,6 @@ export const DEFAULT_SHORTCUTS = [
 export const DEFAULT_GROUPS: ShortcutGroup[] = [];
 
 // 系统 dock 分组 id:dock 布局专属,group 布局隐藏不渲染
-// (参与云同步 — 用户的 dock 书签本身就该跨设备同步)
 export const DOCK_GROUP_ID = 'sys-dock';
 
 // 分组颜色选项

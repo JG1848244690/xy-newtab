@@ -25,22 +25,6 @@ export interface ShortcutGroup {
   updatedAt: number;
 }
 
-// 云同步结果
-export interface SyncConflict {
-  error: "version mismatch";
-  currentVersion: number;
-  currentPayload: unknown;
-}
-
-export interface SyncResult {
-  success: boolean;
-  error?: string;
-  lastSyncAt?: number;
-  count?: number;
-  /** 乐观锁冲突时返回,UI 弹窗让用户选择 */
-  conflict?: SyncConflict;
-}
-
 // 布局类型
 // - grid: 简单平铺网格(暂未用,留作 ShortcutGrid 模式)
 // - group: 当前的分组卡片列表(默认)

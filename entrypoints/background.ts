@@ -1,14 +1,5 @@
 import { onMessage } from '@/messaging';
 import { storage } from '@wxt-dev/storage';
-import { setupSyncInit, pullAndMerge, uploadLocal, downloadCloud } from '@/src/utils/syncAuto';
-import {
-  loginWithGoogle,
-  saveLoginLocally,
-  readSessionToken,
-  readCurrentUser,
-  clearLoginLocally,
-} from '@/src/utils/googleAuth';
-import { SYNC_API_BASE_URL, SYNC_API } from '@/src/utils/syncConfig';
 import { LOCAL_STORAGE_KEY } from '@/src/utils/constants';
 import type { Shortcut } from '@/src/utils/types';
 
@@ -18,85 +9,18 @@ const GROUPS_KEY = LOCAL_STORAGE_KEY.GROUPS;
 
 /*
  * ============================================================================
- * 云同步说明(手动同步模型)
+ * 这个扩展完全本地运行
  * ============================================================================
  *
- * 当前方案:独立后端 (SYNC_API_BASE_URL) + Google OAuth 授权码模式。
- *   - setupSyncInit() 只初始化 deviceId,不再订阅自动 push
- *   - 'sync/on-new-tab'  首次/距上次>30min 时 pullAndMerge(由 newtab 节流)
- *   - 'sync/upload'      手动上传(本地→云)
- *   - 'sync/download'    手动下载(云→本地)
- *   - 用户改书签/分组 → markDirty → UI 红点;上传/下载成功 → clearDirty
- *   - 详细逻辑在 src/utils/syncAuto.ts,脏标记在 src/utils/syncDirty.ts,
- *     鉴权在 src/utils/googleAuth.ts
- *
- * 只同步 shortcuts + groups(书签/分组),不涉及标签页会话。
+ * 没有账号、没有云同步、没有任何自建后端。
+ *   - 数据只存在浏览器扩展存储（chrome.storage.local）与 IndexedDB 里
+ *   - 唯一的对外网络请求是取网站图标（Google / DuckDuckGo / icon.horse）
+ *   - 备份/迁移靠 JSON 导出导入，或一键从 Chrome 书签导入
  * ============================================================================
  */
 
 export default defineBackground(() => {
   console.log('[Extension] Background script loaded', { id: browser.runtime.id });
-
-  // init: 只初始化 deviceId(不再订阅自动 push)
-  setupSyncInit().catch((e) => console.warn('[sync] init failed:', e));
-
-  // ===== 手动同步 =====
-
-  // 新标签页打开时(newtab/App.tsx 节流:距上次>30min 才发)→ 拉取云端 + merge
-  onMessage('sync/on-new-tab', async () => {
-    return await pullAndMerge();
-  });
-
-  // 手动上传:本地 → 云
-  onMessage('sync/upload', async () => {
-    return await uploadLocal();
-  });
-
-  // 手动下载:云 → 本地
-  onMessage('sync/download', async () => {
-    return await downloadCloud();
-  });
-
-  // ===== Auth =====
-
-  onMessage('auth/get-user', async () => {
-    return await readCurrentUser();
-  });
-
-  onMessage('auth/login', async () => {
-    try {
-      const { sessionToken, user } = await loginWithGoogle();
-      await saveLoginLocally(sessionToken, user);
-      // 登录后立即拉取云端 merge(把别的设备的数据拉下来)
-      void pullAndMerge().catch((e) => console.warn('[sync] post-login pull failed:', e));
-      return { success: true, user };
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error('[Auth] login failed:', message);
-      return { success: false, error: message };
-    }
-  });
-
-  onMessage('auth/logout', async () => {
-    try {
-      const token = await readSessionToken();
-      if (token) {
-        try {
-          await fetch(`${SYNC_API_BASE_URL}${SYNC_API.GOOGLE_LOGOUT}`, {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${token}` },
-          });
-        } catch (e) {
-          console.warn('[Auth] backend logout failed (continuing):', e);
-        }
-      }
-      await clearLoginLocally();
-      return { success: true };
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      return { success: false, error: message };
-    }
-  });
 
   // ===== 快捷方式 / 书签 =====
 

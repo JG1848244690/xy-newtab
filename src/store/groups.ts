@@ -20,7 +20,6 @@ import {
   reorderShortcutsInGroup,
 } from '@/src/services/groups';
 import type { ShortcutGroup } from '@/src/utils/types';
-import { markDirty } from '@/src/utils/syncDirty';
 import { STORAGE_KEYS } from './keys';
 
 interface GroupsState {
@@ -31,18 +30,11 @@ interface GroupsState {
 const cell = createStorageCell<ShortcutGroup[]>(STORAGE_KEYS.groups);
 export const groupsStore = createStore<GroupsState>({ list: [], loaded: false });
 
-/** 防抖写：50ms 内多次 setItem 只触发最后一次
- *
- * silent=true: 同步模块(syncAuto)调用 replace() 时用,只写 storage 不标脏。
- * dirty 由 syncAuto 自己根据「本地 vs 云端是否一致」显式控制。
- */
+/** 防抖写：50ms 内多次 setItem 只触发最后一次 */
 let writeTimer: ReturnType<typeof setTimeout> | null = null;
 let pendingValue: ShortcutGroup[] | null = null;
-const scheduleWrite = (value: ShortcutGroup[], silent: boolean = false): void => {
+const scheduleWrite = (value: ShortcutGroup[]): void => {
   pendingValue = value;
-  if (!silent) {
-    void markDirty();
-  }
   if (writeTimer) return;
   writeTimer = setTimeout(() => {
     const v = pendingValue;
@@ -94,7 +86,7 @@ export async function initGroupsStore(): Promise<void> {
           updatedAt: 0,
         },
       ];
-      // 持久化新分组(必须 silent,这是初始化,不算用户 dirty)
+      // 持久化新分组
       await cell.write(list);
     }
     groupsStore.replace({ list, loaded: true });
@@ -125,15 +117,12 @@ export const groupsActions = {
   },
 
   /**
-   * toggleExpand: 展开/折叠纯 UI 状态,**不触发 markDirty**(silent 模式)。
-   * 仍写 storage 让刷新后保留折叠状态,但不算「本地有未同步书签」。
-   * 如果 syncAuto 后续 pullAndMerge 时发现 local.isExpanded ≠ server.isExpanded
-   * 导致 merged ≠ serverPayload,会自己 markDirty(那是数据真实不一致)。
+   * toggleExpand: 展开/折叠纯 UI 状态,仍写 storage 让刷新后保留折叠状态。
    */
   toggleExpand(id: string) {
     const list = toggleGroupExpand(groupsStore.get().list, id);
     groupsStore.set({ list });
-    scheduleWrite(list, true);  // silent: 不调 markDirty
+    scheduleWrite(list);
   },
 
   addShortcut(groupId: string, shortcutId: string) {
@@ -174,10 +163,10 @@ export const groupsActions = {
   },
 
   /**
-   * replace: 无条件覆盖本地数据,silent 模式不触发 markDirty(详见 shortcuts.ts 注释)
+   * replace: 无条件覆盖本地数据(导入备份用)
    */
   replace(next: ShortcutGroup[]) {
     groupsStore.set({ list: next });
-    scheduleWrite(next, true);  // silent: 不调 markDirty
+    scheduleWrite(next);
   },
 };

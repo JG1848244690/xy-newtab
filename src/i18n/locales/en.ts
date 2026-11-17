@@ -86,7 +86,6 @@ export const en: TranslationTree = {
   layout: {
     group: 'Groups',
     importExport: 'Import / Export',
-    dirtyHint: 'Local bookmarks have not been synced to the cloud. Click to upload.',
     actions: 'Actions',
   },
 
@@ -165,26 +164,11 @@ export const en: TranslationTree = {
   importExport: {
     title: 'Import & export bookmarks',
     description: 'Back up or restore your groups and bookmarks',
-    cloudSync: 'Cloud sync',
-    cloudSyncDirty: 'Local changes not yet synced',
-    loggedIn: 'Signed in: {email}',
-    loggedOut: 'Sign in to sync bookmarks across devices',
-    logout: 'Sign out',
-    login: 'Sign in',
-    uploadToCloud: 'Upload to cloud',
-    downloadFromCloud: 'Download from cloud',
-    uploadSuccess: 'Uploaded to the cloud',
-    downloadSuccess: 'Downloaded from the cloud (overwrites local)',
-    downloadConfirm: 'Downloading from the cloud will overwrite your local bookmarks. Continue?',
-    uploadFail: 'Upload failed',
-    downloadFail: 'Download failed',
-    // Toolbar 3 cloud action buttons
-    importGoogleBookmarks: 'Import from Google Bookmarks',
-    importGoogleBookmarksPending: 'Importing from Google Bookmarks…',
+    // Toolbar「从 Chrome 书签导入」
+    importGoogleBookmarks: 'Import from Chrome bookmarks',
+    importGoogleBookmarksPending: 'Importing from Chrome bookmarks…',
     importGoogleBookmarksSuccess: 'Imported {n} bookmarks',
     importGoogleBookmarksFail: 'Import failed',
-    uploadPending: 'Uploading to the cloud…',
-    downloadPending: 'Downloading from the cloud…',
     exportTitle: 'Export data',
     exportSummary: 'Export {shortcuts} shortcuts, {groups} groups',
     export: 'Export',

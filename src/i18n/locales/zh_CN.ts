@@ -86,7 +86,6 @@ export const zh_CN: TranslationTree = {
   layout: {
     group: '分组',
     importExport: '导入导出',
-    dirtyHint: '有未同步到云端的本地书签,点开上传',
     actions: '操作',
   },
 
@@ -165,26 +164,11 @@ export const zh_CN: TranslationTree = {
   importExport: {
     title: '导入导出书签',
     description: '备份或恢复你的分组和书签数据',
-    cloudSync: '书签云同步',
-    cloudSyncDirty: '有未同步到云端的本地书签',
-    loggedIn: '已登录:{email}',
-    loggedOut: '登录后可在多设备间同步书签',
-    logout: '退出',
-    login: '登录',
-    uploadToCloud: '上传到云',
-    downloadFromCloud: '从云下载',
-    uploadSuccess: '已上传到云端',
-    downloadSuccess: '已从云端下载(覆盖本地)',
-    downloadConfirm: '从云端下载将用云端书签覆盖本地,确定?',
-    uploadFail: '上传失败',
-    downloadFail: '下载失败',
-    // 工具栏 3 个云操作按钮(从 Google 书签导入 + 上传/下载云)
-    importGoogleBookmarks: '导入 Google 书签',
-    importGoogleBookmarksPending: '正在导入 Google 书签…',
+    // 工具栏「从 Chrome 书签导入」
+    importGoogleBookmarks: '从 Chrome 书签导入',
+    importGoogleBookmarksPending: '正在导入 Chrome 书签…',
     importGoogleBookmarksSuccess: '已导入 {n} 个书签',
     importGoogleBookmarksFail: '导入失败',
-    uploadPending: '正在上传到云…',
-    downloadPending: '正在从云端下载…',
     exportTitle: '导出数据',
     exportSummary: '导出 {shortcuts} 个书签,{groups} 个分组',
     export: '导出',

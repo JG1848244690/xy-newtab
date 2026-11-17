@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Download, Upload, AlertCircle, Check, Chrome, Loader2, LogOut } from 'lucide-react';
+import { Download, Upload, AlertCircle, Check, Chrome, Loader2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -12,7 +12,6 @@ import { Button } from '@/src/components/ui/button';
 import type { Shortcut, ShortcutGroup, ExportData } from '@/src/utils/types';
 import { exportData, parseImportFile, mergeImportData, replaceImportData, type ImportMode } from '@/src/utils/importExport';
 import { sendMessage } from '@/messaging';
-import { useSyncAuth, useDirty } from '@/src/hooks/useSync';
 import { useI18n } from '@/src/i18n';
 
 interface ImportExportDialogProps {
@@ -39,13 +38,6 @@ export function ImportExportDialog({
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [isChromeImporting, setIsChromeImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // 云同步(书签)
-  const { user, login, logout, loading: authLoading, error: authError } = useSyncAuth();
-  const bookmarksDirty = useDirty();
-  const [syncBusy, setSyncBusy] = useState<null | 'upload' | 'download'>(null);
-  const [syncMsg, setSyncMsg] = useState<string | null>(null);
-  const [syncErr, setSyncErr] = useState<string | null>(null);
 
   const handleExport = () => {
     exportData(shortcuts, groups);
@@ -120,43 +112,6 @@ export function ImportExportDialog({
     }
   };
 
-  const handleSyncUpload = async () => {
-    setSyncBusy('upload');
-    setSyncMsg(null);
-    setSyncErr(null);
-    try {
-      const res = await sendMessage('sync/upload', undefined);
-      if (res.success) {
-        setSyncMsg(t('importExport.uploadSuccess'));
-      } else {
-        setSyncErr(res.error || t('importExport.uploadFail'));
-      }
-    } catch (err) {
-      setSyncErr(err instanceof Error ? err.message : t('importExport.uploadFail'));
-    } finally {
-      setSyncBusy(null);
-    }
-  };
-
-  const handleSyncDownload = async () => {
-    if (!window.confirm(t('importExport.downloadConfirm'))) return;
-    setSyncBusy('download');
-    setSyncMsg(null);
-    setSyncErr(null);
-    try {
-      const res = await sendMessage('sync/download', undefined);
-      if (res.success) {
-        setSyncMsg(t('importExport.downloadSuccess'));
-      } else {
-        setSyncErr(res.error || t('importExport.downloadFail'));
-      }
-    } catch (err) {
-      setSyncErr(err instanceof Error ? err.message : t('importExport.downloadFail'));
-    } finally {
-      setSyncBusy(null);
-    }
-  };
-
   const handleClose = () => {
     setPreviewData(null);
     setError(null);
@@ -175,105 +130,6 @@ export function ImportExportDialog({
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
-          {/* 书签云同步(手动:登录 + 上传/下载 + 红点) */}
-          <div className="space-y-3 p-4 rounded-xl border bg-muted/30">
-            <div className="flex items-center justify-between gap-2">
-              <div className="min-w-0">
-                <p className="font-medium flex items-center gap-1.5">
-                  {t('importExport.cloudSync')}
-                  {bookmarksDirty && (
-                    <span
-                      className="w-2 h-2 rounded-full bg-red-500"
-                      title={t('importExport.cloudSyncDirty')}
-                    />
-                  )}
-                </p>
-                <p className="text-xs text-muted-foreground truncate">
-                  {user ? t('importExport.loggedIn', { email: user.email }) : t('importExport.loggedOut')}
-                </p>
-              </div>
-              {user ? (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={logout}
-                  disabled={authLoading}
-                  className="h-7 text-xs gap-1 shrink-0"
-                >
-                  <LogOut className="w-3 h-3" />
-                  {t('importExport.logout')}
-                </Button>
-              ) : (
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={login}
-                  disabled={authLoading}
-                  className="h-7 text-xs gap-1 shrink-0"
-                >
-                  {authLoading ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                  ) : (
-                    <Chrome className="w-3 h-3" />
-                  )}
-                  {t('importExport.login')}
-                </Button>
-              )}
-            </div>
-
-            {user && (
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 gap-1.5"
-                  disabled={syncBusy !== null}
-                  onClick={handleSyncUpload}
-                >
-                  {syncBusy === 'upload' ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Upload className="w-3.5 h-3.5" />
-                  )}
-                  {t('importExport.uploadToCloud')}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 gap-1.5"
-                  disabled={syncBusy !== null}
-                  onClick={handleSyncDownload}
-                >
-                  {syncBusy === 'download' ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Download className="w-3.5 h-3.5" />
-                  )}
-                  {t('importExport.downloadFromCloud')}
-                </Button>
-              </div>
-            )}
-
-            {authError && (
-              <p className="text-xs text-red-500 flex items-center gap-1">
-                <AlertCircle className="w-3 h-3 shrink-0" />
-                {authError}
-              </p>
-            )}
-            {syncMsg && (
-              <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
-                <Check className="w-3 h-3 shrink-0" />
-                {syncMsg}
-              </p>
-            )}
-            {syncErr && (
-              <p className="text-xs text-destructive flex items-center gap-1">
-                <AlertCircle className="w-3 h-3 shrink-0" />
-                {syncErr}
-              </p>
-            )}
-          </div>
-
           {/* 导出按钮 */}
           <div className="flex items-center justify-between p-4 rounded-xl border bg-muted/30">
             <div>

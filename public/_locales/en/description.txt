@@ -6,9 +6,9 @@ Organize the way you think. Create groups, give them a name, an icon, and a colo
 
 Make it yours. Pick a solid color, a curated wallpaper, your own image, or a local video that plays quietly behind your shortcuts. Adjust size and opacity so any background stays readable. Light and dark themes follow your system or your click. The interface is available in English and Chinese, and the layout stays comfortable from a small laptop screen to an ultrawide.
 
-Bring your bookmarks with you. Import your existing Chrome bookmarks in one click, or back up everything to a JSON file and restore it on another machine. If you want your shortcuts on every device, sign in with Google and use optional cloud sync: local changes are marked until you upload, and downloading replaces what is on this device. Sync is opt-in and manual, so nothing leaves your machine unless you ask it to.
+Bring your bookmarks with you. Import your existing Chrome bookmarks in one click, or back up everything to a JSON file and restore it on another machine. Everything you create lives on your own device — export the JSON when you switch computers, and import it on the new one.
 
-Privacy by default. Your bookmarks, groups, settings, and wallpapers are stored on your device. No account is required to use the extension. There are no ads, no trackers, no analytics fingerprinting, and no data sold or shared with third parties. Cloud sync uploads only your shortcuts and groups, and only after you sign in and press upload.
+Privacy by default, and by design. Your bookmarks, groups, settings, and wallpapers never leave your computer. There is no account and nothing to sign in to. No ads, no trackers, no analytics fingerprinting, and no data sold or shared with third parties. The only outbound request the extension ever makes is fetching a site's icon from a public favicon service, and that request carries nothing but the domain name.
 
 Designed for real use. Power users with hundreds of bookmarks get folders, drag and drop, and batch operations. Minimalists get a clean new tab with only the chrome they need. Anyone tired of new tab pages stuffed with affiliate links and upsells gets a focused alternative that looks good the moment you install it.
 

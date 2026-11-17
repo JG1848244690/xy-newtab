@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Plus, Trash2, X, Move, Search, UploadCloud, DownloadCloud, BookmarkPlus, Settings, ChevronDown } from 'lucide-react';
+import { Plus, Trash2, X, Move, Search, BookmarkPlus, Settings, ChevronDown } from 'lucide-react';
 import {
   DndContext,
   closestCenter,
@@ -41,7 +41,6 @@ import { sendMessage } from '@/messaging';
 interface GroupLayoutProps {
   groups: ShortcutGroup[];
   shortcuts: Shortcut[];
-  bookmarksDirty?: boolean;
   onToggleGroupExpand: (id: string) => void;
   onAddGroup: (data: { name: string; color?: string }) => void;
   onUpdateGroup: (id: string, data: Partial<Omit<ShortcutGroup, 'id' | 'createdAt' | 'updatedAt'>>) => void;
@@ -132,7 +131,6 @@ function SortableGroupCard({
 export function GroupLayout({
   groups,
   shortcuts,
-  bookmarksDirty,
   onToggleGroupExpand,
   onAddGroup,
   onUpdateGroup,
@@ -153,27 +151,21 @@ export function GroupLayout({
   const { t } = useI18n();
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const [shortcutDialogOpen, setShortcutDialogOpen] = useState(false);
-  // 工具栏 3 个云操作按钮的状态提示(success / error)
-  const [cloudOpStatus, setCloudOpStatus] = useState<{
-    type: 'success' | 'error' | 'pending';
-    op: 'import' | 'upload' | 'download';
-    msg?: string;       // 失败时的服务器错误(可空)
-    count?: number;     // 导入成功时的书签数(只对 import 有意义)
-  } | null>(null);
+  // 工具栏「从 Chrome 书签导入」的状态提示(success / error)
+  const [importStatus, setImportStatus] = useState<
+    | { type: 'pending' }
+    | { type: 'success'; count: number }
+    | { type: 'error'; msg?: string }
+    | null
+  >(null);
 
-  // 渲染状态文字:pending → 对应 op 的 xxxPending 文案;success → xxxSuccess(count 走 {n});
-  // fail → 优先用服务器返回的 msg,fallback 到 xxxFail 文案
-  const cloudStatusText = (s: NonNullable<typeof cloudOpStatus>): string => {
-    if (s.type === 'pending') {
-      return t(`importExport.${s.op}Pending`);
-    }
+  // 渲染导入状态文字
+  const importStatusText = (s: NonNullable<typeof importStatus>): string => {
+    if (s.type === 'pending') return t('importExport.importGoogleBookmarksPending');
     if (s.type === 'success') {
-      if (s.op === 'import') {
-        return t('importExport.importGoogleBookmarksSuccess', { n: s.count ?? 0 });
-      }
-      return t(`importExport.${s.op}Success`);
+      return t('importExport.importGoogleBookmarksSuccess', { n: s.count });
     }
-    return s.msg || t(`importExport.${s.op}Fail`);
+    return s.msg || t('importExport.importGoogleBookmarksFail');
   };
   const [editingGroup, setEditingGroup] = useState<ShortcutGroup | null>(null);
   const [editingShortcut, setEditingShortcut] = useState<Shortcut | null>(null);
@@ -363,11 +355,11 @@ export function GroupLayout({
     setIsUngroupedSelectMode(false);
   };
 
-  // ===== 工具栏 3 个云操作 handlers =====
+  // ===== 工具栏「从 Chrome 书签导入」 =====
 
-  // 从 Chrome 书签(Google Bookmarks)导入 — 通过 browser.bookmarks API 读取
-  const handleImportFromGoogleBookmarks = async () => {
-    setCloudOpStatus({ type: 'pending', op: 'import' });
+  // 通过 browser.bookmarks API 读取书签树
+  const handleImportFromChromeBookmarks = async () => {
+    setImportStatus({ type: 'pending' });
     try {
       const result = await sendMessage('shortcuts/import-from-newtab');
       if (result?.success && result.shortcuts) {
@@ -382,70 +374,14 @@ export function GroupLayout({
             await onAddShortcut(item);
           }
         }
-        setCloudOpStatus({ type: 'success', op: 'import', count: items.length });
+        setImportStatus({ type: 'success', count: items.length });
       } else {
-        setCloudOpStatus({
-          type: 'error',
-          op: 'import',
-          msg: result?.error,
-        });
+        setImportStatus({ type: 'error', msg: result?.error });
       }
     } catch (e) {
-      setCloudOpStatus({
-        type: 'error',
-        op: 'import',
-        msg: e instanceof Error ? e.message : undefined,
-      });
+      setImportStatus({ type: 'error', msg: e instanceof Error ? e.message : undefined });
     }
-    setTimeout(() => setCloudOpStatus((s) => (s?.op === 'import' ? null : s)), 3000);
-  };
-
-  // 上传到云 — 后端 jose 验签 sessionToken 后整包覆盖
-  const handleUploadToCloud = async () => {
-    setCloudOpStatus({ type: 'pending', op: 'upload' });
-    try {
-      const res = await sendMessage('sync/upload', undefined);
-      if (res?.success) {
-        setCloudOpStatus({ type: 'success', op: 'upload' });
-      } else {
-        setCloudOpStatus({
-          type: 'error',
-          op: 'upload',
-          msg: res?.error,
-        });
-      }
-    } catch (e) {
-      setCloudOpStatus({
-        type: 'error',
-        op: 'upload',
-        msg: e instanceof Error ? e.message : undefined,
-      });
-    }
-    setTimeout(() => setCloudOpStatus((s) => (s?.op === 'upload' ? null : s)), 3000);
-  };
-
-  // 从云下载 — 整包覆盖本地
-  const handleDownloadFromCloud = async () => {
-    setCloudOpStatus({ type: 'pending', op: 'download' });
-    try {
-      const res = await sendMessage('sync/download', undefined);
-      if (res?.success) {
-        setCloudOpStatus({ type: 'success', op: 'download' });
-      } else {
-        setCloudOpStatus({
-          type: 'error',
-          op: 'download',
-          msg: res?.error,
-        });
-      }
-    } catch (e) {
-      setCloudOpStatus({
-        type: 'error',
-        op: 'download',
-        msg: e instanceof Error ? e.message : undefined,
-      });
-    }
-    setTimeout(() => setCloudOpStatus((s) => (s?.op === 'download' ? null : s)), 3000);
+    setTimeout(() => setImportStatus((s) => (s?.type === 'pending' ? s : null)), 3000);
   };
 
   return (
@@ -480,41 +416,15 @@ export function GroupLayout({
                 <Settings className="w-4 h-4 mr-1" />
                 {t('layout.actions')}
                 <ChevronDown className="w-3 h-3 ml-1 opacity-60" />
-                {bookmarksDirty && (
-                  <span
-                    title={t('layout.dirtyHint')}
-                    className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-background"
-                  />
-                )}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuItem
-                onClick={handleImportFromGoogleBookmarks}
-                disabled={cloudOpStatus?.type === 'pending'}
+                onClick={handleImportFromChromeBookmarks}
+                disabled={importStatus?.type === 'pending'}
               >
                 <BookmarkPlus className="mr-2 h-4 w-4" />
                 {t('importExport.importGoogleBookmarks')}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={handleUploadToCloud}
-                disabled={cloudOpStatus?.type === 'pending'}
-              >
-                <UploadCloud className="mr-2 h-4 w-4" />
-                <span className="flex-1">{t('importExport.uploadToCloud')}</span>
-                {bookmarksDirty && (
-                  <span
-                    title={t('layout.dirtyHint')}
-                    className="ml-2 w-2 h-2 rounded-full bg-red-500 shrink-0"
-                  />
-                )}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={handleDownloadFromCloud}
-                disabled={cloudOpStatus?.type === 'pending'}
-              >
-                <DownloadCloud className="mr-2 h-4 w-4" />
-                {t('importExport.downloadFromCloud')}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleAddGroup}>
@@ -526,18 +436,18 @@ export function GroupLayout({
         </div>
       </div>
 
-      {/* 云操作状态提示(3s 自动消失) */}
-      {cloudOpStatus && (
+      {/* 导入状态提示(3s 自动消失) */}
+      {importStatus && (
         <div
           className={`text-xs mb-2 ${
-            cloudOpStatus.type === 'success'
+            importStatus.type === 'success'
               ? 'text-green-600 dark:text-green-400'
-              : cloudOpStatus.type === 'error'
+              : importStatus.type === 'error'
                 ? 'text-red-600 dark:text-red-400'
                 : 'text-muted-foreground'
           }`}
         >
-          {cloudStatusText(cloudOpStatus)}
+          {importStatusText(importStatus)}
         </div>
       )}
 
