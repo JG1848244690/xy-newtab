@@ -3,6 +3,7 @@
 适用扩展:新标签页（NewTab - Grouped Speed Dial & Wallpapers -xy）
 Effective date / 生效日期:2026-11-17
 Contact / 联系方式:privacy@kskbl.com.cn
+已发布 / Published:https://static.kskbl.com.cn/privacy/（源文件:`/www/wwwroot/static/privacy/index.html`）
 
 ---
 
