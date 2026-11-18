@@ -1,453 +1,238 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronRight, Plus, Pencil, Trash2, FolderOpen, Move, X, GripVertical } from 'lucide-react';
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  rectSortingStrategy,
-} from '@dnd-kit/sortable';
+import { ChevronDown, ChevronRight, Ellipsis, FolderOpen, GripVertical, ListChecks, Move, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { useDndContext, useDroppable } from '@dnd-kit/core';
+import { SortableContext, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Button } from '@/src/components/ui/button';
-import { Checkbox } from '@/src/components/ui/checkbox';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/src/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/src/components/ui/dropdown-menu';
+import { useI18n } from '@/src/i18n';
+import { cn } from '@/src/lib/utils';
+import type { Shortcut, ShortcutGroup } from '@/src/utils/types';
+import { groupDragId, shortcutDragId, ungroupedDragId, type BookmarkDragTarget } from './bookmarkDrag';
 import { MigrateDialog } from './MigrateDialog';
 import { ShortcutCard } from './ShortcutCard';
-import type { Shortcut, ShortcutGroup } from '@/src/utils/types';
-import { cn } from '@/src/lib/utils';
-import { useI18n } from '@/src/i18n';
 
-// 可排序的快捷方式卡片包装器
-interface SortableShortcutCardProps {
-  id: string; // 带组前缀的唯一ID，格式: ${groupId}-${shortcutId}
-  shortcut: Shortcut;
-  onEdit: (shortcut: Shortcut) => void;
-  onRemove: (id: string) => void;
-  isSelectMode: boolean;
-  isSelected: boolean;
-  onSelect: () => void;
-}
-
-function SortableShortcutCard({
-  id,
-  shortcut,
-  onEdit,
-  onRemove,
-  isSelectMode,
-  isSelected,
-  onSelect,
-}: SortableShortcutCardProps) {
-  const { t } = useI18n();
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
-  return (
-    <div ref={setNodeRef} style={style} className={cn("relative", isDragging && "z-50")}>
-      {/* 拖拽手柄 — 放左上,跟右上 ⋯ 菜单错开避免 hover 冲突。
-          仅非选择模式显示(选择模式下 checkbox 在左上)。 */}
-      {!isSelectMode && (
-        <button
-          {...attributes}
-          {...listeners}
-          className="absolute top-1 left-1 z-10 p-1 rounded bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing hover:bg-muted"
-          aria-label={t('common.dragToReorder')}
-        >
-          <GripVertical className="w-3 h-3 text-muted-foreground" />
-        </button>
-      )}
-      {/* 选择模式的 checkbox(留在左上,跟拖拽手柄互斥) */}
-      {isSelectMode && (
-        <div className="absolute top-1 left-1 z-10">
-          <Checkbox
-            checked={isSelected}
-            onCheckedChange={onSelect}
-            className="bg-background border-white/20 dark:border-black/10"
-          />
-        </div>
-      )}
-      <div className={cn(isDragging && "opacity-50")}>
-        <ShortcutCard
-          shortcut={shortcut}
-          onEdit={onEdit}
-          onRemove={onRemove}
-          isSelectMode={isSelectMode}
-          isSelected={isSelected}
-          onSelect={onSelect}
-        />
-      </div>
-    </div>
-  );
-}
+const colors: Record<string, string> = {
+  blue: '[--bookmark-folder:#5799ed]',
+  green: '[--bookmark-folder:#45a579]',
+  purple: '[--bookmark-folder:#a584e5]',
+  orange: '[--bookmark-folder:#ec9a5a]',
+  red: '[--bookmark-folder:#e87d8a]',
+  cyan: '[--bookmark-folder:#53bdc9]',
+};
 
 interface ShortcutGroupCardProps {
-  group: ShortcutGroup;
+  group: ShortcutGroup | null;
+  groups: ShortcutGroup[];
   shortcuts: Shortcut[];
-  allGroups: ShortcutGroup[]; // 所有分组，用于迁移
-  onToggleExpand: () => void;
-  onEdit: () => void;
-  onRemove: () => void;
+  pinnedIds: ReadonlySet<string>;
+  onSetPinned: (shortcutId: string, pinned: boolean) => void;
+  onToggleExpand?: () => void;
+  onEditGroup?: () => void;
+  onRemoveGroup?: () => void;
   onAddShortcut: () => void;
   onEditShortcut: (shortcut: Shortcut) => void;
-  onRemoveShortcut: (id: string) => void;
-  onBatchRemoveShortcuts?: (ids: string[]) => void;
-  onMigrateShortcuts?: (targetGroupId: string | null, shortcutIds: string[]) => void;
-  onCopyShortcuts?: (targetGroupId: string | null, shortcutIds: string[]) => void;
-  onReorderShortcutsInGroup?: (groupId: string, activeId: string, overId: string) => void;
-  dragHandleProps?: React.HTMLAttributes<HTMLButtonElement>; // 拖拽手柄 props（用于分组拖拽）
-  isDragging?: boolean; // 分组是否被拖拽
+  onDeleteShortcuts: (ids: string[]) => void;
+  onMoveShortcuts: (ids: string[], targetId: string | null) => void;
+  onCopyShortcuts: (ids: string[], targetId: string | null) => void;
 }
 
-export function ShortcutGroupCard({
-  group,
-  shortcuts,
-  allGroups,
-  onToggleExpand,
-  onEdit,
-  onRemove,
-  onAddShortcut,
-  onEditShortcut,
-  onRemoveShortcut,
-  onBatchRemoveShortcuts,
-  onMigrateShortcuts,
-  onCopyShortcuts,
-  onReorderShortcutsInGroup,
-  dragHandleProps,
-  isDragging,
-}: ShortcutGroupCardProps) {
+interface TileProps {
+  shortcut: Shortcut;
+  sectionId: string | null;
+  pinned: boolean;
+  onSetPinned: (pinned: boolean) => void;
+  onEdit: () => void;
+  onRemove: () => void;
+  onSelect?: () => void;
+  selected: boolean;
+}
+
+function BookmarkTile({ shortcut, sectionId, onSelect, ...props }: TileProps) {
   const { t } = useI18n();
-  const [isSelectMode, setIsSelectMode] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [migrateDialogOpen, setMigrateDialogOpen] = useState(false);
-
-  // 组内拖拽传感器
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 5, // 需要移动5px才开始拖拽
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
-  // 生成带组前缀的唯一ID
-  const sortableIds = shortcuts.map(s => `${group.id}-${s.id}`);
-
-  // 组内拖拽结束处理
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    console.log('[ShortcutGroupCard] handleDragEnd', { active: active.id, over: over?.id });
-
-    if (over && active.id !== over.id) {
-      // 解析真实ID
-      const prefix = `${group.id}-`;
-      const activeShortcutId = String(active.id).replace(prefix, '');
-      const overShortcutId = String(over.id).replace(prefix, '');
-
-      console.log('[ShortcutGroupCard] calling onReorderShortcutsInGroup', {
-        groupId: group.id,
-        activeShortcutId,
-        overShortcutId,
-      });
-
-      onReorderShortcutsInGroup?.(group.id, activeShortcutId, overShortcutId);
-    }
-  };
-
-  const groupColorMap: Record<string, string> = {
-    blue: 'from-blue-500/20 to-blue-600/10 border-blue-500/30',
-    green: 'from-green-500/20 to-green-600/10 border-green-500/30',
-    purple: 'from-purple-500/20 to-purple-600/10 border-purple-500/30',
-    orange: 'from-orange-500/20 to-orange-600/10 border-orange-500/30',
-    red: 'from-red-500/20 to-red-600/10 border-red-500/30',
-    cyan: 'from-cyan-500/20 to-cyan-600/10 border-cyan-500/30',
-  };
-
-  const colorClass = group.color ? groupColorMap[group.color] || '' : '';
-
-  // sticky 头部背景色映射
-  const stickyBgMap: Record<string, string> = {
-    blue: 'bg-blue-500/20',
-    green: 'bg-green-500/20',
-    purple: 'bg-purple-500/20',
-    orange: 'bg-orange-500/20',
-    red: 'bg-red-500/20',
-    cyan: 'bg-cyan-500/20',
-  };
-  const stickyBg = group.color ? stickyBgMap[group.color] || 'bg-muted/80' : 'bg-muted/80';
-
-  const toggleSelect = (id: string) => {
-    const newSelected = new Set(selectedIds);
-    if (newSelected.has(id)) {
-      newSelected.delete(id);
-    } else {
-      newSelected.add(id);
-    }
-    setSelectedIds(newSelected);
-  };
-
-  const toggleSelectMode = () => {
-    setIsSelectMode(!isSelectMode);
-    setSelectedIds(new Set());
-  };
-
-  const handleSelectAll = () => {
-    if (selectedIds.size === shortcuts.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(shortcuts.map(s => s.id)));
-    }
-  };
-
-  const handleBatchDelete = () => {
-    if (selectedIds.size === 0) return;
-    if (onBatchRemoveShortcuts) {
-      onBatchRemoveShortcuts(Array.from(selectedIds));
-    } else {
-      selectedIds.forEach(id => onRemoveShortcut(id));
-    }
-    setSelectedIds(new Set());
-    setIsSelectMode(false);
-  };
-
-  const handleMigrate = (targetGroupId: string | null) => {
-    if (selectedIds.size === 0 || !onMigrateShortcuts) return;
-    onMigrateShortcuts(targetGroupId, Array.from(selectedIds));
-    setSelectedIds(new Set());
-    setIsSelectMode(false);
-  };
-
-  const handleCopy = (targetGroupId: string | null) => {
-    if (selectedIds.size === 0 || !onCopyShortcuts) return;
-    onCopyShortcuts(targetGroupId, Array.from(selectedIds));
-    setSelectedIds(new Set());
-    setIsSelectMode(false);
-  };
+  const { active } = useDndContext();
+  const isSameSection = active?.data.current?.kind === 'shortcut' && active.data.current.groupId === sectionId;
+  const { setNodeRef, setActivatorNodeRef, attributes, listeners, transform, transition, isDragging, isOver } = useSortable({
+    id: shortcutDragId(sectionId, shortcut.id),
+    data: { kind: 'shortcut', groupId: sectionId, shortcutId: shortcut.id } satisfies BookmarkDragTarget,
+    disabled: { draggable: Boolean(onSelect), droppable: false },
+  });
 
   return (
-    <div className={cn(
-      "rounded-xl border bg-gradient-to-br transition-opacity",
-      "bg-white/10 dark:bg-black/10 backdrop-blur-xl",
-      "shadow-lg shadow-black/5 dark:shadow-black/20",
-      isDragging && "opacity-50",
-      colorClass || 'from-muted/50 to-muted/30 border-white/20 dark:border-black/10'
-    )}>
-      {/* 分组头部 - sticky 吸顶 */}
-      <div className={cn(
-        "sticky top-0 z-10 flex items-center justify-between p-3 backdrop-blur-sm rounded-t-xl",
-        "bg-white/5 dark:bg-black/5"
-      )}>
-        <div className="flex items-center gap-1">
-          {/* 拖拽手柄 */}
-          {dragHandleProps && (
-            <button
-              {...dragHandleProps}
-              className="flex items-center justify-center p-1 hover:bg-muted/50 rounded cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground transition-colors"
-              aria-label={t('common.dragToReorder')}
-            >
-              <GripVertical className="w-4 h-4" />
+    <div ref={setNodeRef} className={cn('group/tile relative min-w-0 rounded-xl', isDragging && 'opacity-40',
+      isOver && !isDragging && active?.data.current?.kind === 'shortcut' && 'ring-2 ring-primary')}
+      style={isSameSection ? { transform: CSS.Transform.toString(transform), transition } : undefined}>
+      <ShortcutCard shortcut={shortcut} onSelect={onSelect} {...props} />
+      {!onSelect && (
+        <button type="button" ref={setActivatorNodeRef} {...attributes} {...listeners}
+          aria-label={t('shortcuts.drag', { name: shortcut.name })}
+          className="bookmark-control absolute left-1 top-1 grid size-7 touch-none place-items-center rounded-lg cursor-grab transition-opacity active:cursor-grabbing [@media(hover:hover)_and_(pointer:fine)]:opacity-0 group-hover/tile:opacity-100 group-focus-within/tile:opacity-100">
+          <GripVertical className="size-4" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+export function ShortcutGroupCard(props: ShortcutGroupCardProps) {
+  return props.group ? <SortableGroup {...props} group={props.group} /> : <UngroupedSection {...props} />;
+}
+
+function SortableGroup(props: ShortcutGroupCardProps & { group: ShortcutGroup }) {
+  const { t } = useI18n();
+  const { active } = useDndContext();
+  const { group } = props;
+  const { setNodeRef, setActivatorNodeRef, attributes, listeners, transform, transition, isDragging } = useSortable({
+    id: groupDragId(group.id),
+    data: { kind: 'group', groupId: group.id } satisfies BookmarkDragTarget,
+  });
+  return (
+    <div ref={setNodeRef} className={cn(isDragging && 'relative z-20 opacity-80')}
+      style={active?.data.current?.kind === 'group' ? { transform: CSS.Transform.toString(transform), transition } : undefined}>
+      <BookmarkSection {...props} dragHandle={
+        <button type="button" ref={setActivatorNodeRef} {...attributes} {...listeners}
+          aria-label={t('groups.drag', { name: group.name })}
+          className="bookmark-action grid size-8 shrink-0 touch-none place-items-center rounded-lg cursor-grab active:cursor-grabbing">
+          <GripVertical className="size-4" />
+        </button>
+      } />
+    </div>
+  );
+}
+
+function UngroupedSection(props: ShortcutGroupCardProps) {
+  const { setNodeRef } = useDroppable({
+    id: ungroupedDragId,
+    data: { kind: 'ungrouped', groupId: null } satisfies BookmarkDragTarget,
+  });
+  return <div ref={setNodeRef}><BookmarkSection {...props} /></div>;
+}
+
+function BookmarkSection({
+  group, groups, shortcuts, pinnedIds, onSetPinned, onToggleExpand, onEditGroup,
+  onRemoveGroup, onAddShortcut, onEditShortcut, onDeleteShortcuts, onMoveShortcuts,
+  onCopyShortcuts, dragHandle,
+}: ShortcutGroupCardProps & { dragHandle?: React.ReactNode }) {
+  const { t } = useI18n();
+  const { active, over } = useDndContext();
+  const [selection, setSelection] = useState<Set<string> | null>(null);
+  const [migrating, setMigrating] = useState(false);
+  const sectionId = group?.id ?? null;
+  const label = group?.name ?? t('groups.ungrouped');
+  const ids = shortcuts.map(({ id }) => id);
+  const selected = ids.filter((id) => selection?.has(id));
+  const allSelected = ids.length > 0 && selected.length === ids.length;
+  const expanded = group?.isExpanded ?? true;
+  const activeShortcut = active?.data.current?.kind === 'shortcut';
+  const target = activeShortcut && over?.data.current?.groupId === sectionId && active?.data.current?.groupId !== sectionId;
+
+  function toggleSelection(id: string) {
+    setSelection((current) => {
+      const next = new Set(current ?? []);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function applySelection(action: (ids: string[]) => void) {
+    if (selected.length) action(selected);
+    setSelection(null);
+  }
+
+  return (
+    <section aria-label={label} className={cn('bookmark-surface rounded-2xl',
+      group && colors[group.color ?? ''], target && 'bookmark-drop-target')}>
+      <header data-open={expanded} className={cn('bookmark-header sticky top-0 z-10 flex flex-wrap items-center justify-between gap-2 px-3 py-1.5',
+        expanded ? 'rounded-t-2xl' : 'rounded-2xl')}>
+        <div className="flex min-w-0 flex-1 items-center gap-1">
+          {dragHandle}
+          {group ? (
+            <button type="button" onClick={onToggleExpand} aria-expanded={expanded}
+              className="bookmark-action flex min-h-8 min-w-0 items-center gap-2 rounded-lg px-1.5 text-left">
+              {expanded ? <ChevronDown className="size-4 shrink-0" /> : <ChevronRight className="size-4 shrink-0" />}
+              <FolderOpen className="bookmark-folder size-[18px] shrink-0" />
+              <span title={label} className="truncate text-sm font-semibold">{label}</span>
+              <span className="bookmark-muted shrink-0 text-xs tabular-nums">({ids.length})</span>
             </button>
-          )}
-          <button
-            onClick={onToggleExpand}
-            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-          >
-          {group.isExpanded ? (
-            <ChevronDown className="w-4 h-4 text-muted-foreground" />
           ) : (
-            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            <h2 className="px-2 text-sm font-semibold">{label} <span className="bookmark-muted text-xs tabular-nums">({ids.length})</span></h2>
           )}
-          <FolderOpen className="w-4 h-4 text-muted-foreground" />
-          <span className="font-medium text-sm">{group.name}</span>
-          <span className="text-xs text-muted-foreground">
-            ({shortcuts.length})
-          </span>
-          </button>
         </div>
 
-        <div className="flex items-center gap-1">
-          {isSelectMode ? (
+        <div className="flex flex-wrap items-center gap-1">
+          {selection ? (
             <>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 px-2"
-                onClick={handleSelectAll}
-              >
-                <Checkbox
-                  checked={selectedIds.size === shortcuts.length && shortcuts.length > 0}
-                  onCheckedChange={handleSelectAll}
-                  className="mr-1 h-3 w-3"
-                />
-                {selectedIds.size === shortcuts.length ? t('common.deselectAll') : t('common.selectAll')}
+              <Button variant="outline" size="sm" aria-pressed={allSelected}
+                onClick={() => setSelection(new Set(allSelected ? [] : ids))}>
+                {t(allSelected ? 'common.deselectAll' : 'common.selectAll')}
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 px-2"
-                onClick={() => setMigrateDialogOpen(true)}
-                disabled={selectedIds.size === 0}
-              >
-                <Move className="w-3 h-3 mr-1" />
-                {t('common.migrate')}
+              <Button variant="outline" size="sm" disabled={!selected.length} onClick={() => setMigrating(true)}>
+                <Move className="size-4" />{t('common.migrate')}
               </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                className="h-7 px-2"
-                onClick={handleBatchDelete}
-                disabled={selectedIds.size === 0}
-              >
-                <Trash2 className="w-3 h-3 mr-1" />
-                {t('common.delete')}
+              <Button variant="destructive" size="sm" disabled={!selected.length} onClick={() => applySelection(onDeleteShortcuts)}>
+                <Trash2 className="size-4" />{t('common.delete')}
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2"
-                onClick={toggleSelectMode}
-              >
-                <X className="w-3 h-3" />
+              <Button variant="ghost" size="icon" className="bookmark-action rounded-lg" aria-label={t('common.cancel')} onClick={() => setSelection(null)}>
+                <X className="size-4" />
               </Button>
             </>
           ) : (
             <>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 text-xs"
-                onClick={() => {
-                  if (!group.isExpanded) {
-                    onToggleExpand();
-                  }
-                  setTimeout(() => toggleSelectMode(), 100);
-                }}
-                disabled={shortcuts.length === 0}
-              >
-                {t('common.batchManage')}
+              <Button variant="ghost" size="sm" className="bookmark-action rounded-lg" aria-label={t('common.batchManage')} disabled={!ids.length} onClick={() => {
+                if (!expanded) onToggleExpand?.();
+                setSelection(new Set());
+              }}>
+                <ListChecks className="size-4 sm:hidden" />
+                <span className="hidden sm:inline">{t('common.batchManage')}</span>
               </Button>
-              {group.isExpanded && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 px-2"
-                  onClick={onAddShortcut}
-                >
-                  <Plus className="w-3 h-3" />
+              {expanded && (
+                <Button variant="ghost" size="icon" className="bookmark-action rounded-lg" aria-label={t('groups.addShortcut')} onClick={onAddShortcut}>
+                  <Plus className="size-4" />
                 </Button>
               )}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                    <span className="text-xs">⋯</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={onEdit}>
-                    <Pencil className="mr-2 h-4 w-4" />
-                    {t('groups.editGroup')}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={onRemove} className="text-destructive focus:text-destructive">
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    {t('common.delete')}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {group && (
+                <DropdownMenu modal={false}>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="bookmark-action rounded-lg" aria-label={t('groups.actionsFor', { name: label })}><Ellipsis className="size-4" /></Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bookmark-menu rounded-xl p-1.5">
+                    <DropdownMenuItem onSelect={onEditGroup}><Pencil className="mr-2 size-4" />{t('groups.editGroup')}</DropdownMenuItem>
+                    <DropdownMenuItem onSelect={onRemoveGroup} data-variant="destructive">
+                      <Trash2 className="mr-2 size-4" />{t('common.delete')}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </>
           )}
         </div>
-      </div>
+      </header>
 
-      {/* 选择模式提示 */}
-      {isSelectMode && selectedIds.size > 0 && (
-        <div className="px-3 py-1 bg-primary/10 text-xs text-primary border-b border-white/20 dark:border-black/10">
-          {t('common.selectedCount', { n: selectedIds.size })}
-        </div>
+      {selection && selected.length > 0 && (
+        <p className="bookmark-muted px-4 pt-2 text-xs">{t('common.selectedCount', { n: selected.length })}</p>
       )}
 
-      {/* 分组内容 */}
-      {group.isExpanded && (
-        <div className="p-3">
-          {shortcuts.length > 0 ? (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext items={sortableIds} strategy={rectSortingStrategy}>
-                <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
-                  {shortcuts.map((shortcut) => {
-                    const sortableId = `${group.id}-${shortcut.id}`;
-                    return (
-                      <SortableShortcutCard
-                        key={sortableId}
-                        id={sortableId}
-                        shortcut={shortcut}
-                        onEdit={onEditShortcut}
-                        onRemove={onRemoveShortcut}
-                        isSelectMode={isSelectMode}
-                        isSelected={selectedIds.has(shortcut.id)}
-                        onSelect={() => toggleSelect(shortcut.id)}
-                      />
-                    );
-                  })}
-                </div>
-              </SortableContext>
-            </DndContext>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-              <FolderOpen className="w-8 h-8 mb-2 opacity-50" />
-              <p className="text-sm">{t('groups.empty')}</p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-2"
-                onClick={onAddShortcut}
-              >
-                <Plus className="w-3 h-3 mr-1" />
-                {t('groups.addShortcut')}
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
+      {expanded && (shortcuts.length ? (
+        <SortableContext items={ids.map((id) => shortcutDragId(sectionId, id))} strategy={rectSortingStrategy}>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,6.5rem),1fr))] gap-1 p-2 sm:gap-1.5 sm:p-3">
+            {shortcuts.map((shortcut) => (
+              <BookmarkTile key={shortcut.id} shortcut={shortcut} sectionId={sectionId}
+                pinned={pinnedIds.has(shortcut.id)} onSetPinned={(pinned) => onSetPinned(shortcut.id, pinned)}
+                onEdit={() => onEditShortcut(shortcut)} onRemove={() => onDeleteShortcuts([shortcut.id])}
+                selected={selection?.has(shortcut.id) ?? false}
+                onSelect={selection ? () => toggleSelection(shortcut.id) : undefined} />
+            ))}
+          </div>
+        </SortableContext>
+      ) : (
+        <p className="bookmark-muted px-4 py-4 text-center text-sm">{t(group ? 'groups.empty' : 'shortcuts.noShortcuts')}</p>
+      ))}
 
-      {/* 迁移弹窗 */}
-      <MigrateDialog
-        open={migrateDialogOpen}
-        onOpenChange={setMigrateDialogOpen}
-        groups={allGroups}
-        currentGroupId={group.id}
-        onMigrate={handleMigrate}
-        onCopy={handleCopy}
-        selectedCount={selectedIds.size}
-      />
-    </div>
+      <MigrateDialog open={migrating} onOpenChange={setMigrating} groups={groups}
+        currentGroupId={sectionId} selectedCount={selected.length}
+        onMigrate={(targetId) => applySelection((ids) => onMoveShortcuts(ids, targetId))}
+        onCopy={(targetId) => applySelection((ids) => onCopyShortcuts(ids, targetId))} />
+    </section>
   );
 }

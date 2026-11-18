@@ -34,6 +34,9 @@ export const en: TranslationTree = {
   },
 
   shortcuts: {
+    actionsFor: 'Actions for {name}',
+    drag: 'Drag {name}',
+    clearSearch: 'Clear filter',
     title: 'Shortcuts',
     searchPlaceholder: 'Search shortcuts…',
     addTitle: 'Add shortcut',
@@ -53,6 +56,13 @@ export const en: TranslationTree = {
   },
 
   groups: {
+    actionsFor: 'Actions for group {name}',
+    drag: 'Drag group {name}',
+    dragHelp: 'Press Space to pick up, the arrow keys to choose a destination, Space to drop, and Escape to cancel.',
+    dragPicked: 'Picked up {name}',
+    dragOver: 'Current destination is {name}',
+    dragDropped: 'Dropped on {name}',
+    dragCancelled: 'Drag cancelled',
     title: 'Groups',
     newGroup: 'New group',
     editGroup: 'Edit group',
@@ -89,12 +99,21 @@ export const en: TranslationTree = {
     actions: 'Actions',
   },
 
+  dock: {
+    title: 'Dock',
+    pin: 'Pin to Dock',
+    unpin: 'Unpin from Dock',
+    moveLeft: 'Move left',
+    moveRight: 'Move right',
+    empty: 'Choose “Pin to Dock” from a bookmark’s menu',
+  },
+
   settings: {
     title: 'Settings',
     layout: {
       label: 'Layout',
       group: 'Group',
-      dock: 'Bottom dock',
+      dock: 'Groups + Dock',
     },
     language: 'Language',
     languageOptions: {

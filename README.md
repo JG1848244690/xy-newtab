@@ -5,8 +5,8 @@
 ## 功能特点
 
 - **快捷方式管理** - 自由添加、编辑、删除网页快捷方式
-- **分组管理** - 分组名称、图标、颜色，支持拖拽排序与批量移动/复制
-- **两种布局** - 分组卡片布局（默认）/ 底部 dock 布局
+- **分组管理** - 拖动书签卡片左上角的手柄可在组内排序、移到其他分组或移到未分组，也支持批量移动和复制
+- **Dock** - 在设置里选择「分组 + Dock」，再从书签的「⋯」菜单固定。固定的书签仍留在原分组，Dock 里的「⋯」菜单可调整顺序或取消固定
 - **背景自定义** - 纯色、精选壁纸、本地图片、本地视频（存 IndexedDB）
 - **主题适配** - 支持浅色/深色主题自动切换
 - **导入导出** - JSON 备份还原 / 一键导入 Chrome 书签
@@ -51,25 +51,25 @@ pnpm test:e2e
 src/
 ├── components/       # React 组件
 │   ├── ui/                     # 基础 UI 组件
-│   ├── BackgroundDialog.tsx    # 背景设置弹窗
-│   ├── DockLayout.tsx          # dock 布局
-│   ├── GroupLayout.tsx         # 分组布局
+│   ├── DockLayout.tsx          # 底部固定书签栏
+│   ├── GroupLayout.tsx         # 书签面板与跨分组拖拽
 │   ├── ImportExportDialog.tsx  # 导入导出 / Chrome 书签导入
 │   ├── MigrateDialog.tsx       # 迁移 / 复制到分组
+│   ├── NewTabWallpaper.tsx     # 图片、纯色和视频壁纸
 │   ├── SettingsSheet.tsx       # 设置面板
 │   ├── ShortcutCard.tsx        # 快捷方式卡片
 │   ├── ShortcutDialog.tsx      # 快捷方式编辑弹窗
 │   └── ShortcutGroupCard.tsx   # 分组卡片
 ├── hooks/            # 自定义 Hooks（store 薄壳）
 ├── store/            # 订阅式 store（shortcuts / groups / settings）
-├── services/         # 纯业务逻辑（无副作用，便于测试）
+├── services/         # 书签与分组操作、Chrome 书签导入
 ├── schemas/          # 运行时数据校验
 ├── i18n/             # 自研极简 i18n（en / zh_CN）
 ├── lib/              # store / storage 基建
 └── utils/            # 常量、类型、favicon、导入导出
 
 entrypoints/
-├── background.ts     # 后台脚本（消息路由 / 书签导入 / favicon 代理）
+├── background.ts     # 后台脚本（书签导入 / favicon 缓存）
 ├── popup/            # 弹出面板（快捷搜索本地快捷方式、快捷添加、设置）
 └── newtab/           # 新标签页
 ```

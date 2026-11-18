@@ -16,7 +16,5 @@ export function useSettingsStore() {
     setBackground: (background: BackgroundSetting) => settingsActions.patch({ background }),
     setLanguage: (language: Locale) => settingsActions.patch({ language }),
     setLayout: (layout: LayoutType) => settingsActions.patch({ layout }),
-    patchSettings: settingsActions.patch,
-    importSettings: settingsActions.replace,
   };
 }

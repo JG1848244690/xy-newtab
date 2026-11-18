@@ -152,7 +152,7 @@ function AddTab({
 function App() {
   const storesReady = useStoresReady();
   const { t } = useI18n();
-  const { shortcuts, addShortcut } = useShortcutsStore();
+  const { shortcuts, actions: shortcutActions } = useShortcutsStore();
   const { groups, addShortcutToGroup } = useGroupsStore();
 
   const [activeTab, setActiveTab] = useState<'search' | 'add' | 'settings'>('search');
@@ -183,9 +183,9 @@ function App() {
 
     setSaving(true);
     try {
-      const created = await addShortcut({ name: shortcutName.trim(), url: currentUrl });
+      const created = shortcutActions.add({ name: shortcutName.trim(), url: currentUrl });
       if (selectedGroupId) {
-        await addShortcutToGroup(selectedGroupId, created.id);
+        addShortcutToGroup(selectedGroupId, created.id);
       }
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);

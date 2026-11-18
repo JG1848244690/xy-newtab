@@ -62,10 +62,6 @@ export function addShortcuts(
   return { list: [...list, ...added], added, skipped };
 }
 
-export function removeShortcut(list: readonly Shortcut[], id: string): Shortcut[] {
-  return list.filter((s) => s.id !== id);
-}
-
 export function removeShortcuts(list: readonly Shortcut[], ids: readonly string[]): Shortcut[] {
   const idSet = new Set(ids);
   return list.filter((s) => !idSet.has(s.id));

@@ -1,11 +1,9 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Settings } from 'lucide-react';
-import {
-  loadBackgroundVideo,
-  type StoredVideo,
-} from '@/src/utils/videoStorage';
+import { NewTabWallpaper } from '@/src/components/NewTabWallpaper';
 import { DockLayout } from '@/src/components/DockLayout';
 import { GroupLayout } from '@/src/components/GroupLayout';
+import { ImportExportDialog } from '@/src/components/ImportExportDialog';
 import { SettingsSheet } from '@/src/components/SettingsSheet';
 import { Button } from '@/src/components/ui/button';
 import { useShortcutsStore } from '@/src/hooks/useShortcutsStore';
@@ -13,11 +11,7 @@ import { useGroupsStore } from '@/src/hooks/useGroupsStore';
 import { useSettingsStore } from '@/src/hooks/useSettingsStore';
 import { useTheme } from '@/src/hooks/useTheme';
 import { useStoresReady } from '@/src/lib/useStoresReady';
-import { useStoreState } from '@/src/lib/store';
-import { settingsStore } from '@/src/store/settings';
 import { NEWTAB_NAVIGATED_EVENT } from '@/src/utils/navigationReset';
-import type { BackgroundSetting } from '@/src/utils/types';
-import { DOCK_GROUP_ID } from '@/src/utils/constants';
 import { useI18n } from '@/src/i18n';
 import { cn } from '@/src/lib/utils';
 
@@ -25,115 +19,20 @@ function App() {
   const storesReady = useStoresReady();
   const { t } = useI18n();
 
-  const { shortcuts, addShortcut, addShortcuts, updateShortcut, removeShortcut, removeShortcuts, importShortcuts } =
-    useShortcutsStore();
-  const {
-    groups,
-    addGroup,
-    updateGroup,
-    removeGroup: rawRemoveGroup,
-    toggleGroupExpand,
-    addShortcutToGroup,
-    moveShortcutsToGroup,
-    getUngroupedShortcutIds,
-    importGroups,
-    reorderGroups,
-    reorderShortcutsInGroup,
-    copyShortcutsToGroup,
-  } = useGroupsStore();
-  const { setBackground, layout } = useSettingsStore();
-  const background = useStoreState(settingsStore, (s) => s.background);
+  const { shortcuts, actions: shortcutActions } = useShortcutsStore();
+  const { records, pinnedIds, actions: groupActions } = useGroupsStore();
+  const dockShortcuts = useMemo(() => {
+    const byId = new Map(shortcuts.map((shortcut) => [shortcut.id, shortcut]));
+    return pinnedIds.flatMap((id) => {
+      const shortcut = byId.get(id);
+      return shortcut ? [shortcut] : [];
+    });
+  }, [shortcuts, pinnedIds]);
+  const { settings: { background }, setBackground, layout } = useSettingsStore();
 
   const { mounted } = useTheme();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [resetNonce, setResetNonce] = useState(0);
-
-  // 视频背景:ref 控制 video 元素(visibilitychange 时直接操作 DOM,不走 React 重渲染)
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  // 保存当前 blob URL 字符串,visibilitychange 切回时如果 src 被卸载可重新挂
-  const videoBlobUrlRef = useRef<string | null>(null);
-  const [videoUrl, setVideoUrl] = useState<string | null>(null);
-
-  // 加载视频:从 IndexedDB 读 → blob URL → 设到 video 元素的 src + play
-  useEffect(() => {
-    if (background?.type !== 'video') {
-      const v = videoRef.current;
-      if (v) {
-        v.removeAttribute('src');
-        v.load();
-      }
-      if (videoBlobUrlRef.current) {
-        URL.revokeObjectURL(videoBlobUrlRef.current);
-        videoBlobUrlRef.current = null;
-      }
-      setVideoUrl(null);
-      return;
-    }
-    let blobUrl: string | null = null;
-    let cancelled = false;
-    loadBackgroundVideo()
-      .then((stored: StoredVideo | null) => {
-        if (cancelled || !stored) return;
-        blobUrl = URL.createObjectURL(stored.blob);
-        videoBlobUrlRef.current = blobUrl;
-        const v = videoRef.current;
-        if (v) {
-          v.src = blobUrl;
-          v.muted = background.muted ?? true;
-          v.play().catch(() => {});
-        }
-        setVideoUrl(blobUrl); // 触发首次显示
-      })
-      .catch((e) => console.error('[bg] load video failed:', e));
-    return () => {
-      cancelled = true;
-      if (blobUrl) URL.revokeObjectURL(blobUrl);
-      videoBlobUrlRef.current = null;
-    };
-  }, [background?.type, background?.videoFileName, background?.muted]);
-
-  // 可见性优化:tab 切到后台 → 暂停 + 10s 后卸载 src 释放 GPU/解码内存
-  //   切回来 → 如果 src 还在就直接 play,被卸载了从保存的 blob URL 恢复
-  useEffect(() => {
-    let unloadTimer: number | null = null;
-    const onVis = () => {
-      const v = videoRef.current;
-      if (!v) return;
-      if (document.hidden) {
-        v.pause();
-        // 10s 后才真卸载,避免快速切 tab 来回 load
-        unloadTimer = window.setTimeout(() => {
-          v.removeAttribute('src');
-          v.load(); // 释放解码缓冲 + GPU 显存
-        }, 10_000);
-      } else {
-        if (unloadTimer !== null) {
-          clearTimeout(unloadTimer);
-          unloadTimer = null;
-        }
-        // 恢复:src 被卸载过(>10s 隐藏)的话,从保存的 blob URL 重新挂
-        if (!v.src && videoBlobUrlRef.current) {
-          v.src = videoBlobUrlRef.current;
-          v.load();
-        }
-        v.play().catch(() => {});
-      }
-    };
-    document.addEventListener('visibilitychange', onVis);
-    return () => {
-      document.removeEventListener('visibilitychange', onVis);
-      if (unloadTimer !== null) clearTimeout(unloadTimer);
-    };
-  }, []);
-
-  // 拦截:系统 dock 分组不能被删(dock 布局依赖它)
-  const removeGroup = useCallback(
-    (id: string) => {
-      if (id === DOCK_GROUP_ID) return;
-      return rawRemoveGroup(id);
-    },
-    [rawRemoveGroup]
-  );
 
   // 跳转重置
   useEffect(() => {
@@ -141,24 +40,6 @@ function App() {
     window.addEventListener(NEWTAB_NAVIGATED_EVENT, handleNavigated);
     return () => window.removeEventListener(NEWTAB_NAVIGATED_EVENT, handleNavigated);
   }, []);
-
-  /**
-   * dock 一次性迁移:首次启动 / 老用户升级
-   * 条件:dock 组存在 + 空 + 有 ungrouped 快捷方式
-   * 触发:把 ungrouped 的快捷方式全部搬进 dock 组
-   * 设计:用户切到 dock 模式前不打扰;一次性,跑过就再也跑
-   * 注意:这条 effect 在 storesReady 之前可能拿到空 groups,所以加 storesReady 保护
-   */
-  useEffect(() => {
-    if (!storesReady) return;
-    const dockGroup = groups.find((g) => g.id === DOCK_GROUP_ID);
-    if (!dockGroup || dockGroup.shortcutIds.length > 0) return;
-    const ungroupedIds = getUngroupedShortcutIds(shortcuts.map((s) => s.id));
-    if (ungroupedIds.length === 0) return;
-    moveShortcutsToGroup(null, DOCK_GROUP_ID, ungroupedIds);
-    // 依赖只读 storesReady 触发一次即可
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [storesReady]);
 
   // 等主题 + stores 初始化
   if (!mounted || !storesReady) {
@@ -169,118 +50,54 @@ function App() {
     );
   }
 
-  const handleSaveBackground = (setting: BackgroundSetting) => {
-    setBackground(setting);
-  };
-
-  const handleImportData = async (newShortcuts: typeof shortcuts, newGroups: typeof groups) => {
-    await Promise.all([importShortcuts(newShortcuts), importGroups(newGroups)]);
-  };
-
-  const getBackgroundStyle = (): React.CSSProperties => {
-    if (!background || background.type === 'none') return {};
-    if (background.type === 'color') return { backgroundColor: background.color };
-    if (background.type === 'image' && background.imageUrl) {
-      return {
-        backgroundImage: 'url(' + background.imageUrl + ')',
-        backgroundSize: background.size || 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-      };
-    }
-    // video 类型由 <video> 元素自己渲染,这里返回空 style
-    return {};
-  };
-
-  const getOverlayStyle = (): React.CSSProperties => {
-    // video 类型用 video 元素自身的 opacity,不再加遮罩
-    if (!background || background.type === 'video') return {};
-    if (background.type !== 'image' || background.opacity === undefined) return {};
-    return { backgroundColor: 'rgba(0, 0, 0, ' + (1 - background.opacity) + ')' };
+  const handleImportData = (newShortcuts: typeof shortcuts, newGroups: typeof records) => {
+    shortcutActions.replace(newShortcuts);
+    groupActions.replace(newGroups);
   };
 
   return (
-    <div className="min-h-screen relative" style={getBackgroundStyle()}>
-      {/* 视频背景层(fixed 全屏铺底,opacity 由 setting.opacity 控制)
-          src 不绑 React state,改用 ref 控制 — 配合 visibilitychange 优化,
-          切 tab 时 pause / 卸载 src 不触发 React 重渲染 */}
-      {background?.type === 'video' && (
-        <video
-          ref={videoRef}
-          autoPlay
-          loop
-          muted={background.muted ?? true}
-          playsInline
-          className="fixed inset-0 w-full h-full object-cover z-0"
-          style={{ opacity: background.opacity ?? 1 }}
-        />
-      )}
-      {background?.type === 'image' && background.imageUrl && (
-        <div className="fixed inset-0 z-0" style={getOverlayStyle()} />
-      )}
-
+    <div className="relative min-h-screen">
+      <NewTabWallpaper setting={background} />
       <div className="min-h-screen bg-transparent transition-colors duration-300 relative z-10">
-        <div className="fixed top-4 right-4 z-10 bg-white/20 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-black/10 rounded-2xl p-2 shadow-lg shadow-black/5 dark:shadow-black/20">
+        <div className="bookmark-surface fixed right-4 top-4 z-30 flex items-center gap-0.5 rounded-xl p-1">
+          <ImportExportDialog
+            shortcuts={shortcuts}
+            groups={records}
+            onImport={handleImportData}
+            addShortcuts={shortcutActions.addMany}
+          />
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setSettingsOpen(true)}
-            className="text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-xl transition-all duration-300"
+            aria-label={t('settings.title')}
+            className="bookmark-action rounded-lg"
           >
             <Settings className="h-4 w-4" />
           </Button>
         </div>
 
-        <div className="min-h-screen flex flex-col items-center px-8 pt-8">
-          <div className={cn(
-            "w-full flex-1",
-            layout === 'dock' ? "max-w-none" : "max-w-4xl mt-16"
-          )}>
-            {layout === 'dock' ? (
-              <DockLayout
-                key={'dock-' + resetNonce}
-                shortcuts={shortcuts}
-                groups={groups}
-              />
-            ) : (
-              <GroupLayout
-                key={'groups-' + resetNonce}
-                groups={groups}
-                shortcuts={shortcuts}
-                onToggleGroupExpand={toggleGroupExpand}
-                onAddGroup={addGroup}
-              onUpdateGroup={updateGroup}
-              onRemoveGroup={removeGroup}
-              onAddShortcutToGroup={addShortcutToGroup}
-              onAddShortcut={addShortcut}
-              onAddShortcuts={addShortcuts}
-              onUpdateShortcut={updateShortcut}
-              onRemoveShortcut={removeShortcut}
-              onBatchRemoveShortcuts={removeShortcuts}
-              onMoveShortcutsToGroup={moveShortcutsToGroup}
-              onCopyShortcutsToGroup={copyShortcutsToGroup}
-              onImportData={handleImportData}
-              onReorderGroups={reorderGroups}
-              onReorderShortcutsInGroup={reorderShortcutsInGroup}
-              getUngroupedShortcutIds={getUngroupedShortcutIds}
-            />
-            )}
-          </div>
-        </div>
+        <main className={cn('mx-auto max-w-4xl px-3 pt-24 sm:px-6',
+          layout === 'dock' ? 'pb-40' : 'pb-16')}>
+          <GroupLayout key={resetNonce} />
+        </main>
 
-        <div className="fixed bottom-4 left-0 right-0 text-center text-muted-foreground text-sm">
-          {/* dock 模式隐藏 footer(给 dock 让位) */}
-          {layout !== 'dock' && (
-            <>{t('common.appName')} · {t('common.shortcutCount', { n: shortcuts.length })}</>
-          )}
-        </div>
+        {layout === 'dock' && (
+          <DockLayout shortcuts={dockShortcuts}
+            onUnpin={(id) => groupActions.setPinned(id, false)} onReorder={groupActions.reorderDock} />
+        )}
+        <footer className="fixed inset-x-0 bottom-2 z-10 flex justify-center pointer-events-none">
+          <span className="bookmark-surface bookmark-footer rounded-full px-3 py-1 text-xs tabular-nums">
+            {t('common.appName')} · {t('common.shortcutCount', { n: shortcuts.length })}
+          </span>
+        </footer>
       </div>
 
       <SettingsSheet
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
         setting={background || { type: 'none' }}
-        onSave={handleSaveBackground}
+        onSave={setBackground}
       />
     </div>
   );

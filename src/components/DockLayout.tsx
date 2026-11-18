@@ -1,199 +1,70 @@
-/**
- * 底部 macOS 风格 dock 栏布局(手写,0 依赖)
- *
- * 视觉:半透明毛玻璃 + 鼠标靠近的图标放大,周围图标轻微扩展
- * 内容:从系统 dock 分组(DOCK_GROUP_ID)拉书签 — 用户切回 group 布局可编辑该分组
- * 交互:点击打开网址(排序走 group 布局对 dock 分组的 reorderShortcutsInGroup)
- */
-
-import React, { useEffect, useRef, useState } from 'react';
-import type { Shortcut, ShortcutGroup } from '@/src/utils/types';
-import { notifyNewtabNavigated } from '@/src/utils/navigationReset';
-import { cn } from '@/src/lib/utils';
+import { useState } from 'react';
+import { ArrowLeft, ArrowRight, Ellipsis, PinOff } from 'lucide-react';
+import { Button } from '@/src/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/src/components/ui/dropdown-menu';
 import { useI18n } from '@/src/i18n';
-import { DOCK_GROUP_ID } from '@/src/utils/constants';
-import {
-  getFaviconWithFallback,
-  generateInitialFallback,
-} from '@/src/utils/faviconCache';
+import type { Shortcut } from '@/src/utils/types';
+import { notifyNewtabNavigated } from '@/src/utils/navigationReset';
+import { ShortcutIcon } from './ShortcutIcon';
 
 interface DockLayoutProps {
   shortcuts: Shortcut[];
-  groups: ShortcutGroup[];
+  onUnpin: (id: string) => void;
+  onReorder: (id: string, overId: string) => void;
 }
 
-// magnification 参数
-const ITEM_BASE_PX = 52; // 基础宽高
-const ITEM_HOVER_PX = 70; // 放大目标
-const NEIGHBOR_HOVER_PX = 60; // 邻居轻微放大
-
-// 单个 dock item
-function DockItem({
-  shortcut,
-  scale,
-}: {
-  shortcut: Shortcut;
-  /** 0~1,1 表示完全放大;0 表示基础尺寸;0.4~0.7 表示邻居 */
-  scale: number;
-}) {
-  const [faviconSrc, setFaviconSrc] = useState<string | null>(null);
-  useEffect(() => {
-    let mounted = true;
-    getFaviconWithFallback(shortcut.url, shortcut.name)
-      .then(({ src }) => {
-        if (mounted) setFaviconSrc(src);
-      })
-      .catch(() => {
-        if (mounted) setFaviconSrc(generateInitialFallback(shortcut.name));
-      });
-    return () => {
-      mounted = false;
-    };
-  }, [shortcut.url, shortcut.name]);
-
-  // 用 CSS 变量传递 scale,过渡动画走 transform,避免 reflow
-  const size = ITEM_BASE_PX + (ITEM_HOVER_PX - ITEM_BASE_PX) * scale;
-  return (
-    <button
-      onClick={() => {
-        window.open(shortcut.url, '_blank');
-        notifyNewtabNavigated();
-      }}
-      title={shortcut.name}
-      style={
-        {
-          width: `${size}px`,
-          height: `${size}px`,
-          // 邻居轻微向上抬一点,模拟 macOS 凸起
-          transform: `translateY(${-6 * scale}px)`,
-          transitionDuration: '180ms',
-        } as React.CSSProperties
-      }
-      className={cn(
-        'shrink-0 rounded-2xl cursor-pointer overflow-hidden',
-        'bg-white/15 dark:bg-black/30 backdrop-blur-2xl',
-        'border border-white/25 dark:border-white/10',
-        'flex items-center justify-center',
-        'shadow-md shadow-black/15',
-        'transition-all ease-out',
-      )}
-    >
-      {faviconSrc ? (
-        <img
-          src={faviconSrc}
-          alt={shortcut.name}
-          className="rounded pointer-events-none"
-          style={{ width: '60%', height: '60%' }}
-          draggable={false}
-        />
-      ) : (
-        <span className="text-sm font-bold text-primary">
-          {shortcut.name.charAt(0).toUpperCase()}
-        </span>
-      )}
-    </button>
-  );
-}
-
-/**
- * 手写 dock:鼠标在容器内移动 → 计算每个 item 与鼠标的距离 → 映射到 scale
- * 距离越近 scale 越大(最大 1),距离 ≤ 60px 给 0.5 邻居缩放,其余 0
- */
-function Dock({ children }: { children: React.ReactNode[] }) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
-  const itemCount = Array.isArray(children) ? children.length : 1;
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const container = containerRef.current;
-    if (!container) return;
-    const rect = container.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    // 找最近的 item 中心点
-    const itemSlot = rect.width / itemCount;
-    const idx = Math.max(0, Math.min(itemCount - 1, Math.floor(x / itemSlot)));
-    setHoverIndex(idx);
-  };
-
-  const handleMouseLeave = () => setHoverIndex(null);
+export function DockLayout({ shortcuts, onUnpin, onReorder }: DockLayoutProps) {
+  const { t } = useI18n();
+  const [hovered, setHovered] = useState<string | null>(null);
+  const hoveredIndex = hovered === null ? -1 : shortcuts.findIndex(({ id }) => id === hovered);
 
   return (
-    <div
-      ref={containerRef}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      className={cn(
-        'flex items-end gap-2 px-3 py-2',
-        'bg-white/15 dark:bg-black/30 backdrop-blur-2xl',
-        'border border-white/25 dark:border-white/10',
-        'rounded-3xl shadow-2xl shadow-black/25',
-      )}
-    >
-      {Array.isArray(children)
-        ? children.map((child, i) => {
-            // 计算 scale:被 hover 的 index → 1,邻居 ±1 → 0.4~0.5,其他 → 0
-            let scale = 0;
-            if (hoverIndex !== null) {
-              const dist = Math.abs(i - hoverIndex);
-              if (dist === 0) scale = 1;
-              else if (dist === 1) scale = 0.45;
-              else if (dist === 2) scale = 0.15;
-            }
-            // 克隆 child,注入 scale prop
-            const childEl = child as React.ReactElement<{ scale: number }>;
+    <nav aria-label={t('dock.title')} className="pointer-events-none fixed inset-x-3 bottom-10 z-20 flex justify-center">
+      {shortcuts.length ? (
+        <div onPointerLeave={() => setHovered(null)}
+          className="bookmark-surface pointer-events-auto flex max-w-full gap-2 overflow-x-auto rounded-2xl px-3 pb-2 pt-3">
+          {shortcuts.map((shortcut, index) => {
+            const previous = shortcuts[index - 1];
+            const next = shortcuts[index + 1];
+            const distance = hoveredIndex < 0 ? Infinity : Math.abs(hoveredIndex - index);
+            const scale = distance === 0 ? 1.16 : distance === 1 ? 1.06 : 1;
             return (
-              <div
-                key={(childEl as { key?: string }).key ?? i}
-                className="flex items-end"
-                style={{
-                  // 邻居位置留 padding,让放大后的图标能向上凸出而不被裁
-                  paddingTop: `${ITEM_HOVER_PX - ITEM_BASE_PX}px`,
-                  marginTop: `-${ITEM_HOVER_PX - ITEM_BASE_PX}px`,
-                }}
-              >
-                {React.cloneElement(childEl, { scale })}
+              <div key={shortcut.id} onPointerEnter={() => setHovered(shortcut.id)}
+                className="group/dock-item relative shrink-0">
+                <a href={shortcut.url} target="_blank" rel="noopener noreferrer" onClick={notifyNewtabNavigated}
+                  aria-label={shortcut.name} title={shortcut.name}
+                  style={{ transform: 'scale(' + scale + ')' }}
+                  className="bookmark-icon bookmark-tile transition-transform motion-reduce:transition-none">
+                  <ShortcutIcon url={shortcut.url} name={shortcut.name} className="size-8 text-xl" />
+                </a>
+                <DropdownMenu modal={false}>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" aria-label={t('shortcuts.actionsFor', { name: shortcut.name })}
+                      className="bookmark-control absolute -right-1 -top-1 size-6 rounded-md transition-opacity [@media(hover:hover)_and_(pointer:fine)]:opacity-0 group-hover/dock-item:opacity-100 group-focus-within/dock-item:opacity-100 data-[state=open]:opacity-100">
+                      <Ellipsis className="size-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="center" className="bookmark-menu rounded-xl p-1.5">
+                    <DropdownMenuItem disabled={!previous} onSelect={() => previous && onReorder(shortcut.id, previous.id)}>
+                      <ArrowLeft className="mr-2 size-4" />{t('dock.moveLeft')}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem disabled={!next} onSelect={() => next && onReorder(shortcut.id, next.id)}>
+                      <ArrowRight className="mr-2 size-4" />{t('dock.moveRight')}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => onUnpin(shortcut.id)}>
+                      <PinOff className="mr-2 size-4" />{t('dock.unpin')}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             );
-          })
-        : null}
-    </div>
-  );
-}
-
-export function DockLayout({
-  shortcuts,
-  groups,
-}: DockLayoutProps) {
-  const { t } = useI18n();
-
-  // 从系统 dock 分组拉书签(默认有,但先防御下,避免初始化竞态)
-  const dockGroup = groups.find((g) => g.id === DOCK_GROUP_ID);
-  const dockShortcuts = (dockGroup?.shortcutIds ?? [])
-    .map((id) => shortcuts.find((s) => s.id === id))
-    .filter((s): s is Shortcut => s !== undefined);
-
-  return (
-    <>
-      {/* dock 主体:固定底部 + 水平居中 */}
-      <div className="fixed bottom-6 left-0 right-0 z-10 flex justify-center pointer-events-none">
-        <div className="pointer-events-auto">
-          {dockShortcuts.length > 0 ? (
-            <Dock>
-              {dockShortcuts.map((s) => (
-                <DockItem key={s.id} shortcut={s} scale={0} />
-              ))}
-            </Dock>
-          ) : (
-            <div
-              className="text-sm text-muted-foreground bg-white/10 dark:bg-black/20
-                         backdrop-blur-2xl border border-dashed border-white/25
-                         rounded-2xl px-6 py-4"
-            >
-              {t('shortcuts.noShortcuts')}
-            </div>
-          )}
+          })}
         </div>
-      </div>
-    </>
+      ) : (
+        <p className="bookmark-surface pointer-events-auto rounded-xl px-4 py-3 text-sm">
+          {t('dock.empty')}
+        </p>
+      )}
+    </nav>
   );
 }

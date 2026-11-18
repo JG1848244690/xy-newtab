@@ -5,24 +5,6 @@
 
 import type { Settings, ShortcutGroup, BackgroundSize } from './types';
 
-// 扩展名称
-export const EXTENSION_NAME = '序言';
-
-// Storage Keys
-export const STORAGE_KEY = {
-  SETTINGS: 'settings',
-  SHORTCUTS: 'shortcuts',
-  GROUPS: 'groups',
-} as const;
-
-// local 命名空间下的完整 storage key（带 `local:` 前缀）
-// 集中管理避免散落硬编码
-export const LOCAL_STORAGE_KEY = {
-  SETTINGS: `local:${STORAGE_KEY.SETTINGS}`,
-  SHORTCUTS: `local:${STORAGE_KEY.SHORTCUTS}`,
-  GROUPS: `local:${STORAGE_KEY.GROUPS}`,
-} as const;
-
 // 默认快捷方式
 export const DEFAULT_SHORTCUTS = [
   { id: '1', name: 'Google', url: 'https://www.google.com', createdAt: Date.now(), updatedAt: Date.now() },
@@ -34,7 +16,7 @@ export const DEFAULT_SHORTCUTS = [
 // 默认分组
 export const DEFAULT_GROUPS: ShortcutGroup[] = [];
 
-// 系统 dock 分组 id:dock 布局专属,group 布局隐藏不渲染
+// 旧版存储和备份中用于保存 Dock 固定顺序的记录 ID。
 export const DOCK_GROUP_ID = 'sys-dock';
 
 // 分组颜色选项
@@ -85,24 +67,4 @@ export const SIZE_OPTIONS: { value: BackgroundSize; label: string }[] = [
 ];
 
 // UI 配置
-export const UI_CONFIG = {
-  POPUP_WIDTH: 320,
-  SHORTCUT_ICON_SIZE: 48,
-  GRID_COLS: {
-    sm: 5,
-    md: 6,
-    lg: 8,
-  },
-  DEFAULT_ICONS_PER_ROW: 8,
-  MIN_ICONS_PER_ROW: 4,
-  MAX_ICONS_PER_ROW: 12,
-  /** 本地快捷方式筛选的防抖延迟(ms) */
-  SEARCH_DEBOUNCE_DELAY: 300,
-} as const;
-
-// 样式常量
-export const STYLE = {
-  // Tab 激活态
-  TAB_ACTIVE: 'text-blue-400 border-b-2 border-blue-400',
-  TAB_INACTIVE: 'text-gray-400 hover:text-white',
-} as const;
+export const BOOKMARK_FILTER_DELAY_MS = 300;

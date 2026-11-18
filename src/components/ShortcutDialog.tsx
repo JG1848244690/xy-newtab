@@ -11,7 +11,8 @@ import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { Label } from '@/src/components/ui/label';
 import type { Shortcut } from '@/src/utils/types';
-import { getGoogleFaviconUrl, extractDomain } from '@/src/utils/faviconCache';
+import { useDebounce } from '@/src/hooks/useDebounce';
+import { ShortcutIcon } from './ShortcutIcon';
 import { useI18n } from '@/src/i18n';
 
 interface ShortcutDialogProps {
@@ -55,7 +56,6 @@ export function ShortcutDialog({ open, onOpenChange, shortcut, onSave, quickMode
   const { t } = useI18n();
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
-  const [icon, setIcon] = useState('');
   const [urlInputKey, setUrlInputKey] = useState(0); // 用于重置输入框聚焦
   const isEditing = !!shortcut;
 
@@ -65,11 +65,9 @@ export function ShortcutDialog({ open, onOpenChange, shortcut, onSave, quickMode
       if (shortcut) {
         setName(shortcut.name);
         setUrl(shortcut.url);
-        setIcon(shortcut.icon || '');
       } else {
         setName('');
         setUrl('');
-        setIcon('');
       }
       // 快捷模式下，每次打开都重置并聚焦URL输入框
       if (quickMode && !shortcut) {
@@ -92,14 +90,12 @@ export function ShortcutDialog({ open, onOpenChange, shortcut, onSave, quickMode
     }
   }, [url, quickMode, shortcut]);
 
-  // 预览图标（直接使用 Google Favicon URL）
-  const previewIcon = url ? getGoogleFaviconUrl(extractDomain(url), 64) : '';
+  const previewUrl = useDebounce(url, 350);
 
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!name.trim() || !url.trim()) return;
 
-    // 不传 icon，让 ShortcutCard 通过三级 fallback 自己获取和缓存
     onSave({
       name: name.trim(),
       url: url.trim(),
@@ -125,6 +121,10 @@ export function ShortcutDialog({ open, onOpenChange, shortcut, onSave, quickMode
         {quickMode ? (
           // 快捷模式：极简布局，无图标预览
           <div className="flex items-center gap-3 py-2">
+            <DialogHeader className="sr-only">
+              <DialogTitle>{t('shortcuts.addTitle')}</DialogTitle>
+              <DialogDescription>{t('shortcuts.addDescription')}</DialogDescription>
+            </DialogHeader>
             {/* 加号占位 */}
             <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-muted flex items-center justify-center">
               <span className="text-2xl font-bold text-primary/50">+</span>
@@ -188,17 +188,10 @@ export function ShortcutDialog({ open, onOpenChange, shortcut, onSave, quickMode
                   />
                 </div>
                 {/* 图标预览 */}
-                {previewIcon && (
+                {previewUrl && (
                   <div className="flex items-center gap-3">
                     <span className="text-sm text-muted-foreground">{t('shortcuts.iconPreview')}</span>
-                    <img
-                      src={previewIcon}
-                      alt="Favicon"
-                      className="w-8 h-8 rounded"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
+                    <ShortcutIcon url={previewUrl} name={name} className="size-8" />
                   </div>
                 )}
               </div>

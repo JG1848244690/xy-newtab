@@ -9,7 +9,7 @@
 
 import { v } from './validator';
 import type { Shortcut, ShortcutGroup, Settings, BackgroundSetting } from '@/src/utils/types';
-import { SUPPORTED_LOCALES } from '@/src/i18n';
+import { SUPPORTED_LOCALES } from '@/src/i18n/types';
 
 const LAYOUTS = ['grid', 'group', 'dock'] as const;
 const BG_TYPES = ['none', 'color', 'image', 'video'] as const;

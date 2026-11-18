@@ -3,7 +3,9 @@
  */
 
 import type { Shortcut, ShortcutGroup, ExportData } from './types';
-import { STORAGE_KEY, DEFAULT_SHORTCUTS, DEFAULT_GROUPS } from './constants';
+import { DOCK_GROUP_ID } from './constants';
+import { getDockIds, setDockIds } from '@/src/services/groups';
+import { groupSchema, shortcutSchema } from '@/src/schemas';
 
 const EXPORT_VERSION = '1.0';
 
@@ -34,46 +36,23 @@ export function exportData(shortcuts: Shortcut[], groups: ShortcutGroup[]): void
 /**
  * 解析导入的 JSON 文件
  */
-export function parseImportFile(file: File): Promise<ExportData> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
+export async function parseImportFile(file: File): Promise<ExportData> {
+  const data = JSON.parse(await file.text()) as Partial<ExportData> | null;
+  if (!Array.isArray(data?.shortcuts)) throw new Error('无效的数据格式：缺少 shortcuts');
+  if (!Array.isArray(data.groups)) throw new Error('无效的数据格式：缺少 groups');
 
-    reader.onload = (e) => {
-      try {
-        const content = e.target?.result as string;
-        const data = JSON.parse(content) as ExportData;
-
-        // 验证数据格式
-        if (!data.shortcuts || !Array.isArray(data.shortcuts)) {
-          throw new Error('无效的数据格式：缺少 shortcuts');
-        }
-        if (!data.groups || !Array.isArray(data.groups)) {
-          throw new Error('无效的数据格式：缺少 groups');
-        }
-
-        // 验证快捷方式格式
-        for (const s of data.shortcuts) {
-          if (!s.id || !s.name || !s.url) {
-            throw new Error('无效的快捷方式数据');
-          }
-        }
-
-        // 验证分组格式
-        for (const g of data.groups) {
-          if (!g.id || !g.name || !Array.isArray(g.shortcutIds)) {
-            throw new Error('无效的分组数据');
-          }
-        }
-
-        resolve(data);
-      } catch (err) {
-        reject(err);
-      }
-    };
-
-    reader.onerror = () => reject(new Error('文件读取失败'));
-    reader.readAsText(file);
+  const exportedAt = typeof data.exportedAt === 'number' ? data.exportedAt : Date.now();
+  const shortcuts = data.shortcuts.map((shortcut) => {
+    if (!shortcut?.id || !shortcut.name || !shortcut.url) throw new Error('无效的快捷方式数据');
+    const createdAt = shortcut.createdAt ?? exportedAt;
+    return shortcutSchema.parse({ ...shortcut, createdAt, updatedAt: shortcut.updatedAt ?? createdAt });
   });
+  const groups = data.groups.map((group) => {
+    if (!group?.id || !group.name) throw new Error('无效的分组数据');
+    const createdAt = group.createdAt ?? exportedAt;
+    return groupSchema.parse({ ...group, createdAt, updatedAt: group.updatedAt ?? createdAt, isExpanded: group.isExpanded ?? true });
+  });
+  return { version: data.version ?? EXPORT_VERSION, exportedAt, shortcuts, groups };
 }
 
 /**
@@ -94,20 +73,24 @@ export function mergeImportData(
 
   // 为导入的快捷方式生成新ID（如果与现有ID冲突）
   const existingShortcutIds = new Set(existingShortcuts.map(s => s.id));
-  const existingUrls = new Set(existingShortcuts.map(s => s.url));
+  const idsByUrl = new Map(existingShortcuts.map((shortcut) => [shortcut.url, shortcut.id]));
 
   const newShortcuts: Shortcut[] = [];
   for (const s of importData.shortcuts) {
     // 跳过重复URL
-    if (existingUrls.has(s.url)) continue;
+    const existingId = idsByUrl.get(s.url);
+    if (existingId !== undefined) {
+      idMap.set(s.id, existingId);
+      continue;
+    }
 
     let newId = s.id;
     if (existingShortcutIds.has(s.id)) {
-      newId = `${s.id}_${now}`;
+      do { newId = `${s.id}_${crypto.randomUUID()}`; } while (existingShortcutIds.has(newId));
     }
     idMap.set(s.id, newId);
     existingShortcutIds.add(newId);
-    existingUrls.add(s.url);
+    idsByUrl.set(s.url, newId);
 
     newShortcuts.push({
       ...s,
@@ -120,16 +103,17 @@ export function mergeImportData(
   const existingGroupIds = new Set(existingGroups.map(g => g.id));
   const newGroups: ShortcutGroup[] = [];
   for (const g of importData.groups) {
+    if (g.id === DOCK_GROUP_ID) continue;
     let newId = g.id;
     if (existingGroupIds.has(g.id)) {
-      newId = `${g.id}_${now}`;
+      do { newId = `${g.id}_${crypto.randomUUID()}`; } while (existingGroupIds.has(newId));
     }
     existingGroupIds.add(newId);
 
     // 更新分组中的快捷方式ID引用
-    const newShortcutIds = g.shortcutIds
+    const newShortcutIds = [...new Set(g.shortcutIds
       .map(oldId => idMap.get(oldId))
-      .filter((newId): newId is string => newId !== undefined);
+      .filter((newId): newId is string => newId !== undefined))];
 
     newGroups.push({
       ...g,
@@ -139,9 +123,16 @@ export function mergeImportData(
     });
   }
 
+  let groups = [...existingGroups, ...newGroups];
+  const importedDock = getDockIds(importData.groups).flatMap((oldId) => {
+    const id = idMap.get(oldId);
+    return id === undefined ? [] : [id];
+  });
+  if (importedDock.length) groups = setDockIds(groups, [...new Set([...getDockIds(existingGroups), ...importedDock])]);
+
   return {
     shortcuts: [...existingShortcuts, ...newShortcuts],
-    groups: [...existingGroups, ...newGroups],
+    groups,
   };
 }
 

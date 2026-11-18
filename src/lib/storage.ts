@@ -1,52 +1,52 @@
-/**
- * 统一 storage 适配层
- *
- * 设计动机：
- * - 散落各处的 storage.getItem("local:xxx") 字符串魔法值
- * - constants.ts 同时定义 STORAGE_KEY / LOCAL_STORAGE_KEY 容易混用
- * - 每个 hook 重复实现「读 -> 写 -> 订阅」逻辑
- */
-
 import { storage } from '@wxt-dev/storage';
 
-const NAMESPACE = 'local:';
+type LocalKey = `local:${string}`;
 
-type Unsubscribe = () => void;
+const queued = new Map<LocalKey, unknown>();
+const writing = new Set<LocalKey>();
+let flushing = false;
 
-/** WXT 的 storage 类型要求 key 带命名空间字面量前缀；这里 cast 一下 */
-type NamespacedKey = `local:${string}` | `session:${string}` | `sync:${string}` | `managed:${string}`;
-const ns = (key: string): NamespacedKey => (NAMESPACE + key) as NamespacedKey;
+function stageWrite(key: LocalKey, value: unknown): void {
+  queued.set(key, value);
+  if (flushing) return;
+  flushing = true;
+  queueMicrotask(() => void flush());
+}
+
+async function flush(): Promise<void> {
+  while (queued.size) {
+    const batch = Array.from(queued, ([key, value]) => ({ key, value }));
+    queued.clear();
+    for (const { key } of batch) writing.add(key);
+    try {
+      // 同一轮里的书签与分组变更一起保存，例如导入和删除。
+      await storage.setItems(batch);
+    } catch (error) {
+      console.error('[storage] write failed:', error);
+    } finally {
+      for (const { key } of batch) writing.delete(key);
+    }
+  }
+  flushing = false;
+}
 
 export function createStorageCell<T>(key: string) {
-  const fullKey = ns(key);
-
+  const fullKey: LocalKey = `local:${key}`;
   return {
-    key: fullKey,
-    rawKey: key,
-
     async read(): Promise<T | undefined> {
-      // storage.getItem 返回 T | null，统一成 T | undefined
-      const v = await storage.getItem<T>(fullKey);
-      return v ?? undefined;
+      return (await storage.getItem<T>(fullKey)) ?? undefined;
     },
-
-    async readOr(defaultValue: T): Promise<T> {
-      const v = await storage.getItem<T>(fullKey);
-      return (v ?? undefined) ?? defaultValue;
+    write(value: T): Promise<void> {
+      return storage.setItem(fullKey, value);
     },
-
-    async write(value: T): Promise<void> {
-      await storage.setItem(fullKey, value);
+    stage(value: T): void {
+      stageWrite(fullKey, value);
     },
-
-    watch(listener: (next: T | undefined) => void): Unsubscribe {
-      return storage.watch<T>(fullKey, (next) => listener(next ?? undefined));
-    },
-
-    async remove(): Promise<void> {
-      await storage.removeItem(fullKey);
+    watch(listener: (next: T) => void): void {
+      storage.watch<T>(fullKey, (next) => {
+        // 当前界面已应用待保存的值，旧写入的通知不应覆盖更新的本地状态。
+        if (next != null && !queued.has(fullKey) && !writing.has(fullKey)) listener(next);
+      });
     },
   };
 }
-
-export type StorageCell<T> = ReturnType<typeof createStorageCell<T>>;

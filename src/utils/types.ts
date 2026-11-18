@@ -26,7 +26,7 @@ export interface ShortcutGroup {
 }
 
 // 布局类型
-// - grid: 简单平铺网格(暂未用,留作 ShortcutGrid 模式)
+// - grid: 旧版持久化值，界面按分组模式显示
 // - group: 当前的分组卡片列表(默认)
 // - dock: 底部 macOS 风格 dock 栏
 export type LayoutType = 'grid' | 'group' | 'dock';

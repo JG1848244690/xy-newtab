@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Download, Upload, AlertCircle, Check, Chrome, Loader2 } from 'lucide-react';
+import { Download, Upload, AlertCircle, Check, Chrome, Loader2, ArrowDownUp } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -7,31 +7,29 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogTrigger,
 } from '@/src/components/ui/dialog';
 import { Button } from '@/src/components/ui/button';
 import type { Shortcut, ShortcutGroup, ExportData } from '@/src/utils/types';
 import { exportData, parseImportFile, mergeImportData, replaceImportData, type ImportMode } from '@/src/utils/importExport';
-import { sendMessage } from '@/messaging';
+import { importChromeBookmarks } from '@/src/services/chromeBookmarks';
 import { useI18n } from '@/src/i18n';
 
 interface ImportExportDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
   shortcuts: Shortcut[];
   groups: ShortcutGroup[];
   onImport: (shortcuts: Shortcut[], groups: ShortcutGroup[]) => void;
-  addShortcuts: (items: { name: string; url: string }[]) => Promise<number>;
+  addShortcuts: (items: { name: string; url: string }[]) => number;
 }
 
 export function ImportExportDialog({
-  open,
-  onOpenChange,
   shortcuts,
   groups,
   onImport,
   addShortcuts,
 }: ImportExportDialogProps) {
   const { t } = useI18n();
+  const [open, setOpen] = useState(false);
   const [importMode, setImportMode] = useState<ImportMode>('merge');
   const [previewData, setPreviewData] = useState<ExportData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +39,7 @@ export function ImportExportDialog({
 
   const handleExport = () => {
     exportData(shortcuts, groups);
-    onOpenChange(false);
+    handleClose();
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -74,9 +72,7 @@ export function ImportExportDialog({
     }
 
     onImport(result.shortcuts, result.groups);
-    setPreviewData(null);
-    setError(null);
-    onOpenChange(false);
+    handleClose();
   };
 
   const handleChromeImport = async () => {
@@ -85,43 +81,41 @@ export function ImportExportDialog({
     setSuccessMsg(null);
 
     try {
-      const result = await sendMessage('shortcuts/import-from-newtab');
-
-      if (!result.success) {
-        setError(result.error || t('importExport.chromeImport'));
-        return;
-      }
-
-      if (result.shortcuts.length === 0) {
+      const { count, added, skipped } = await importChromeBookmarks(addShortcuts);
+      if (count === 0) {
         setError(t('importExport.chromeImportNone'));
         return;
       }
 
-      const importedCount = await addShortcuts(result.shortcuts);
-
-      if (importedCount === 0) {
+      if (added === 0) {
         setSuccessMsg(t('importExport.chromeImportSkipAll'));
       } else {
-        const skipped = result.shortcuts.length - importedCount;
-        setSuccessMsg(t('importExport.chromeImportSuccess', { n: importedCount }) + (skipped > 0 ? t('importExport.chromeImportSkip', { n: skipped }) : ''));
+        setSuccessMsg(t('importExport.chromeImportSuccess', { n: added }) + (skipped > 0 ? t('importExport.chromeImportSkip', { n: skipped }) : ''));
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('importExport.chromeImportFail'));
+      setError((err instanceof Error && err.message) || t('importExport.chromeImportFail'));
     } finally {
       setIsChromeImporting(false);
     }
   };
 
   const handleClose = () => {
+    setImportMode('merge');
     setPreviewData(null);
     setError(null);
     setSuccessMsg(null);
-    onOpenChange(false);
+    setOpen(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[425px]">
+    <Dialog open={open} onOpenChange={(nextOpen) => nextOpen ? setOpen(true) : handleClose()}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="sm" className="bookmark-action gap-1.5 rounded-lg">
+          <ArrowDownUp className="h-3.5 w-3.5" />
+          {t('layout.importExport')}
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{t('importExport.title')}</DialogTitle>
           <DialogDescription>

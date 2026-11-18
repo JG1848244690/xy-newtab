@@ -12,7 +12,7 @@ import type { TranslationTree } from '../types';
 export const zh_CN: TranslationTree = {
   common: {
     loading: '加载中…',
-    appName: '序章',
+    appName: '序言',
     shortcutCount: '{n} 个快捷方式',
     cancel: '取消',
     save: '保存',
@@ -34,6 +34,9 @@ export const zh_CN: TranslationTree = {
   },
 
   shortcuts: {
+    actionsFor: '「{name}」的操作',
+    drag: '拖动「{name}」',
+    clearSearch: '清空筛选',
     title: '快捷方式',
     searchPlaceholder: '搜索快捷方式…',
     addTitle: '添加快捷方式',
@@ -53,6 +56,13 @@ export const zh_CN: TranslationTree = {
   },
 
   groups: {
+    actionsFor: '「{name}」分组的操作',
+    drag: '拖动「{name}」分组',
+    dragHelp: '按空格拿起，方向键选择落点，再按空格放下，按 Esc 取消。',
+    dragPicked: '已拿起「{name}」',
+    dragOver: '当前落点为「{name}」',
+    dragDropped: '已放到「{name}」',
+    dragCancelled: '已取消拖动',
     title: '分组',
     newGroup: '新建分组',
     editGroup: '编辑分组',
@@ -89,12 +99,21 @@ export const zh_CN: TranslationTree = {
     actions: '操作',
   },
 
+  dock: {
+    title: 'Dock',
+    pin: '固定到 Dock',
+    unpin: '从 Dock 取消固定',
+    moveLeft: '向左移动',
+    moveRight: '向右移动',
+    empty: '在书签的「⋯」菜单中选择「固定到 Dock」',
+  },
+
   settings: {
     title: '设置',
     layout: {
       label: '布局',
       group: '分组',
-      dock: '底部 dock',
+      dock: '分组 + Dock',
     },
     language: '语言',
     languageOptions: {
@@ -218,7 +237,7 @@ export const zh_CN: TranslationTree = {
       saving: '保存中…',
       addButton: '添加到快捷方式',
     },
-    settings: {
+  settings: {
       title: '快捷键设置',
       description: '设置全局快捷键快速打开搜索面板',
       openButton: '前往设置快捷键',

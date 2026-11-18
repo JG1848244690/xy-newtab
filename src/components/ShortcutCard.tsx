@@ -1,164 +1,71 @@
-import { useState, useEffect } from 'react';
-import { Pencil, Trash2, Loader2 } from 'lucide-react';
+import { Ellipsis, Pencil, Pin, PinOff, Trash2 } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/src/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/src/components/ui/dropdown-menu';
+import { ShortcutIcon } from './ShortcutIcon';
 import type { Shortcut } from '@/src/utils/types';
-import { getFaviconWithFallback, generateInitialFallback } from '@/src/utils/faviconCache';
-import { cn } from '@/src/lib/utils';
 import { notifyNewtabNavigated } from '@/src/utils/navigationReset';
 import { useI18n } from '@/src/i18n';
 
 interface ShortcutCardProps {
   shortcut: Shortcut;
-  onEdit: (shortcut: Shortcut) => void;
-  onRemove: (id: string) => void;
-  isSelectMode?: boolean;
-  isSelected?: boolean;
+  onEdit: () => void;
+  onRemove: () => void;
+  pinned: boolean;
+  onSetPinned: (pinned: boolean) => void;
+  selected?: boolean;
   onSelect?: () => void;
 }
 
-export function ShortcutCard({
-  shortcut,
-  onEdit,
-  onRemove,
-  isSelectMode = false,
-  isSelected = false,
-  onSelect
-}: ShortcutCardProps) {
+export function ShortcutCard({ shortcut, onEdit, onRemove, pinned, onSetPinned, selected, onSelect }: ShortcutCardProps) {
   const { t } = useI18n();
-  const [faviconSrc, setFaviconSrc] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadFavicon = async () => {
-      setIsLoading(true);
-
-      try {
-        // 三级 fallback: 网络 → IndexedDB → 首字母
-        const { src } = await getFaviconWithFallback(shortcut.url, shortcut.name);
-
-        if (isMounted) {
-          setFaviconSrc(src);
-          setIsLoading(false);
-        }
-      } catch {
-        if (isMounted) {
-          setFaviconSrc(generateInitialFallback(shortcut.name));
-          setIsLoading(false);
-        }
-      }
-    };
-
-    loadFavicon();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [shortcut.url, shortcut.name]);
-
-  const handleClick = () => {
-    if (isSelectMode) {
-      onSelect?.();
-    } else {
-      window.open(shortcut.url, '_blank');
-      notifyNewtabNavigated();
-    }
-  };
-
-  return (
-    <div
-      onClick={handleClick}
-      title={`${shortcut.name}\n${shortcut.url}`}
-      className={cn(
-        "flex flex-col items-center p-2 rounded-xl cursor-pointer transition-all duration-300 group relative",
-        "bg-white/10 dark:bg-black/10 backdrop-blur-xl",
-        "border border-white/20 dark:border-black/10",
-        "hover:bg-white/20 dark:hover:bg-black/20",
-        "hover:border-primary/30 dark:hover:border-primary/30",
-        "hover:shadow-lg hover:shadow-primary/5",
-        "hover:-translate-y-0.5 hover:scale-[1.01]",
-        "active:scale-[0.98]",
-        isSelectMode && isSelected && "ring-2 ring-primary border-primary bg-primary/10"
-      )}
-    >
-      {/* 选择模式下隐藏操作菜单 */}
-      {!isSelectMode && (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute -top-1 -right-1 w-6 h-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity bg-background border shadow-sm"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <span className="text-xs">⋯</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={(e) => {
-              e.stopPropagation();
-              onEdit(shortcut);
-            }}>
-              <Pencil className="mr-2 h-4 w-4" />
-              {t('common.edit')}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                onRemove(shortcut.id);
-              }}
-              className="text-destructive focus:text-destructive"
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              {t('common.delete')}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )}
-
-      {/* 图标 */}
-      <div className={cn(
-        "w-9 h-9 rounded-lg flex items-center justify-center shadow-sm transition-all",
-        "bg-linear-to-br from-blue-500/10 to-purple-500/10 dark:from-blue-500/20 dark:to-purple-500/20",
-        isSelectMode && isSelected && "ring-1 ring-primary"
-      )}>
-        {isLoading ? (
-          <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-        ) : faviconSrc ? (
-          <img
-            src={faviconSrc}
-            alt={shortcut.name}
-            className="w-5 h-5 rounded"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.style.display = 'none';
-              const parent = target.parentElement;
-              if (parent) {
-                parent.innerHTML = `<span class="text-sm font-bold text-primary">${shortcut.name.charAt(0).toUpperCase()}</span>`;
-              }
-            }}
-          />
-        ) : (
-          <span className="text-sm font-bold text-primary">
-            {shortcut.name.charAt(0).toUpperCase()}
-          </span>
-        )}
-      </div>
-
-      {/* 名称 */}
-      <span className={cn(
-        "mt-1 text-[10px] truncate max-w-full text-center leading-tight",
-        isSelectMode && isSelected ? "text-primary font-medium" : "text-card-foreground"
-      )}>
+  const content = (
+    <>
+      <span className="bookmark-icon">
+        <ShortcutIcon url={shortcut.url} name={shortcut.name} className="size-8 text-xl" />
+      </span>
+      <span className="bookmark-title line-clamp-2 text-center text-sm font-medium leading-[1.25]">
         {shortcut.name}
       </span>
+    </>
+  );
+  const cardClass = 'bookmark-tile grid h-full min-h-24 w-full min-w-0 auto-rows-max justify-items-center gap-2 rounded-xl px-2 py-2.5';
+
+  return (
+    <div className="relative h-full" title={shortcut.name + '\n' + shortcut.url}>
+      {onSelect ? (
+        <button type="button" aria-pressed={selected} onClick={onSelect} className={cardClass}>
+          {content}
+        </button>
+      ) : (
+        <>
+          <a href={shortcut.url} target="_blank" rel="noopener noreferrer"
+            onClick={notifyNewtabNavigated} draggable={false} className={cardClass}>
+            {content}
+          </a>
+          <DropdownMenu modal={false}>
+            <DropdownMenuTrigger asChild>
+              <Button type="button" variant="ghost" size="icon" aria-label={t('shortcuts.actionsFor', { name: shortcut.name })}
+                className="bookmark-control absolute right-1 top-1 size-7 rounded-lg transition-opacity [@media(hover:hover)_and_(pointer:fine)]:opacity-0 group-hover/tile:opacity-100 group-focus-within/tile:opacity-100 data-[state=open]:opacity-100">
+                <Ellipsis className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bookmark-menu min-w-36 rounded-xl p-1.5">
+              <DropdownMenuItem onSelect={() => onSetPinned(!pinned)}>
+                {pinned ? <PinOff className="mr-2 size-4" /> : <Pin className="mr-2 size-4" />}
+                {t(pinned ? 'dock.unpin' : 'dock.pin')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={onEdit}>
+                <Pencil className="mr-2 size-4" />
+                {t('common.edit')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={onRemove} data-variant="destructive">
+                <Trash2 className="mr-2 size-4" />
+                {t('common.delete')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </>
+      )}
     </div>
   );
 }

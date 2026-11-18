@@ -22,7 +22,7 @@ pnpm test:e2e       # Playwright，会启动真实 Chrome 窗口（headless:fals
 - `entrypoints/`：`background.ts`（消息路由 + 书签导入 + favicon 代理）、`popup/`（快捷添加 + 本地快捷方式筛选）、`newtab/`（主界面）
 - `src/store/`：自研订阅式 store（`src/lib/store.ts`），持久化走 `createStorageCell`（`src/lib/storage.ts`）
 - `src/hooks/`：store 的薄壳 hook，组件只从这里取数据
-- `src/services/`：纯函数业务逻辑（无副作用）
+- `src/services/`：书签与分组的纯函数业务逻辑，以及 Chrome 书签导入入口
 - `src/components/`：UI，文案一律走 `useI18n()` 的 `t()`，不要硬编码中文
 - `src/schemas/`：storage / 导入数据的运行时校验
 - `messaging/index.ts`：跨 context 消息协议（`@webext-core/messaging`），新增消息必须同时登记类型
@@ -35,6 +35,8 @@ pnpm test:e2e       # Playwright，会启动真实 Chrome 窗口（headless:fals
 
 - 数据存 `chrome.storage.local`（快捷方式/分组/设置）与 IndexedDB（背景图/视频/favicon 缓存）
 - 备份与迁移：JSON 导出导入、一键从 Chrome 书签导入
+- Dock 固定顺序通过旧版 `sys-dock` 记录保存，兼容已安装扩展和 JSON 备份。常规分组归属不读取此记录。
+- Favicon 由后台统一读取 IndexedDB 和请求图标源，书签卡片和 Dock 共用渲染组件。
 - **不要**重新引入任何服务端、登录、上传下载逻辑；这会让商店审核和隐私政策复杂化
 
 ## 权限约定（商店审核敏感）
