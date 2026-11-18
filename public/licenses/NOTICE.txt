@@ -1,0 +1,6 @@
+Scene wallpaper rendering includes WebWallGL 3.0.2, licensed under MIT.
+Source: https://github.com/oneincase/webwallgl
+
+WebWallGL includes Mediabunny 1.66.0, licensed under the Mozilla Public License 2.0.
+Corresponding source is in the src/ directory of the published package:
+https://registry.npmjs.org/mediabunny/-/mediabunny-1.66.0.tgz

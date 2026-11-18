@@ -6,8 +6,8 @@
 
 - **快捷方式管理** - 自由添加、编辑、删除网页快捷方式
 - **分组管理** - 拖动书签卡片左上角的手柄可在组内排序、移到其他分组或移到未分组，也支持批量移动和复制
-- **Dock** - 在设置里选择「分组 + Dock」，再从书签的「⋯」菜单固定。固定的书签仍留在原分组，Dock 里的「⋯」菜单可调整顺序或取消固定
-- **背景自定义** - 纯色、精选壁纸、本地图片、本地视频（存 IndexedDB）
+- **Dock** - 新标签页默认以底部 Dock 显示固定书签。在设置中切换至「分组」可从书签的「⋯」菜单固定，Dock 中可调整顺序或取消固定。
+- **背景自定义** - 纯色、精选壁纸、本地图片、本地视频，以及 Wallpaper Engine 的 Scene 壁纸
 - **主题适配** - 支持浅色/深色主题自动切换
 - **导入导出** - JSON 备份还原 / 一键导入 Chrome 书签
 - **多语言** - English / 简体中文
@@ -25,6 +25,10 @@
 - **UI 组件**: Radix UI + 自定义组件
 - **拖拽**: @dnd-kit
 - **测试**: Playwright
+
+## Wallpaper Engine 场景壁纸
+
+在新标签页的「设置 → Scene 壁纸」中，选择单张 Wallpaper Engine 壁纸的文件夹，或选择 `scene.pkg`（可同时选 `project.json`）。文件保存在本地，后台标签页会暂停渲染。SceneScript 和系统音频联动在当前版本中关闭。
 
 ## 开发
 
@@ -55,7 +59,7 @@ src/
 │   ├── GroupLayout.tsx         # 书签面板与跨分组拖拽
 │   ├── ImportExportDialog.tsx  # 导入导出 / Chrome 书签导入
 │   ├── MigrateDialog.tsx       # 迁移 / 复制到分组
-│   ├── NewTabWallpaper.tsx     # 图片、纯色和视频壁纸
+│   ├── NewTabWallpaper.tsx     # 图片、纯色、视频和 Scene 壁纸入口
 │   ├── SettingsSheet.tsx       # 设置面板
 │   ├── ShortcutCard.tsx        # 快捷方式卡片
 │   ├── ShortcutDialog.tsx      # 快捷方式编辑弹窗

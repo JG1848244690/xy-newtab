@@ -65,6 +65,10 @@ export const groupsActions = {
     if (ids.includes(shortcutId) === pinned) return;
     commit(setDockIds(groups, pinned ? [...ids, shortcutId] : ids.filter((id) => id !== shortcutId)));
   },
+  initializeDock(ids: string[]) {
+    const groups = current();
+    if (ids.length && !groups.some(({ id }) => id === DOCK_GROUP_ID)) commit(setDockIds(groups, ids));
+  },
   reorderDock(shortcutId: string, overId: string) {
     commit(reorderShortcutsInGroup(current(), DOCK_GROUP_ID, shortcutId, overId));
   },

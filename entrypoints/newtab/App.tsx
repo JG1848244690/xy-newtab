@@ -28,7 +28,8 @@ function App() {
       return shortcut ? [shortcut] : [];
     });
   }, [shortcuts, pinnedIds]);
-  const { settings: { background }, setBackground, layout } = useSettingsStore();
+  const { settings: { background }, setBackground, setLayout, layout } = useSettingsStore();
+  const dockMode = layout === 'dock';
 
   const { mounted } = useTheme();
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -40,6 +41,10 @@ function App() {
     window.addEventListener(NEWTAB_NAVIGATED_EVENT, handleNavigated);
     return () => window.removeEventListener(NEWTAB_NAVIGATED_EVENT, handleNavigated);
   }, []);
+
+  useEffect(() => {
+    if (storesReady && dockMode) groupActions.initializeDock(shortcuts.slice(0, 6).map(({ id }) => id));
+  }, [dockMode, groupActions, shortcuts, storesReady]);
 
   // 等主题 + stores 初始化
   if (!mounted || !storesReady) {
@@ -59,12 +64,14 @@ function App() {
     <div className="relative min-h-screen">
       <NewTabWallpaper setting={background} />
       <div className="min-h-screen bg-transparent transition-colors duration-300 relative z-10">
-        <div className="bookmark-surface fixed right-4 top-4 z-30 flex items-center gap-0.5 rounded-xl p-1">
+        <div className={cn('bookmark-surface fixed right-4 top-4 z-30 flex items-center gap-0.5 rounded-xl p-1',
+          dockMode && 'dock-tools')}>
           <ImportExportDialog
             shortcuts={shortcuts}
             groups={records}
             onImport={handleImportData}
             addShortcuts={shortcutActions.addMany}
+            compact={dockMode}
           />
           <Button
             variant="ghost"
@@ -77,20 +84,22 @@ function App() {
           </Button>
         </div>
 
-        <main className={cn('mx-auto max-w-4xl px-3 pt-24 sm:px-6',
-          layout === 'dock' ? 'pb-40' : 'pb-16')}>
-          <GroupLayout key={resetNonce} />
-        </main>
-
-        {layout === 'dock' && (
+        {dockMode ? (
           <DockLayout shortcuts={dockShortcuts}
-            onUnpin={(id) => groupActions.setPinned(id, false)} onReorder={groupActions.reorderDock} />
+            onUnpin={(id) => groupActions.setPinned(id, false)} onReorder={groupActions.reorderDock}
+            onManage={() => setLayout('group')} />
+        ) : (
+          <>
+            <main className="mx-auto max-w-4xl px-3 pb-16 pt-24 sm:px-6">
+              <GroupLayout key={resetNonce} />
+            </main>
+            <footer className="fixed inset-x-0 bottom-2 z-10 flex justify-center pointer-events-none">
+              <span className="bookmark-surface bookmark-footer rounded-full px-3 py-1 text-xs tabular-nums">
+                {t('common.appName')} · {t('common.shortcutCount', { n: shortcuts.length })}
+              </span>
+            </footer>
+          </>
         )}
-        <footer className="fixed inset-x-0 bottom-2 z-10 flex justify-center pointer-events-none">
-          <span className="bookmark-surface bookmark-footer rounded-full px-3 py-1 text-xs tabular-nums">
-            {t('common.appName')} · {t('common.shortcutCount', { n: shortcuts.length })}
-          </span>
-        </footer>
       </div>
 
       <SettingsSheet

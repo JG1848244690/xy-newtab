@@ -23,9 +23,11 @@ import {
   DEFAULT_BACKGROUND_COLOR,
 } from '@/src/utils/constants';
 import type { BackgroundSetting, BackgroundType, BackgroundSize } from '@/src/utils/types';
-import { Image, Palette, Maximize2, RotateCcw, Upload, Globe, Video, Volume2, VolumeX, Trash2, LayoutGrid, Dock } from 'lucide-react';
+import { Image, Palette, Maximize2, RotateCcw, Upload, Globe, Video, Volume2, VolumeX, Trash2, LayoutGrid, Dock, Layers } from 'lucide-react';
 import { useI18n, SUPPORTED_LOCALES, type Locale } from '@/src/i18n';
 import { useSettingsStore } from '@/src/hooks/useSettingsStore';
+import { removeBackgroundScene } from '@/src/utils/sceneStorage';
+import { SceneBackgroundSettings } from './SceneBackgroundSettings';
 import {
   saveBackgroundVideo,
   clearBackgroundVideo,
@@ -94,17 +96,19 @@ export function SettingsSheet({
 
   // 即时保存
   const saveSetting = (newSetting: BackgroundSetting) => {
-    onSave(newSetting);
+    onSave({ sceneId: setting.sceneId, sceneName: setting.sceneName, ...newSetting });
   };
 
   // 类型变化时即时保存
   const handleTypeChange = (newType: BackgroundType) => {
     setType(newType);
+    if (newType === 'scene' && !setting.sceneId) return;
     const newSetting: BackgroundSetting = {
       type: newType,
       ...(newType === 'color' && { color }),
       ...(newType === 'image' && { imageUrl, size, opacity }),
       ...(newType === 'video' && { videoFileName, muted, size, opacity }),
+      ...(newType === 'scene' && { size, opacity }),
     };
     saveSetting(newSetting);
   };
@@ -189,7 +193,8 @@ export function SettingsSheet({
     setMuted(true);
     setVideoFileName('');
     void clearBackgroundVideo().catch(() => {});
-    saveSetting({ type: 'none' });
+    if (setting.sceneId) void removeBackgroundScene(setting.sceneId).catch(console.error);
+    onSave({ type: 'none' });
     onOpenChange(false);
   };
 
@@ -344,6 +349,10 @@ export function SettingsSheet({
               >
                 <Video className="w-3.5 h-3.5" />
                 {t('settings.bg.type.video')}
+              </Button>
+              <Button variant={type === 'scene' ? 'default' : 'outline'} size="sm"
+                onClick={() => handleTypeChange('scene')} className="col-span-2 gap-1.5">
+                <Layers className="size-4" />{t('settings.bg.type.scene')}
               </Button>
             </div>
           </div>
@@ -641,6 +650,8 @@ export function SettingsSheet({
               </div>
             </div>
           )}
+
+          {type === 'scene' && <SceneBackgroundSettings setting={setting} onSave={onSave} />}
 
           {/* 重置按钮 */}
           <div className="pt-4 border-t">

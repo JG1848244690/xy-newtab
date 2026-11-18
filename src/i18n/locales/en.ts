@@ -105,7 +105,7 @@ export const en: TranslationTree = {
     unpin: 'Unpin from Dock',
     moveLeft: 'Move left',
     moveRight: 'Move right',
-    empty: 'Choose “Pin to Dock” from a bookmark’s menu',
+    empty: 'Pin bookmarks from the groups layout',
   },
 
   settings: {
@@ -113,7 +113,7 @@ export const en: TranslationTree = {
     layout: {
       label: 'Layout',
       group: 'Group',
-      dock: 'Groups + Dock',
+      dock: 'Bottom Dock',
     },
     language: 'Language',
     languageOptions: {
@@ -128,6 +128,7 @@ export const en: TranslationTree = {
         color: 'Color',
         image: 'Image',
         video: 'Video',
+        scene: 'Scene wallpaper',
       },
       presetColors: 'Pick a preset color',
       customColor: 'Custom color',
@@ -153,6 +154,16 @@ export const en: TranslationTree = {
       videoHint: 'Supports MP4 / WebM. Local files: no size limit',
       videoInvalidType: 'Please choose an MP4 or WebM video',
       videoSaveFailed: 'Failed to save the video',
+      scene: {
+        chooseFolder: 'Choose a wallpaper folder',
+        choosePackage: 'Choose scene.pkg',
+        hint: 'Right-click a wallpaper in Wallpaper Engine and select “Open in Explorer”. You can also select scene.pkg and project.json together.',
+        effects: 'Effects that use SceneScript or system audio may look different from Wallpaper Engine.',
+        invalid: 'Choose a valid Scene package or a wallpaper folder containing one .pkg file.',
+        saveFailed: 'Could not save the Scene wallpaper. Please try again.',
+        renderFailed: 'Could not play this Scene wallpaper. Choose another one in Settings.',
+        remove: 'Remove Scene wallpaper',
+      },
       presetColor: {
         midNightBlue: 'Midnight Blue',
         starPurple: 'Starlight Purple',

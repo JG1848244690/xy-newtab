@@ -27,19 +27,19 @@ export interface ShortcutGroup {
 
 // 布局类型
 // - grid: 旧版持久化值，界面按分组模式显示
-// - group: 当前的分组卡片列表(默认)
-// - dock: 底部 macOS 风格 dock 栏
+// - group: 分组卡片列表
+// - dock: 底部 Dock（默认）
 export type LayoutType = 'grid' | 'group' | 'dock';
 
 // 背景适配方式
 export type BackgroundSize = 'cover' | 'contain' | 'auto' | '100% 100%';
 
 // 背景类型
-export type BackgroundType = 'none' | 'color' | 'image' | 'video';
+export type BackgroundType = 'none' | 'color' | 'image' | 'video' | 'scene';
 
 // 背景设置
 export interface BackgroundSetting {
-  type: BackgroundType; // 'none' | 'color' | 'image' | 'video'
+  type: BackgroundType;
   color?: string; // 背景色，如 '#1a1a2e'
   imageUrl?: string; // 背景图 URL
   size?: BackgroundSize; // 适配方式
@@ -47,6 +47,8 @@ export interface BackgroundSetting {
   // 视频背景:fileName / muted / size 仅作显示/控制用,实际 blob 在 IndexedDB
   videoFileName?: string;
   muted?: boolean;
+  sceneId?: string;
+  sceneName?: string;
 }
 
 // 设置

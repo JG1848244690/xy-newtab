@@ -69,7 +69,7 @@ const test = base.extend<{ board: Page; extensionContext: BrowserContext; worker
       await chrome.storage.local.set({
         shortcuts: fixture.shortcuts,
         groups: fixture.groups,
-        settings: { iconsPerRow: 8, layout: 'dock', language: 'zh_CN', background: { type: 'color', color: '#dce4ef' } },
+        settings: { iconsPerRow: 8, layout: 'group', language: 'zh_CN', background: { type: 'color', color: '#dce4ef' } },
       });
     }, { icon, shortcuts, groups });
     const page = await extensionContext.newPage();
@@ -82,6 +82,78 @@ const test = base.extend<{ board: Page; extensionContext: BrowserContext; worker
 const section = (page: Page, name: string) => page.getByRole('region', { name, exact: true });
 const link = (page: Page, group: string, label: string) => section(page, group).getByRole('link', { name: label, exact: true });
 const dock = (page: Page) => page.getByRole('navigation', { name: 'Dock', exact: true });
+
+async function switchLayout(page: Page, label: '底部 Dock' | '分组') {
+  await page.getByRole('button', { name: '设置', exact: true }).click();
+  await page.getByRole('button', { name: label, exact: true }).click();
+  await page.keyboard.press('Escape');
+}
+
+test('defaults to a glass Dock and respects reduced motion', async ({ board }) => {
+  await board.route('https://images.unsplash.com/**', (route) => route.abort());
+  await board.evaluate(async () => {
+    const { groups } = await chrome.storage.local.get('groups');
+    await chrome.storage.local.set({ groups: (groups as { id: string }[]).filter(({ id }) => id !== 'sys-dock') });
+    await chrome.storage.local.remove('settings');
+  });
+  await board.reload();
+  await expect(dock(board).getByRole('link')).toHaveCount(5);
+  await expect(section(board, 'Work')).toHaveCount(0);
+  await expect(board.locator('footer')).toHaveCount(0);
+  await expect(board.locator('html')).toHaveCSS('scrollbar-gutter', 'auto');
+  const first = dock(board).getByRole('link').first();
+  const face = first.locator('.dock-face');
+  await first.hover();
+  await expect.poll(() => face.evaluate((node) => {
+    return new DOMMatrix(getComputedStyle(node).transform).a;
+  })).toBeGreaterThan(1.2);
+  await board.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(face).toHaveCSS('transform', 'none');
+  await board.setViewportSize({ width: 320, height: 600 });
+  expect(await board.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+});
+
+test('imports a Scene wallpaper locally, restores it after reload and removes it', async ({ board }) => {
+  const sceneName = 'Scene test fixture';
+  const config = Buffer.from(JSON.stringify({
+    general: { orthogonalprojection: { width: 640, height: 360 }, clearcolor: '0.2 0.4 0.6' },
+    objects: [],
+  }));
+  const entry = Buffer.from('scene.json');
+  const header = Buffer.alloc(28 + entry.length);
+  header.writeUInt32LE(8, 0);
+  header.write('PKGV0012', 4);
+  header.writeUInt32LE(1, 12);
+  header.writeUInt32LE(entry.length, 16);
+  entry.copy(header, 20);
+  header.writeUInt32LE(config.length, 24 + entry.length);
+
+  await board.getByRole('button', { name: '设置', exact: true }).click();
+  await board.getByRole('button', { name: 'Scene 壁纸', exact: true }).click();
+  const picker = board.locator('input[accept=".pkg,.json"]');
+  await picker.setInputFiles({ name: 'invalid.pkg', mimeType: 'application/octet-stream', buffer: Buffer.from('invalid') });
+  await expect(board.getByRole('alert')).toContainText('请选择有效的 Scene 文件');
+  const canvas = board.locator('[data-scene-wallpaper] canvas');
+  await expect(canvas).toHaveCount(0);
+
+  await picker.setInputFiles([
+    { name: 'scene.pkg', mimeType: 'application/octet-stream', buffer: Buffer.concat([header, config]) },
+    { name: 'project.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ title: sceneName, type: 'Scene' })) },
+  ]);
+  await expect(board.getByTitle(sceneName)).toBeVisible();
+  await expect(canvas).toBeVisible();
+  await board.reload();
+  await expect(canvas).toBeVisible();
+  await expect(board.getByText('无法播放这张 Scene 壁纸')).toHaveCount(0);
+
+  await board.getByRole('button', { name: '设置', exact: true }).click();
+  await board.getByRole('button', { name: '移除 Scene 壁纸' }).click();
+  await expect(canvas).toHaveCount(0);
+  await expect.poll(() => board.evaluate(async () => {
+    const { settings } = await chrome.storage.local.get('settings');
+    return (settings as { background?: { type: string } }).background?.type;
+  })).toBe('none');
+});
 
 test('contains an uninterrupted bookmark title on narrow and wide screens', async ({ board }) => {
   const name = 'EngagementratecalculatorWithAnEvenLongerName';
@@ -168,19 +240,19 @@ test('drags between groups, reorders within a group, drops into collapsed and un
 
 test('keeps Dock pins independent while importing and exporting the legacy backup format', async ({ board }) => {
   await expect(link(board, '未分组', 'Legacy pin')).toBeVisible();
-  await expect(dock(board).getByRole('link', { name: 'Legacy pin' })).toBeVisible();
 
   await section(board, 'Read').getByRole('button', { name: '「Bravo」的操作' }).click();
   await board.getByRole('menuitem', { name: '固定到 Dock', exact: true }).click();
-  await expect(dock(board).getByRole('link')).toHaveCount(2);
   await expect(link(board, 'Read', 'Bravo')).toBeVisible();
+  await switchLayout(board, '底部 Dock');
+  await expect(section(board, 'Read')).toHaveCount(0);
+  await expect(dock(board).getByRole('link')).toHaveCount(2);
   await dock(board).getByRole('button', { name: '「Bravo」的操作' }).click();
   await board.getByRole('menuitem', { name: '向左移动' }).click();
   await expect(dock(board).getByRole('link').first()).toHaveAccessibleName('Bravo');
   await dock(board).getByRole('button', { name: '「Bravo」的操作' }).click();
   await board.getByRole('menuitem', { name: '从 Dock 取消固定' }).click();
   await expect(dock(board).getByRole('link', { name: 'Bravo' })).toHaveCount(0);
-  await expect(link(board, 'Read', 'Bravo')).toBeVisible();
 
   await board.getByRole('button', { name: '导入导出', exact: true }).click();
   const dialog = board.getByRole('dialog', { name: '导入导出书签' });
@@ -206,6 +278,7 @@ test('keeps Dock pins independent while importing and exporting the legacy backu
   expect(data.groups.filter((group: { id: string }) => group.id === 'sys-dock')).toEqual([
     expect.objectContaining({ shortcutIds: ['legacy', 'bravo'] }),
   ]);
+  await switchLayout(board, '分组');
   await expect(link(board, 'Read', 'Bravo')).toBeVisible();
 });
 

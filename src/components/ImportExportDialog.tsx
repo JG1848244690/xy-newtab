@@ -16,6 +16,7 @@ import { importChromeBookmarks } from '@/src/services/chromeBookmarks';
 import { useI18n } from '@/src/i18n';
 
 interface ImportExportDialogProps {
+  compact?: boolean;
   shortcuts: Shortcut[];
   groups: ShortcutGroup[];
   onImport: (shortcuts: Shortcut[], groups: ShortcutGroup[]) => void;
@@ -23,6 +24,7 @@ interface ImportExportDialogProps {
 }
 
 export function ImportExportDialog({
+  compact = false,
   shortcuts,
   groups,
   onImport,
@@ -110,9 +112,10 @@ export function ImportExportDialog({
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => nextOpen ? setOpen(true) : handleClose()}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="bookmark-action gap-1.5 rounded-lg">
+        <Button variant="ghost" size={compact ? 'icon' : 'sm'} className="bookmark-action gap-1.5 rounded-lg"
+          aria-label={t('layout.importExport')} title={compact ? t('layout.importExport') : undefined}>
           <ArrowDownUp className="h-3.5 w-3.5" />
-          {t('layout.importExport')}
+          {!compact && t('layout.importExport')}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-[425px]">

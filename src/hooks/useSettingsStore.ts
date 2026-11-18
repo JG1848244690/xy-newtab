@@ -12,7 +12,7 @@ export function useSettingsStore() {
 
   return {
     settings,
-    layout: (settings.layout ?? 'group') as LayoutType,
+    layout: settings.layout,
     setBackground: (background: BackgroundSetting) => settingsActions.patch({ background }),
     setLanguage: (language: Locale) => settingsActions.patch({ language }),
     setLayout: (layout: LayoutType) => settingsActions.patch({ layout }),

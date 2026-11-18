@@ -20,6 +20,7 @@ Contact / 联系方式:privacy@kskbl.com.cn
 
 **b. 你的设置与外观**
 布局、主题、背景颜色 / 图片 / 视频、透明度。背景图片与视频保存在本机 IndexedDB 中。我们无法访问。
+你选择的 Wallpaper Engine Scene 包及其可选工程信息保存在本机 IndexedDB，并在新标签页本地渲染。
 
 **c. 备份文件**
 只有当你主动点击「导出」时,扩展才会在本地生成一个 JSON 文件交给你。文件保存在你自己选择的位置,不经过任何服务器。
@@ -87,6 +88,7 @@ Contact / 联系方式:privacy@kskbl.com.cn
 **a. Shortcuts and groups you create.** Names, URLs, icons, and group membership are stored in your browser's extension storage (`chrome.storage.local`). We cannot access them.
 
 **b. Settings and appearance.** Layout, theme, background color / image / video, opacity. Background images and videos are stored in your browser's IndexedDB. We cannot access them.
+Wallpaper Engine Scene packages and optional project metadata you select are stored in IndexedDB and rendered locally on the new tab page.
 
 **c. Backup files.** Only when you click Export does the extension generate a JSON file locally for you. It is saved wherever you choose and never passes through a server.
 

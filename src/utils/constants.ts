@@ -32,7 +32,7 @@ export const GROUP_COLORS = [
 // 默认设置
 export const DEFAULT_SETTINGS: Settings = {
   iconsPerRow: 8,
-  layout: 'group',
+  layout: 'dock',
   background: { type: 'image', imageUrl: 'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=1920&q=80', size: 'cover', opacity: 1 },
 };
 

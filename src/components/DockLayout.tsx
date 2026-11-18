@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ArrowLeft, ArrowRight, Ellipsis, PinOff } from 'lucide-react';
+import { useEffect, useRef } from 'react';
+import { ArrowLeft, ArrowRight, Ellipsis, PinOff, Settings2 } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/src/components/ui/dropdown-menu';
 import { useI18n } from '@/src/i18n';
@@ -11,59 +11,98 @@ interface DockLayoutProps {
   shortcuts: Shortcut[];
   onUnpin: (id: string) => void;
   onReorder: (id: string, overId: string) => void;
+  onManage: () => void;
 }
 
-export function DockLayout({ shortcuts, onUnpin, onReorder }: DockLayoutProps) {
+export function DockLayout({ shortcuts, onUnpin, onReorder, onManage }: DockLayoutProps) {
   const { t } = useI18n();
-  const [hovered, setHovered] = useState<string | null>(null);
-  const hoveredIndex = hovered === null ? -1 : shortcuts.findIndex(({ id }) => id === hovered);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const pointerX = useRef<number | null>(null);
+  const frame = useRef<number | null>(null);
+
+  useEffect(() => () => {
+    if (frame.current !== null) cancelAnimationFrame(frame.current);
+  }, []);
+
+  function updateMagnification() {
+    if (frame.current !== null) return;
+    frame.current = requestAnimationFrame(() => {
+      frame.current = null;
+      const track = trackRef.current;
+      if (!track) return;
+      const x = pointerX.current === null ? null :
+        pointerX.current - track.getBoundingClientRect().left + track.scrollLeft;
+      const slots = Array.from(track.children) as HTMLElement[];
+      const weights = slots.map((slot) => {
+        if (x === null) return 0;
+        const distance = Math.abs(x - slot.offsetLeft - slot.offsetWidth / 2);
+        return Math.max(0, 1 - (distance / 124) ** 2) ** 2;
+      });
+
+      slots.forEach((slot, index) => {
+        const weight = weights[index];
+        slot.style.setProperty('--dock-scale', (1 + 0.32 * weight).toFixed(3));
+        slot.style.setProperty('--dock-lift', (-13 * weight).toFixed(2) + 'px');
+        slot.style.zIndex = String(Math.round(weight * 10));
+      });
+    });
+  }
 
   return (
-    <nav aria-label={t('dock.title')} className="pointer-events-none fixed inset-x-3 bottom-10 z-20 flex justify-center">
+    <nav aria-label={t('dock.title')} className="dock-position pointer-events-none fixed inset-x-3 z-20 flex justify-center">
       {shortcuts.length ? (
-        <div onPointerLeave={() => setHovered(null)}
-          className="bookmark-surface pointer-events-auto flex max-w-full gap-2 overflow-x-auto rounded-2xl px-3 pb-2 pt-3">
-          {shortcuts.map((shortcut, index) => {
-            const previous = shortcuts[index - 1];
-            const next = shortcuts[index + 1];
-            const distance = hoveredIndex < 0 ? Infinity : Math.abs(hoveredIndex - index);
-            const scale = distance === 0 ? 1.16 : distance === 1 ? 1.06 : 1;
-            return (
-              <div key={shortcut.id} onPointerEnter={() => setHovered(shortcut.id)}
-                className="group/dock-item relative shrink-0">
-                <a href={shortcut.url} target="_blank" rel="noopener noreferrer" onClick={notifyNewtabNavigated}
-                  aria-label={shortcut.name} title={shortcut.name}
-                  style={{ transform: 'scale(' + scale + ')' }}
-                  className="bookmark-icon bookmark-tile transition-transform motion-reduce:transition-none">
-                  <ShortcutIcon url={shortcut.url} name={shortcut.name} className="size-8 text-xl" />
-                </a>
-                <DropdownMenu modal={false}>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" aria-label={t('shortcuts.actionsFor', { name: shortcut.name })}
-                      className="bookmark-control absolute -right-1 -top-1 size-6 rounded-md transition-opacity [@media(hover:hover)_and_(pointer:fine)]:opacity-0 group-hover/dock-item:opacity-100 group-focus-within/dock-item:opacity-100 data-[state=open]:opacity-100">
-                      <Ellipsis className="size-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="center" className="bookmark-menu rounded-xl p-1.5">
-                    <DropdownMenuItem disabled={!previous} onSelect={() => previous && onReorder(shortcut.id, previous.id)}>
-                      <ArrowLeft className="mr-2 size-4" />{t('dock.moveLeft')}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem disabled={!next} onSelect={() => next && onReorder(shortcut.id, next.id)}>
-                      <ArrowRight className="mr-2 size-4" />{t('dock.moveRight')}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => onUnpin(shortcut.id)}>
-                      <PinOff className="mr-2 size-4" />{t('dock.unpin')}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            );
-          })}
+        <div className="dock-shelf pointer-events-auto min-w-0">
+          <div ref={trackRef} className="dock-track relative flex"
+            onPointerMove={(event) => {
+              if (event.pointerType !== 'mouse' && event.pointerType !== 'pen') return;
+              pointerX.current = event.clientX;
+              updateMagnification();
+            }}
+            onPointerLeave={() => {
+              pointerX.current = null;
+              updateMagnification();
+            }}
+            onScroll={updateMagnification}>
+            {shortcuts.map((shortcut, index) => {
+              const previous = shortcuts[index - 1];
+              const next = shortcuts[index + 1];
+              return (
+                <div key={shortcut.id} className="dock-slot group/dock-item relative shrink-0">
+                  <a href={shortcut.url} target="_blank" rel="noopener noreferrer" onClick={notifyNewtabNavigated}
+                    aria-label={shortcut.name} title={shortcut.name} className="dock-link grid place-items-center">
+                    <span className="dock-face grid place-items-center">
+                      <ShortcutIcon url={shortcut.url} name={shortcut.name} className="size-8 text-lg" />
+                    </span>
+                  </a>
+                  <DropdownMenu modal={false}>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" aria-label={t('shortcuts.actionsFor', { name: shortcut.name })}
+                        className="bookmark-control dock-control absolute -bottom-1 -right-1 size-6 rounded-md">
+                        <Ellipsis className="size-3" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="center" side="top" sideOffset={12} className="bookmark-menu rounded-xl p-1.5">
+                      <DropdownMenuItem disabled={!previous} onSelect={() => previous && onReorder(shortcut.id, previous.id)}>
+                        <ArrowLeft className="mr-2 size-4" />{t('dock.moveLeft')}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem disabled={!next} onSelect={() => next && onReorder(shortcut.id, next.id)}>
+                        <ArrowRight className="mr-2 size-4" />{t('dock.moveRight')}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => onUnpin(shortcut.id)}>
+                        <PinOff className="mr-2 size-4" />{t('dock.unpin')}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              );
+            })}
+          </div>
         </div>
       ) : (
-        <p className="bookmark-surface pointer-events-auto rounded-xl px-4 py-3 text-sm">
-          {t('dock.empty')}
-        </p>
+        <Button variant="ghost" onClick={onManage}
+          className="bookmark-surface bookmark-action dock-empty pointer-events-auto max-w-full rounded-2xl px-4 py-3">
+          <Settings2 className="size-4" />{t('dock.empty')}
+        </Button>
       )}
     </nav>
   );

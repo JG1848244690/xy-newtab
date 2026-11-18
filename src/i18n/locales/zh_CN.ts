@@ -105,7 +105,7 @@ export const zh_CN: TranslationTree = {
     unpin: '从 Dock 取消固定',
     moveLeft: '向左移动',
     moveRight: '向右移动',
-    empty: '在书签的「⋯」菜单中选择「固定到 Dock」',
+    empty: '去分组布局固定书签',
   },
 
   settings: {
@@ -113,7 +113,7 @@ export const zh_CN: TranslationTree = {
     layout: {
       label: '布局',
       group: '分组',
-      dock: '分组 + Dock',
+      dock: '底部 Dock',
     },
     language: '语言',
     languageOptions: {
@@ -128,6 +128,7 @@ export const zh_CN: TranslationTree = {
         color: '纯色',
         image: '图片',
         video: '视频',
+        scene: 'Scene 壁纸',
       },
       presetColors: '选择预设颜色',
       customColor: '自定义颜色',
@@ -153,6 +154,16 @@ export const zh_CN: TranslationTree = {
       videoHint: '支持 MP4 / WebM,本地文件无大小限制',
       videoInvalidType: '请选择 MP4 / WebM 视频文件',
       videoSaveFailed: '保存视频失败',
+      scene: {
+        chooseFolder: '选择单张壁纸的文件夹',
+        choosePackage: '选择 scene.pkg',
+        hint: '右键 Wallpaper Engine 中的壁纸，选择「在资源管理器中打开」。也可以同时选择 scene.pkg 和 project.json。',
+        effects: '依赖 SceneScript 或系统音频的效果可能与 Wallpaper Engine 不同。',
+        invalid: '请选择有效的 Scene 文件，或包含一份 .pkg 的壁纸文件夹。',
+        saveFailed: '无法保存 Scene 壁纸，请重试。',
+        renderFailed: '无法播放这张 Scene 壁纸，请在设置中更换。',
+        remove: '移除 Scene 壁纸',
+      },
       presetColor: {
         midNightBlue: '深夜蓝',
         starPurple: '星空紫',

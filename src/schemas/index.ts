@@ -12,7 +12,7 @@ import type { Shortcut, ShortcutGroup, Settings, BackgroundSetting } from '@/src
 import { SUPPORTED_LOCALES } from '@/src/i18n/types';
 
 const LAYOUTS = ['grid', 'group', 'dock'] as const;
-const BG_TYPES = ['none', 'color', 'image', 'video'] as const;
+const BG_TYPES = ['none', 'color', 'image', 'video', 'scene'] as const;
 const BG_SIZES = ['cover', 'contain', 'auto', '100% 100%'] as const;
 
 export const shortcutSchema = v.object({
@@ -45,6 +45,8 @@ const backgroundSchema = v.object({
   // 视频背景:实际 blob 存在 IndexedDB,这里只存 meta
   videoFileName: v.optional(v.string()),
   muted: v.optional(v.boolean()),
+  sceneId: v.optional(v.string()),
+  sceneName: v.optional(v.string()),
 });
 
 export const settingsSchema = v.object({

@@ -1,8 +1,12 @@
 import { useEffect, useRef } from 'react';
 import type { BackgroundSetting } from '@/src/utils/types';
 import { loadBackgroundVideo } from '@/src/utils/videoStorage';
+import { SceneWallpaper } from './SceneWallpaper';
 
 export function NewTabWallpaper({ setting }: { setting?: BackgroundSetting }) {
+  if (setting?.type === 'scene' && setting.sceneId) {
+    return <SceneWallpaper key={setting.sceneId} id={setting.sceneId} size={setting.size} opacity={setting.opacity} />;
+  }
   if (setting?.type === 'video') return <VideoWallpaper key={setting.videoFileName} setting={setting} />;
   if (setting?.type === 'color') {
     return <div aria-hidden="true" className="pointer-events-none fixed inset-0" style={{ backgroundColor: setting.color }} />;

@@ -60,6 +60,7 @@
 <h3>1. 我们如何处理数据</h3>
 <p><strong>a. 你创建的快捷方式与分组。</strong>名称、网址、图标、所属分组，保存在你本机的浏览器扩展存储（<code>chrome.storage.local</code>）中。我们无法访问。</p>
 <p><strong>b. 你的设置与外观。</strong>布局、主题、背景颜色 / 图片 / 视频、透明度。背景图片与视频保存在本机 IndexedDB 中。我们无法访问。</p>
+<p>你选择的 Wallpaper Engine Scene 包及其可选工程信息保存在本机 IndexedDB，并在新标签页本地渲染。</p>
 <p><strong>c. 备份文件。</strong>只有当你主动点击「导出」时，扩展才会在本地生成一个 JSON 文件交给你。文件保存在你自己选择的位置，不经过任何服务器。</p>
 <p><strong>d. 从 Chrome 书签导入。</strong>你点击「从 Chrome 书签导入」时，扩展通过浏览器提供的 <code>chrome.bookmarks</code> 接口读取本机书签树，直接写入本机存储。全程不联网。</p>
 
@@ -116,6 +117,7 @@
 <h3>1. How data is handled</h3>
 <p><strong>a. Shortcuts and groups you create.</strong> Names, URLs, icons, and group membership are stored in your browser's extension storage (<code>chrome.storage.local</code>). We cannot access them.</p>
 <p><strong>b. Settings and appearance.</strong> Layout, theme, background color / image / video, opacity. Background images and videos are stored in your browser's IndexedDB. We cannot access them.</p>
+<p>Wallpaper Engine Scene packages and optional project metadata you select are stored in IndexedDB and rendered locally on the new tab page.</p>
 <p><strong>c. Backup files.</strong> Only when you click Export does the extension generate a JSON file locally for you. It is saved wherever you choose and never passes through a server.</p>
 <p><strong>d. Importing Chrome bookmarks.</strong> When you click Import from Chrome bookmarks, the extension reads your local bookmark tree through the browser's <code>chrome.bookmarks</code> API and writes it straight into local storage. No network involved.</p>
 
