@@ -23,8 +23,9 @@ import {
   DEFAULT_BACKGROUND_COLOR,
 } from '@/src/utils/constants';
 import type { BackgroundSetting, BackgroundType, BackgroundSize } from '@/src/utils/types';
-import { Image, Palette, Maximize2, RotateCcw, Upload, Globe, Video, Volume2, VolumeX, Trash2, LayoutGrid, Dock, Layers } from 'lucide-react';
+import { Image, Palette, Maximize2, RotateCcw, Upload, Globe, Video, Volume2, VolumeX, Trash2, LayoutGrid, Dock, Layers, Settings2, CircleOff } from 'lucide-react';
 import { useI18n, SUPPORTED_LOCALES, type Locale } from '@/src/i18n';
+import { detectLocale } from '@/src/i18n/detect';
 import { useSettingsStore } from '@/src/hooks/useSettingsStore';
 import { removeBackgroundScene } from '@/src/utils/sceneStorage';
 import { SceneBackgroundSettings } from './SceneBackgroundSettings';
@@ -38,7 +39,12 @@ interface SettingsSheetProps {
   onOpenChange: (open: boolean) => void;
   setting: BackgroundSetting;
   onSave: (setting: BackgroundSetting) => void;
+  onCloseAutoFocus: (event: Event) => void;
 }
+
+const BACKGROUND_CHOICES = [
+  ['none', CircleOff], ['color', Palette], ['image', Image], ['video', Video], ['scene', Layers],
+] as const;
 
 /** 预设色 key → 词典 key 的映射(避免在 JSX 里嵌 i18n key) */
 const PRESET_COLOR_KEY = {
@@ -67,8 +73,9 @@ export function SettingsSheet({
   onOpenChange,
   setting,
   onSave,
+  onCloseAutoFocus,
 }: SettingsSheetProps) {
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const { settings, setLanguage, layout: currentLayout, setLayout } = useSettingsStore();
 
   const [type, setType] = useState<BackgroundType>(setting.type || 'none');
@@ -249,34 +256,32 @@ export function SettingsSheet({
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
-        className="w-80 sm:max-w-80 overflow-y-auto overflow-x-hidden
-          bg-white/20 dark:bg-black/20
-          backdrop-blur-xl
-          border-l border-white/20 dark:border-black/10
-          shadow-2xl shadow-black/10 dark:shadow-black/50
-          data-[state=open]:animate-in data-[state=closed]:animate-out
-          data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right
-          duration-300"
+        className="settings-sheet flex flex-col gap-0 p-0"
+        overlayClassName="settings-scrim"
+        closeLabel={t('common.close')}
+        aria-describedby={undefined}
+        onCloseAutoFocus={onCloseAutoFocus}
       >
-        <SheetHeader className="pb-4">
-          <SheetTitle className="flex items-center gap-2">
-            <Palette className="w-5 h-5" />
+        <SheetHeader className="settings-heading shrink-0 px-5 py-4 text-left">
+          <SheetTitle className="flex items-center gap-2.5">
+            <Settings2 className="settings-heading-icon size-5" />
             {t('settings.title')}
           </SheetTitle>
         </SheetHeader>
 
-        <div className="space-y-6">
+        <div className="settings-scroll min-h-0 flex-1 space-y-5 overflow-y-auto overflow-x-hidden p-4 sm:p-5">
           {/* 语言切换 */}
-          <div className="space-y-3">
-            <Label className="text-sm font-medium flex items-center gap-1.5">
+          <div className="settings-section space-y-3">
+            <Label htmlFor="settings-language" className="text-sm font-medium flex items-center gap-1.5">
               <Globe className="w-3.5 h-3.5" />
               {t('settings.language')}
             </Label>
-            <Select value={settings.language ?? locale} onValueChange={(v) => setLanguage(v as Locale)}>
-              <SelectTrigger className="w-full">
+            <Select value={settings.language ?? 'auto'} onValueChange={(value) => setLanguage(value === 'auto' ? undefined : value as Locale)}>
+              <SelectTrigger id="settings-language" className="settings-choice w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="auto">{t('settings.languageAuto', { language: t(`settings.languageOptions.${detectLocale()}`) })}</SelectItem>
                 {SUPPORTED_LOCALES.map((loc) => (
                   <SelectItem key={loc} value={loc}>
                     {t(`settings.languageOptions.${loc}`)}
@@ -287,23 +292,25 @@ export function SettingsSheet({
           </div>
 
           {/* 布局选择 */}
-          <div className="space-y-3">
+          <div className="settings-section space-y-3">
             <Label className="text-sm font-medium">{t('settings.layout.label')}</Label>
             <div className="grid grid-cols-2 gap-2">
               <Button
-                variant={currentLayout === 'group' ? 'default' : 'outline'}
+                variant="ghost"
                 size="sm"
+                aria-pressed={currentLayout !== 'dock'}
                 onClick={() => setLayout('group')}
-                className="gap-1.5"
+                className="settings-choice gap-1.5"
               >
                 <LayoutGrid className="w-3.5 h-3.5" />
                 {t('settings.layout.group')}
               </Button>
               <Button
-                variant={currentLayout === 'dock' ? 'default' : 'outline'}
+                variant="ghost"
                 size="sm"
+                aria-pressed={currentLayout === 'dock'}
                 onClick={() => setLayout('dock')}
-                className="gap-1.5"
+                className="settings-choice gap-1.5"
               >
                 <Dock className="w-3.5 h-3.5" />
                 {t('settings.layout.dock')}
@@ -312,48 +319,16 @@ export function SettingsSheet({
           </div>
 
           {/* 背景类型选择 */}
-          <div className="space-y-3">
+          <div className="settings-section space-y-3">
             <Label className="text-sm font-medium">{t('settings.bg.typeLabel')}</Label>
             <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant={type === 'none' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleTypeChange('none')}
-                className="gap-1.5"
-              >
-                {t('settings.bg.type.none')}
-              </Button>
-              <Button
-                variant={type === 'color' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleTypeChange('color')}
-                className="gap-1.5"
-              >
-                <Palette className="w-3.5 h-3.5" />
-                {t('settings.bg.type.color')}
-              </Button>
-              <Button
-                variant={type === 'image' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleTypeChange('image')}
-                className="gap-1.5"
-              >
-                <Image className="w-3.5 h-3.5" />
-                {t('settings.bg.type.image')}
-              </Button>
-              <Button
-                variant={type === 'video' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleTypeChange('video')}
-                className="gap-1.5"
-              >
-                <Video className="w-3.5 h-3.5" />
-                {t('settings.bg.type.video')}
-              </Button>
-              <Button variant={type === 'scene' ? 'default' : 'outline'} size="sm"
-                onClick={() => handleTypeChange('scene')} className="col-span-2 gap-1.5">
-                <Layers className="size-4" />{t('settings.bg.type.scene')}
-              </Button>
+              {BACKGROUND_CHOICES.map(([choice, Icon]) => (
+                <Button key={choice} variant="ghost" size="sm" aria-pressed={type === choice}
+                  onClick={() => handleTypeChange(choice)}
+                  className={choice === 'scene' ? 'settings-choice col-span-2' : 'settings-choice'}>
+                  <Icon className="size-4" />{t('settings.bg.type.' + choice)}
+                </Button>
+              ))}
             </div>
           </div>
 
@@ -653,18 +628,17 @@ export function SettingsSheet({
 
           {type === 'scene' && <SceneBackgroundSettings setting={setting} onSave={onSave} />}
 
-          {/* 重置按钮 */}
-          <div className="pt-4 border-t">
-            <Button
-              variant="ghost"
-              onClick={handleReset}
-              size="sm"
-              className="w-full gap-1.5 text-muted-foreground hover:text-foreground"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              {t('settings.bg.resetDefault')}
-            </Button>
-          </div>
+        </div>
+        <div className="settings-footer shrink-0 p-3">
+          <Button
+            variant="ghost"
+            onClick={handleReset}
+            size="sm"
+            className="bookmark-action w-full gap-1.5 rounded-xl"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            {t('settings.bg.resetDefault')}
+          </Button>
         </div>
       </SheetContent>
     </Sheet>

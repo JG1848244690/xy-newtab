@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { ArrowLeft, ArrowRight, Ellipsis, PinOff, Settings2 } from 'lucide-react';
+import { useDroppable } from '@dnd-kit/core';
+import { ArrowLeft, ArrowRight, Ellipsis, Pencil, PinOff, Settings2 } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/src/components/ui/dropdown-menu';
 import { useI18n } from '@/src/i18n';
@@ -7,15 +8,20 @@ import type { Shortcut } from '@/src/utils/types';
 import { notifyNewtabNavigated } from '@/src/utils/navigationReset';
 import { ShortcutIcon } from './ShortcutIcon';
 
+export const dockDropTarget = 'desktop-dock';
+
 interface DockLayoutProps {
   shortcuts: Shortcut[];
+  recentPin?: string;
   onUnpin: (id: string) => void;
   onReorder: (id: string, overId: string) => void;
   onManage: () => void;
+  onEdit: (shortcut: Shortcut) => void;
 }
 
-export function DockLayout({ shortcuts, onUnpin, onReorder, onManage }: DockLayoutProps) {
+export function DockLayout({ shortcuts, recentPin, onUnpin, onReorder, onManage, onEdit }: DockLayoutProps) {
   const { t } = useI18n();
+  const { setNodeRef, isOver, active } = useDroppable({ id: dockDropTarget });
   const trackRef = useRef<HTMLDivElement>(null);
   const pointerX = useRef<number | null>(null);
   const frame = useRef<number | null>(null);
@@ -51,7 +57,8 @@ export function DockLayout({ shortcuts, onUnpin, onReorder, onManage }: DockLayo
   return (
     <nav aria-label={t('dock.title')} className="dock-position pointer-events-none fixed inset-x-3 z-20 flex justify-center">
       {shortcuts.length ? (
-        <div className="dock-shelf pointer-events-auto min-w-0">
+        <div ref={setNodeRef} data-drag-ready={active ? '' : undefined} data-drag-over={isOver ? '' : undefined}
+          className="dock-shelf pointer-events-auto min-w-0">
           <div ref={trackRef} className="dock-track relative flex"
             onPointerMove={(event) => {
               if (event.pointerType !== 'mouse' && event.pointerType !== 'pen') return;
@@ -67,7 +74,8 @@ export function DockLayout({ shortcuts, onUnpin, onReorder, onManage }: DockLayo
               const previous = shortcuts[index - 1];
               const next = shortcuts[index + 1];
               return (
-                <div key={shortcut.id} className="dock-slot group/dock-item relative shrink-0">
+                <div key={shortcut.id} data-new-pin={shortcut.id === recentPin ? '' : undefined}
+                  className="dock-slot group/dock-item relative shrink-0">
                   <a href={shortcut.url} target="_blank" rel="noopener noreferrer" onClick={notifyNewtabNavigated}
                     aria-label={shortcut.name} title={shortcut.name} className="dock-link grid place-items-center">
                     <span className="dock-face grid place-items-center">
@@ -82,6 +90,9 @@ export function DockLayout({ shortcuts, onUnpin, onReorder, onManage }: DockLayo
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="center" side="top" sideOffset={12} className="bookmark-menu rounded-xl p-1.5">
+                      <DropdownMenuItem onSelect={() => onEdit(shortcut)}>
+                        <Pencil className="mr-2 size-4" />{t('common.edit')}
+                      </DropdownMenuItem>
                       <DropdownMenuItem disabled={!previous} onSelect={() => previous && onReorder(shortcut.id, previous.id)}>
                         <ArrowLeft className="mr-2 size-4" />{t('dock.moveLeft')}
                       </DropdownMenuItem>
@@ -99,7 +110,8 @@ export function DockLayout({ shortcuts, onUnpin, onReorder, onManage }: DockLayo
           </div>
         </div>
       ) : (
-        <Button variant="ghost" onClick={onManage}
+        <Button ref={setNodeRef} variant="ghost" onClick={onManage}
+          data-drag-ready={active ? '' : undefined} data-drag-over={isOver ? '' : undefined}
           className="bookmark-surface bookmark-action dock-empty pointer-events-auto max-w-full rounded-2xl px-4 py-3">
           <Settings2 className="size-4" />{t('dock.empty')}
         </Button>

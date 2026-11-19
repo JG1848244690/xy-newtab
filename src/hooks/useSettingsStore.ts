@@ -14,7 +14,9 @@ export function useSettingsStore() {
     settings,
     layout: settings.layout,
     setBackground: (background: BackgroundSetting) => settingsActions.patch({ background }),
-    setLanguage: (language: Locale) => settingsActions.patch({ language }),
+    setLanguage: (language: Locale | undefined) => settingsActions.patch({ language }),
     setLayout: (layout: LayoutType) => settingsActions.patch({ layout }),
+    setDesktopOrder: (desktopOrder: string[]) => settingsActions.patch({ desktopOrder }),
+    setDesktopVisible: settingsActions.setDesktopVisible,
   };
 }

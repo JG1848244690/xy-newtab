@@ -25,4 +25,11 @@ export const settingsActions = {
     settingsStore.replace(next);
     cell.stage(next);
   },
+  setDesktopVisible(id: string, visible: boolean): void {
+    const hidden = new Set(settingsStore.get().desktopHiddenIds);
+    if (hidden.has(id) === !visible) return;
+    if (visible) hidden.delete(id);
+    else hidden.add(id);
+    settingsActions.patch({ desktopHiddenIds: [...hidden] });
+  },
 };

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { BookmarkPlus, ChevronDown, Plus, Search, Settings, X } from 'lucide-react';
 import { DndContext, DragOverlay, KeyboardSensor, PointerSensor, useSensor, useSensors,
@@ -10,29 +10,32 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useDebounce } from '@/src/hooks/useDebounce';
 import { useShortcutsStore } from '@/src/hooks/useShortcutsStore';
 import { useGroupsStore } from '@/src/hooks/useGroupsStore';
+import { useSettingsStore } from '@/src/hooks/useSettingsStore';
 import { useI18n } from '@/src/i18n';
 import { BOOKMARK_FILTER_DELAY_MS } from '@/src/utils/constants';
 import { filterShortcuts } from '@/src/services/shortcuts';
-import { importChromeBookmarks } from '@/src/services/chromeBookmarks';
 import type { Shortcut, ShortcutGroup } from '@/src/utils/types';
 import { bookmarkCollision, bookmarkKeyboardCoordinates, groupDragId, type BookmarkDragTarget } from './bookmarkDrag';
 import { GroupDialog } from './GroupDialog';
 import { ShortcutDialog } from './ShortcutDialog';
 import { ShortcutGroupCard } from './ShortcutGroupCard';
 import { ShortcutIcon } from './ShortcutIcon';
+import { ChromeBookmarkImportDialog } from './ChromeBookmarkImportDialog';
 
 type ShortcutEditor = { shortcut: Shortcut } | { groupId: string | null };
-type ImportStatus = { type: 'pending' } | { type: 'success'; count: number } | { type: 'error'; message?: string };
 
 export function GroupLayout() {
   const { t } = useI18n();
   const { shortcuts, actions: shortcutActions } = useShortcutsStore();
   const { groups, pinnedIds, actions } = useGroupsStore();
+  const { settings: { desktopHiddenIds }, setDesktopVisible } = useSettingsStore();
   const [groupEditor, setGroupEditor] = useState<ShortcutGroup | 'new' | null>(null);
   const [shortcutEditor, setShortcutEditor] = useState<ShortcutEditor | null>(null);
+  const editedShortcut = shortcutEditor && 'shortcut' in shortcutEditor ? shortcutEditor.shortcut : null;
   const [query, setQuery] = useState('');
   const [dragging, setDragging] = useState<Shortcut | null>(null);
-  const [importStatus, setImportStatus] = useState<ImportStatus | null>(null);
+  const [chromeOpen, setChromeOpen] = useState(false);
+  const actionsTrigger = useRef<HTMLButtonElement>(null);
 
   const search = useDebounce(query, BOOKMARK_FILTER_DELAY_MS).trim();
   const pins = useMemo(() => new Set(pinnedIds), [pinnedIds]);
@@ -61,12 +64,6 @@ export function GroupLayout() {
     if (target?.kind === 'group') return groups.find(({ id }) => id === target.groupId)?.name ?? '';
     return t('groups.ungrouped');
   }
-
-  useEffect(() => {
-    if (!importStatus || importStatus.type === 'pending') return;
-    const timer = setTimeout(() => setImportStatus(null), 3000);
-    return () => clearTimeout(timer);
-  }, [importStatus]);
 
   function handleDragStart({ active }: DragStartEvent) {
     const source = active.data.current as BookmarkDragTarget | undefined;
@@ -102,16 +99,6 @@ export function GroupLayout() {
     } else {
       const shortcut = shortcutActions.add(data);
       if (shortcutEditor.groupId) actions.addShortcut(shortcutEditor.groupId, shortcut.id);
-    }
-  }
-
-  async function handleImportChromeBookmarks() {
-    setImportStatus({ type: 'pending' });
-    try {
-      const { added } = await importChromeBookmarks(shortcutActions.addMany);
-      setImportStatus({ type: 'success', count: added });
-    } catch (error) {
-      setImportStatus({ type: 'error', message: error instanceof Error ? error.message : undefined });
     }
   }
 
@@ -155,13 +142,13 @@ export function GroupLayout() {
         </div>
         <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="bookmark-surface bookmark-action h-10 shrink-0 rounded-xl px-3.5">
+            <Button ref={actionsTrigger} variant="outline" size="sm" className="bookmark-surface bookmark-action h-10 shrink-0 rounded-xl px-3.5">
               <Settings className="size-4" />{t('layout.actions')}<ChevronDown className="size-3" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="bookmark-menu rounded-xl p-1.5">
-            <DropdownMenuItem disabled={importStatus?.type === 'pending'} onSelect={handleImportChromeBookmarks}>
-              <BookmarkPlus className="mr-2 size-4" />{t('importExport.importGoogleBookmarks')}
+            <DropdownMenuItem onSelect={() => setChromeOpen(true)}>
+              <BookmarkPlus className="mr-2 size-4" />{t('importExport.chromeImportTitle')}
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => setGroupEditor('new')}>
               <Plus className="mr-2 size-4" />{t('groups.newGroup')}
@@ -170,13 +157,8 @@ export function GroupLayout() {
         </DropdownMenu>
       </div>
 
-      {importStatus && (
-        <p role="status" className="bookmark-surface w-fit rounded-lg px-3 py-1.5 text-sm">
-          {importStatus.type === 'pending' ? t('importExport.importGoogleBookmarksPending')
-            : importStatus.type === 'success' ? t('importExport.importGoogleBookmarksSuccess', { n: importStatus.count })
-              : importStatus.message || t('importExport.importGoogleBookmarksFail')}
-        </p>
-      )}
+      <ChromeBookmarkImportDialog open={chromeOpen} onOpenChange={setChromeOpen}
+        addShortcuts={shortcutActions.addMany} returnFocus={actionsTrigger} />
       {search && (
         <p role="status" className="bookmark-surface w-fit rounded-lg px-3 py-1.5 text-sm">
           {board.count ? t('common.foundResults', { n: board.count }) : t('common.noResults')}
@@ -221,7 +203,10 @@ export function GroupLayout() {
           else actions.add(data);
         }} />
       <ShortcutDialog open={shortcutEditor !== null} onOpenChange={(open) => { if (!open) setShortcutEditor(null); }}
-        shortcut={shortcutEditor && 'shortcut' in shortcutEditor ? shortcutEditor.shortcut : null}
+        shortcut={editedShortcut}
+        desktopVisibility={editedShortcut && desktopHiddenIds?.includes(editedShortcut.id) ? {
+          visible: false, onChange: (visible) => setDesktopVisible(editedShortcut.id, visible),
+        } : undefined}
         quickMode={shortcutEditor !== null && 'groupId' in shortcutEditor} onSave={handleSaveShortcut} />
     </div>
   );

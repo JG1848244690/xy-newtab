@@ -1,197 +1,45 @@
-# Chrome Web Store Listing — NewTab - Grouped Speed Dial & Wallpapers -xy
+# Chrome Web Store 提审资料
 
-> Last Updated: 2026-11-17
+## 商品
 
-## Store Listing
+| 字段 | 值 |
+| --- | --- |
+| 商品 ID | `lanccjojcmdklbhnbmbfemiabnpbgoga` |
+| 主语言 | English |
+| 本地化商品页 | 简体中文 |
+| 类别 | Productivity |
+| 单一用途 | Customize the Chrome new tab page with organized bookmark shortcuts and a user-selected background. |
+| 反馈 | privacy@kskbl.com.cn |
+| 1.0.4 | 新增本地 Wallpaper Engine Scene，默认毛玻璃 Dock，右上角快速切换布局，优化设置面板及语言跟随 |
 
-**Extension Name** [REQUIRED]
+2026-11-19 已提交 1.0.4 审核，选择通过后自动发布。审核期间公开版本为 1.0.3。
 
-NewTab - Grouped Speed Dial & Wallpapers -xy
+[英文详情](public/_locales/en/description.txt) · [中文详情](public/_locales/zh_CN/description.txt) · [英文名称及简介](public/_locales/en/messages.json) · [中文名称及简介](public/_locales/zh_CN/messages.json)
 
-<!-- 44 characters. Must match manifest.json "name" (rendered via __MSG_extName__). -->
+英文简介 125 字符。文案明确限定为用户选取的本地 Scene 文件、无 SceneScript 或音频，避免暗示可在线浏览创意工坊、支持 Web 壁纸或与 Wallpaper Engine 官方合作。
 
-**Short Description** [REQUIRED]
+## 文件和截图
 
-EN (129 / 132 chars):
-Grouped Speed Dial for your new tab: bookmarks, drag and drop, custom wallpapers, video backgrounds. Offline, no account, no ads.
+运行 `pnpm zip:store` 生成 `.output/my-test-extension-1.0.4-chrome.zip`。商店模式不写入开发用公钥，通过现有商品上传即可沿用扩展 ID。
 
-ZH (84 / 132 chars):
-极简 Speed Dial 替换 Chrome 新标签页:分组书签、拖拽整理、自定义壁纸与视频背景。纯本地运行,无账号、无云端、无广告无追踪,也不修改你的默认搜索引擎。
+图标使用包内 `icon/128.png`。新版 1280 × 800 截图位于 `.output/store-1.0.4/`，包含浮动 Dock、分组书签和 Scene 导入设置。截图使用演示书签和原创背景。分组页面的搜索框仅筛选本地快捷方式。
 
-<!-- Source of truth: public/_locales/{en,zh_CN}/messages.json → extDescription -->
+## 隐私权
 
-**Detailed Description** [REQUIRED]
+[公开隐私政策](https://github.com/JG1848244690/xy-newtab/blob/codex/privacy-policy/docs/privacy-policy.md) · [本地 HTML 源文件](docs/privacy-policy.html)
 
-EN — full text in `public/_locales/en/description.txt` (plain text, CWS strips markdown):
+| 权限 | 后台理由 |
+| --- | --- |
+| `storage` | Stores shortcuts, groups, Dock pins and preferences locally so the user's new tab is restored when Chrome restarts. |
+| `activeTab` | When the user invokes the extension, reads the active tab's URL and title to prefill the Add shortcut form. |
+| `bookmarks` | Reads the local Chrome bookmark tree only when the user chooses Import from Chrome bookmarks, then creates local new tab shortcuts. |
+| 主机权限 | Contacts icon.horse, DuckDuckGo and Google only to fetch the visible shortcut's favicon. Sends its hostname without the page path, query string or title and caches the image locally. |
+| 远程代码 | No. The package bundles the renderer and accepts local Scene data. The extension does not load executable JavaScript from servers or Scene packages. |
 
-```
-Replace your Chrome new tab page with your own grouped bookmark shortcuts and wallpapers.
+数据披露填写「网络记录」和「网站内容」，对应扩展处理用户明确选取的网页 URL、标题、超链接及壁纸媒体。扩展不会读取 Chrome 历史记录数据库。favicon 服务只收到域名，预设背景来自 Unsplash，用户输入的在线图片地址由对应主机提供。三项有限使用声明均需确认。
 
-FEATURES
+## 审核测试说明
 
-• Grouped shortcuts — create groups, give each one a name, icon and color, then drag sites between them.
-• Two layouts — a grouped card layout for browsing, or a dock along the bottom edge.
-• Wallpapers — solid colors, curated images, your own picture, or a local video that plays quietly behind your shortcuts.
-• Fast adding — press Ctrl+Y (Cmd+Y on Mac) while on any page and the popup opens with the URL already filled in.
-• Batch editing — select several shortcuts at once to move, copy or delete them.
-• Light and dark themes, following your system or your choice.
-• English and Chinese interface.
+> No sign-in is needed. Open a new tab and use the middle button in the top-right toolbar to switch from Dock to grouped bookmarks. Search shortcuts filters the local list. To test animation, open Settings → Scene wallpaper and choose a local Wallpaper Engine Scene folder or scene.pkg with its optional project.json. The renderer is bundled and reads files locally. SceneScript, audio and Web/HTML wallpapers are unsupported.
 
-HOW TO USE
-
-1. Install the extension and open a new tab — it replaces the default page.
-2. Click the plus button inside a group, or press Ctrl+Y on any page to add the current site.
-3. Drag shortcuts or groups to reorder them. Use the gear icon for layout, wallpaper and language.
-4. Back up from Import / Export, or pull in your existing Chrome bookmarks with one click.
-
-PRIVACY
-
-No account, no sign-in, no cloud sync and no server of ours. Your shortcuts, groups, settings and wallpapers stay on your computer. The only outbound request the extension makes is fetching a site's icon from a public favicon service, and that request carries nothing but the domain name. No ads, no trackers, no analytics.
-
-PERMISSIONS
-
-• "Read and change your bookmarks" — used only when you click Import from Chrome bookmarks, to read the bookmarks you already have and add them to your new tab.
-• "Read your browsing history" (current-tab access) — granted only when you click the extension icon, to prefill the current page's address and title in the Add form.
-• Website access is limited to four favicon services, used solely to display site icons.
-
-SUPPORT
-
-Questions, bugs or suggestions: privacy@kskbl.com.cn
-
-Version 1.0.3 — adds video wallpapers and the dock layout, keeps everything on your device.
-```
-
-ZH — full text in `public/_locales/zh_CN/description.txt`.
-
-**Category** [REQUIRED]
-
-Productivity
-
-**Single Purpose** [REQUIRED]
-
-Replaces the Chrome new tab page with the user's own grouped bookmark shortcuts and wallpapers.
-
-<!-- 明确不包含搜索框 / 不修改默认搜索引擎 —— 上一版正因此被判 Red Argon。 -->
-
-**Primary Language** [REQUIRED]
-
-English (also localized: Chinese — Simplified)
-
-## Graphics & Assets
-
-| Asset | Dimensions | Status | Filename |
-|-------|-----------|--------|----------|
-| Store Icon [REQUIRED] | 128×128 PNG | ✅ Ready | `public/icon/128.png` |
-| Screenshot 1 [REQUIRED] | 1280×800 or 640×400 | 🟡 Needs update | — |
-| Screenshot 2 [RECOMMENDED] | 1280×800 or 640×400 | 🟡 Needs update | — |
-| Screenshot 3 [RECOMMENDED] | 1280×800 or 640×400 | 🟡 Needs update | — |
-| Screenshot 4 | 1280×800 or 640×400 | ⬜ Not created | — |
-| Screenshot 5 | 1280×800 or 640×400 | ⬜ Not created | — |
-| Small Promo Tile [RECOMMENDED] | 440×280 | ⬜ Not created | — |
-| Marquee Promo Tile | 1400×560 | ⬜ Not created | — |
-
-### Screenshot Notes
-
-现有截图是旧版界面（顶部带搜索框），**必须重拍**，否则会被判「描述与实际功能不符」。
-
-1. 分组卡片布局 + 壁纸（主界面全貌）
-2. dock 布局（底部 dock）
-3. 视频/图片壁纸设置面板
-4. 导入导出 / 从 Chrome 书签导入
-5. 深浅色主题对比
-
-截图不得出现旧版搜索框或多引擎切换，因为这两个功能已删除。
-
-## Permissions Justification
-
-| Permission | Type | Justification |
-|------------|------|---------------|
-| `storage` | permissions | Saves the user's shortcuts, groups, layout and appearance settings locally so the new tab page looks the same after a restart. No data leaves the device. |
-| `activeTab` | permissions | Grants access to the current tab only when the user clicks the extension icon or presses the Ctrl+Y shortcut, so the Add form can be pre-filled with that page's address and title. Nothing is read in the background. |
-| `bookmarks` | permissions | Used only when the user clicks "Import from Chrome bookmarks", to read their existing bookmarks and add them as shortcuts on the new tab page. The extension never modifies or deletes bookmarks. |
-| `https://www.google.com/*`, `https://*.google.com/*` | host_permissions | Requests an icon image for the domain of a site the user added (Google's public favicon endpoint). Used only to display the shortcut icon. |
-| `https://icons.duckduckgo.com/*` | host_permissions | Fallback favicon source when Google returns no icon. Used only to display the shortcut icon. |
-| `https://icon.horse/*` | host_permissions | Second fallback favicon source when the first two return nothing. Used only to display the shortcut icon. |
-
-<!-- 审核重点关注：解释"为什么只在用户操作时使用"，并明确不读取页面内容。 -->
-
-## Privacy & Data Use
-
-### Data Collection
-
-**Does the extension collect user data?** No
-
-作者本人不收集、不上传、不存储任何用户数据。没有账号体系、没有云同步、没有自建服务器、没有统计或崩溃上报。
-
-| Data Type | Collected? | Transmitted Off-Device? | Purpose | Shared with Third Parties? |
-|-----------|-----------|------------------------|---------|---------------------------|
-| Personally identifiable info | No | No | — | No |
-| Health info | No | No | — | No |
-| Financial info | No | No | — | No |
-| Authentication info | No | No | — | No |
-| Personal communications | No | No | — | No |
-| Location | No | No | — | No |
-| Web history | No | No | — | No |
-| User activity | No | No | — | No |
-| Website content | No | Domain names only, to public favicon services | Render the icon of a site the user added | Favicon providers receive the domain; the author never receives it |
-
-### Data Use Certification
-
-- [x] Data is NOT sold to third parties
-- [x] Data is NOT used for purposes unrelated to the extension's core functionality
-- [x] Data is NOT used for creditworthiness or lending purposes
-
-## Privacy Policy
-
-**Privacy Policy URL** [REQUIRED]
-
-https://static.kskbl.com.cn/privacy/
-
-<!-- 已上线并验证 200。源文件 docs/privacy-policy.html，服务器路径 /www/wwwroot/static/privacy/index.html。
-     必须填在开发者后台「隐私权」标签页的字段里，不能只写进商品描述（上一版被拒原因 Purple Nickel）。 -->
-
-## Distribution
-
-**Visibility**: Public
-**Regions**: All regions
-
-## Developer Info
-
-**Publisher Name** [REQUIRED]
-
-xy
-
-**Contact Email** [REQUIRED]
-
-privacy@kskbl.com.cn
-
-**Support URL / Email** [RECOMMENDED]
-
-privacy@kskbl.com.cn
-
-**Homepage URL** [RECOMMENDED]
-
-https://kskbl.com.cn
-
-## Version History
-
-| Version | Date | Changes | Status |
-|---------|------|---------|--------|
-| 1.0.3 | 2026-11-17 | 移除网页搜索框与多引擎切换（Red Argon 整改）；移除标签页会话管理；移除 Google 登录与云同步，改为纯本地；权限收紧为 storage / activeTab / bookmarks；short description 由 169 字压缩到 129 字 | Draft |
-| 1.0.2 | 2026-08-18 | 首次提交后被拒 | Rejected |
-
-## Review Notes
-
-### Known Issues / Limitations
-
-- 截图仍是旧界面（含已删除的搜索框），提交前必须重拍。
-- `e2e/` 下的 Playwright 用例仍覆盖已删除的搜索 / 会话功能，未同步更新。
-- manifest 含 `key` 字段（历史遗留）；如上传报错再移除后重打包。
-- 不提供网页搜索，不修改默认搜索引擎 —— 这是刻意的产品边界，不要在描述或截图中暗示相反。
-
-### Rejection History
-
-| Date | Reason | Fix Applied | Resubmitted |
-|------|--------|-------------|-------------|
-| 2026-08-18 | Red Argon — 更改新标签页与用户搜索体验：自带搜索框、可切换搜索引擎（默认 bing），未使用 Chrome Search API | 删除搜索框、引擎切换与搜索建议，扩展不再提供任何搜索入口；popup 内搜索框降级为纯本地快捷方式筛选 | 1.0.3 待提交 |
-| 2026-08-18 | Purple Nickel — 未在指定字段提供隐私政策链接 | 编写中英双语隐私政策并托管到 https://static.kskbl.com.cn/privacy/，填写到后台「隐私权」标签页 | 1.0.3 待提交 |
+历史问题包括网页搜索引擎切换（Red Argon）及隐私政策链接缺失（Purple Nickel）。1.0.4 的商品详情和权限理由按当前功能填写。

@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
-import { Settings } from 'lucide-react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { Dock, LayoutGrid, Settings } from 'lucide-react';
 import { NewTabWallpaper } from '@/src/components/NewTabWallpaper';
-import { DockLayout } from '@/src/components/DockLayout';
+import { DockDesktop } from '@/src/components/DockDesktop';
 import { GroupLayout } from '@/src/components/GroupLayout';
 import { ImportExportDialog } from '@/src/components/ImportExportDialog';
 import { SettingsSheet } from '@/src/components/SettingsSheet';
@@ -17,7 +17,7 @@ import { cn } from '@/src/lib/utils';
 
 function App() {
   const storesReady = useStoresReady();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
 
   const { shortcuts, actions: shortcutActions } = useShortcutsStore();
   const { records, pinnedIds, actions: groupActions } = useGroupsStore();
@@ -28,12 +28,19 @@ function App() {
       return shortcut ? [shortcut] : [];
     });
   }, [shortcuts, pinnedIds]);
-  const { settings: { background }, setBackground, setLayout, layout } = useSettingsStore();
+  const { settings: { background, desktopOrder, desktopHiddenIds }, setBackground, setDesktopOrder,
+    setDesktopVisible, setLayout, layout } = useSettingsStore();
   const dockMode = layout === 'dock';
 
   const { mounted } = useTheme();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const settingsTrigger = useRef<HTMLButtonElement>(null);
   const [resetNonce, setResetNonce] = useState(0);
+
+  useEffect(() => {
+    document.documentElement.lang = locale.replace('_', '-');
+    document.title = t('common.appName');
+  }, [locale, t]);
 
   // 跳转重置
   useEffect(() => {
@@ -64,20 +71,29 @@ function App() {
     <div className="relative min-h-screen">
       <NewTabWallpaper setting={background} />
       <div className="min-h-screen bg-transparent transition-colors duration-300 relative z-10">
-        <div className={cn('bookmark-surface fixed right-4 top-4 z-30 flex items-center gap-0.5 rounded-xl p-1',
+        <div role="group" aria-label={t('layout.actions')} className={cn('bookmark-surface fixed right-4 top-4 z-30 flex items-center gap-0.5 rounded-xl p-1',
           dockMode && 'dock-tools')}>
           <ImportExportDialog
             shortcuts={shortcuts}
             groups={records}
             onImport={handleImportData}
             addShortcuts={shortcutActions.addMany}
-            compact={dockMode}
+            compact
           />
+          <Button type="button" variant="ghost" size="icon" className="bookmark-action rounded-lg"
+            aria-label={t(dockMode ? 'layout.switchToGroups' : 'layout.switchToDock')}
+            title={t(dockMode ? 'layout.switchToGroups' : 'layout.switchToDock')}
+            onClick={() => setLayout(dockMode ? 'group' : 'dock')}>
+            {dockMode ? <LayoutGrid className="size-4" /> : <Dock className="size-4" />}
+          </Button>
           <Button
+            ref={settingsTrigger}
             variant="ghost"
-            size="sm"
+            size="icon"
             onClick={() => setSettingsOpen(true)}
             aria-label={t('settings.title')}
+            title={t('settings.title')}
+            aria-haspopup="dialog"
             className="bookmark-action rounded-lg"
           >
             <Settings className="h-4 w-4" />
@@ -85,8 +101,9 @@ function App() {
         </div>
 
         {dockMode ? (
-          <DockLayout shortcuts={dockShortcuts}
-            onUnpin={(id) => groupActions.setPinned(id, false)} onReorder={groupActions.reorderDock}
+          <DockDesktop shortcuts={shortcuts} dockShortcuts={dockShortcuts} desktopOrder={desktopOrder} onSort={setDesktopOrder}
+            hiddenIds={desktopHiddenIds} onSetDesktopVisible={setDesktopVisible}
+            onPin={groupActions.setPinned} onReorder={groupActions.reorderDock} onUpdateShortcut={shortcutActions.update}
             onManage={() => setLayout('group')} />
         ) : (
           <>
@@ -105,6 +122,10 @@ function App() {
       <SettingsSheet
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          settingsTrigger.current?.focus({ preventScroll: true });
+        }}
         setting={background || { type: 'none' }}
         onSave={setBackground}
       />

@@ -53,6 +53,8 @@ export interface BackgroundSetting {
 
 // 设置
 export interface Settings {
+  desktopOrder?: string[];
+  desktopHiddenIds?: string[];
   iconsPerRow: number;
   layout: LayoutType; // 布局类型
   background?: BackgroundSetting; // 背景设置

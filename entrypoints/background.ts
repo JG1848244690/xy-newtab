@@ -1,4 +1,4 @@
-import { onMessage } from '@/messaging';
+import { onMessage, type ChromeBookmark } from '@/messaging';
 import { extractDomain, loadFavicon } from '@/src/utils/faviconCache';
 import { STORAGE_KEYS } from '@/src/store/keys';
 import type { Shortcut } from '@/src/utils/types';
@@ -17,26 +17,22 @@ export default defineBackground(() => {
     }
   });
 
-  onMessage('shortcuts/import-from-newtab', async () => {
+  onMessage('bookmarks/list', async () => {
     try {
       const tree = await browser.bookmarks.getTree();
-      const shortcuts: { name: string; url: string }[] = [];
-      const collect = (nodes: typeof tree) => {
+      const bookmarks: ChromeBookmark[] = [];
+      const collect = (nodes: typeof tree, folder: string[]) => {
         for (const node of nodes) {
-          if (node.title && node.url && /^https?:\/\//i.test(node.url)) {
-            shortcuts.push({ name: node.title, url: node.url });
+          if (node.url && /^https?:\/\//i.test(node.url)) {
+            bookmarks.push({ id: node.id, name: node.title.trim() || node.url, url: node.url, folder });
           }
-          if (node.children) collect(node.children);
+          if (node.children) collect(node.children, node.title ? [...folder, node.title] : folder);
         }
       };
-      collect(tree);
-      return { shortcuts, success: true };
-    } catch (error) {
-      return {
-        shortcuts: [],
-        success: false,
-        error: error instanceof Error ? error.message : undefined,
-      };
+      collect(tree, []);
+      return { bookmarks, success: true };
+    } catch {
+      return { success: false };
     }
   });
 });

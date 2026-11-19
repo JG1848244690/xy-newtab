@@ -151,7 +151,7 @@ function AddTab({
 
 function App() {
   const storesReady = useStoresReady();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { shortcuts, actions: shortcutActions } = useShortcutsStore();
   const { groups, addShortcutToGroup } = useGroupsStore();
 
@@ -166,6 +166,10 @@ function App() {
   const [shortcutName, setShortcutName] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    document.documentElement.lang = locale.replace('_', '-');
+  }, [locale]);
 
   // 加载当前标签页
   useEffect(() => {

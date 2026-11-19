@@ -2,7 +2,7 @@
   "name": "my-test-extension",
   "description": "WXT 浏览器扩展项目",
   "private": true,
-  "version": "1.0.3",
+  "version": "1.0.4",
   "type": "module",
   "scripts": {
     "dev": "wxt",
@@ -11,6 +11,7 @@
     "build:dev": "wxt build -b chrome -m development",
     "build:firefox": "wxt build -b firefox",
     "zip": "wxt zip",
+    "zip:store": "wxt zip -b chrome -m store",
     "zip:firefox": "wxt zip -b firefox",
     "compile": "tsc --noEmit",
     "postinstall": "wxt prepare",

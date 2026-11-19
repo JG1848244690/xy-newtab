@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Download, Upload, AlertCircle, Check, Chrome, Loader2, ArrowDownUp } from 'lucide-react';
+import { Download, Upload, AlertCircle, Check, Chrome, ArrowDownUp } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -12,7 +12,7 @@ import {
 import { Button } from '@/src/components/ui/button';
 import type { Shortcut, ShortcutGroup, ExportData } from '@/src/utils/types';
 import { exportData, parseImportFile, mergeImportData, replaceImportData, type ImportMode } from '@/src/utils/importExport';
-import { importChromeBookmarks } from '@/src/services/chromeBookmarks';
+import { ChromeBookmarkImportDialog } from './ChromeBookmarkImportDialog';
 import { useI18n } from '@/src/i18n';
 
 interface ImportExportDialogProps {
@@ -35,8 +35,8 @@ export function ImportExportDialog({
   const [importMode, setImportMode] = useState<ImportMode>('merge');
   const [previewData, setPreviewData] = useState<ExportData | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const [isChromeImporting, setIsChromeImporting] = useState(false);
+  const [chromeOpen, setChromeOpen] = useState(false);
+  const chromeTrigger = useRef<HTMLButtonElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleExport = () => {
@@ -49,7 +49,6 @@ export function ImportExportDialog({
     if (!file) return;
 
     setError(null);
-    setSuccessMsg(null);
     try {
       const data = await parseImportFile(file);
       setPreviewData(data);
@@ -77,35 +76,11 @@ export function ImportExportDialog({
     handleClose();
   };
 
-  const handleChromeImport = async () => {
-    setIsChromeImporting(true);
-    setError(null);
-    setSuccessMsg(null);
-
-    try {
-      const { count, added, skipped } = await importChromeBookmarks(addShortcuts);
-      if (count === 0) {
-        setError(t('importExport.chromeImportNone'));
-        return;
-      }
-
-      if (added === 0) {
-        setSuccessMsg(t('importExport.chromeImportSkipAll'));
-      } else {
-        setSuccessMsg(t('importExport.chromeImportSuccess', { n: added }) + (skipped > 0 ? t('importExport.chromeImportSkip', { n: skipped }) : ''));
-      }
-    } catch (err) {
-      setError((err instanceof Error && err.message) || t('importExport.chromeImportFail'));
-    } finally {
-      setIsChromeImporting(false);
-    }
-  };
-
   const handleClose = () => {
     setImportMode('merge');
     setPreviewData(null);
     setError(null);
-    setSuccessMsg(null);
+    setChromeOpen(false);
     setOpen(false);
   };
 
@@ -150,19 +125,17 @@ export function ImportExportDialog({
               </p>
             </div>
             <Button
-              onClick={handleChromeImport}
+              ref={chromeTrigger}
+              onClick={() => setChromeOpen(true)}
               variant="outline"
               size="sm"
-              disabled={isChromeImporting}
             >
-              {isChromeImporting ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Chrome className="w-4 h-4 mr-2" />
-              )}
+              <Chrome className="size-4" />
               {t('importExport.chromeImport')}
             </Button>
           </div>
+          <ChromeBookmarkImportDialog open={chromeOpen} onOpenChange={setChromeOpen}
+            addShortcuts={addShortcuts} returnFocus={chromeTrigger} />
 
           {/* 从文件导入 */}
           <div className="space-y-3">
@@ -222,14 +195,6 @@ export function ImportExportDialog({
                     ? t('importExport.mergeModeDesc')
                     : t('importExport.replaceModeDesc')}
                 </p>
-              </div>
-            )}
-
-            {/* 成功提示 */}
-            {successMsg && (
-              <div className="flex items-center gap-2 p-3 rounded-xl border border-green-500/50 bg-green-500/10 text-sm text-green-600 dark:text-green-400">
-                <Check className="w-4 h-4 flex-shrink-0" />
-                {successMsg}
               </div>
             )}
 

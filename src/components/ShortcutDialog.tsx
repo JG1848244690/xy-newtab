@@ -20,6 +20,9 @@ interface ShortcutDialogProps {
   onOpenChange: (open: boolean) => void;
   shortcut?: Shortcut | null;
   onSave: (data: { name: string; url: string; icon?: string }) => void;
+  dockPin?: { pinned: boolean; onSave: (pinned: boolean) => void };
+  desktopVisibility?: { visible: boolean; onChange: (visible: boolean) => void };
+  onCloseAutoFocus?: (event: Event) => void;
   /** 快捷模式：粘贴URL后自动提取name，回车直接添加 */
   quickMode?: boolean;
 }
@@ -52,16 +55,20 @@ function extractNameFromUrl(url: string): string {
   }
 }
 
-export function ShortcutDialog({ open, onOpenChange, shortcut, onSave, quickMode = false }: ShortcutDialogProps) {
+export function ShortcutDialog({ open, onOpenChange, shortcut, onSave, dockPin, desktopVisibility, onCloseAutoFocus, quickMode = false }: ShortcutDialogProps) {
   const { t } = useI18n();
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
+  const [pinOverride, setPinOverride] = useState<boolean>();
   const [urlInputKey, setUrlInputKey] = useState(0); // 用于重置输入框聚焦
   const isEditing = !!shortcut;
+  const initialPinned = dockPin?.pinned ?? false;
+  const pinned = pinOverride ?? initialPinned;
 
   // 当打开弹窗时，初始化表单数据
   useEffect(() => {
     if (open) {
+      setPinOverride(undefined);
       if (shortcut) {
         setName(shortcut.name);
         setUrl(shortcut.url);
@@ -100,6 +107,7 @@ export function ShortcutDialog({ open, onOpenChange, shortcut, onSave, quickMode
       name: name.trim(),
       url: url.trim(),
     });
+    if (dockPin && initialPinned !== pinned) dockPin.onSave(pinned);
 
     onOpenChange(false);
   };
@@ -117,7 +125,7 @@ export function ShortcutDialog({ open, onOpenChange, shortcut, onSave, quickMode
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={quickMode ? 'sm:max-w-[480px]' : 'sm:max-w-[425px]'}>
+      <DialogContent className={quickMode ? 'sm:max-w-[480px]' : 'sm:max-w-[425px]'} onCloseAutoFocus={onCloseAutoFocus}>
         {quickMode ? (
           // 快捷模式：极简布局，无图标预览
           <div className="flex items-center gap-3 py-2">
@@ -193,6 +201,22 @@ export function ShortcutDialog({ open, onOpenChange, shortcut, onSave, quickMode
                     <span className="text-sm text-muted-foreground">{t('shortcuts.iconPreview')}</span>
                     <ShortcutIcon url={previewUrl} name={name} className="size-8" />
                   </div>
+                )}
+                {dockPin && (
+                  <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border bg-muted/25 px-3 text-sm">
+                    <input type="checkbox" className="size-4 accent-primary" checked={pinned}
+                      onChange={(event) => setPinOverride(event.target.checked)} />
+                    {t('desktop.pinInEditor')}
+                  </label>
+                )}
+                {desktopVisibility && (
+                  <Button type="button" variant="ghost" size="sm" className="w-fit"
+                    onClick={() => {
+                      desktopVisibility.onChange(!desktopVisibility.visible);
+                      onOpenChange(false);
+                    }}>
+                    {t(desktopVisibility.visible ? 'desktop.remove' : 'desktop.restore')}
+                  </Button>
                 )}
               </div>
               <DialogFooter>

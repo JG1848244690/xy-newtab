@@ -50,6 +50,8 @@ const backgroundSchema = v.object({
 });
 
 export const settingsSchema = v.object({
+  desktopOrder: v.optional(v.array(v.string())),
+  desktopHiddenIds: v.optional(v.array(v.string())),
   iconsPerRow: v.number(),
   layout: v.oneOf(LAYOUTS),
   background: v.optional(backgroundSchema),
