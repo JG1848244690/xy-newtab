@@ -4,13 +4,11 @@ type LocalKey = `local:${string}`;
 
 const queued = new Map<LocalKey, unknown>();
 const writing = new Set<LocalKey>();
-let flushing = false;
+let pendingFlush: Promise<void> | undefined;
 
 function stageWrite(key: LocalKey, value: unknown): void {
   queued.set(key, value);
-  if (flushing) return;
-  flushing = true;
-  queueMicrotask(() => void flush());
+  pendingFlush ??= Promise.resolve().then(flush);
 }
 
 async function flush(): Promise<void> {
@@ -27,7 +25,12 @@ async function flush(): Promise<void> {
       for (const { key } of batch) writing.delete(key);
     }
   }
-  flushing = false;
+  pendingFlush = undefined;
+}
+
+export async function persistStorageItems(values: Record<string, unknown>): Promise<void> {
+  while (pendingFlush) await pendingFlush;
+  await storage.setItems(Object.entries(values).map(([key, value]) => ({ key: `local:${key}` as const, value })));
 }
 
 export function createStorageCell<T>(key: string) {

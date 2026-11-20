@@ -50,6 +50,7 @@ const backgroundSchema = v.object({
 });
 
 export const settingsSchema = v.object({
+  weather: v.optional(v.object({ id: v.string(), city: v.string(), apiKey: v.string() })),
   desktopOrder: v.optional(v.array(v.string())),
   desktopHiddenIds: v.optional(v.array(v.string())),
   iconsPerRow: v.number(),

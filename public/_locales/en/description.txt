@@ -1,12 +1,19 @@
-Make Chrome’s new tab your own with grouped bookmark shortcuts and a customizable background.
+Turn your Chrome new tab into a bookmark launcher with a floating Dock, grouped shortcuts and backgrounds you choose.
 
-• Organize shortcuts into groups and drag them between groups. Move, copy or delete several at once.
-• Switch between the floating bottom Dock and grouped cards from the new tab toolbar. Pin a shortcut to the Dock while keeping it in its group.
-• Choose a solid color, a preset image, your own image or a local video.
-• Import a local Wallpaper Engine Scene folder or select its scene.pkg with the optional project.json. Compatible scenes render in the new tab. SceneScript, audio and Web/HTML wallpapers are unsupported, so some scenes may appear different from Wallpaper Engine.
-• Import existing Chrome bookmarks or use Import / Export to back up your shortcuts as JSON. Background media files stay on the device and are separate from the JSON backup.
-• Press Ctrl+Y (Cmd+Y on Mac) to add the current page. Choose a light or dark theme, and use English or Simplified Chinese based on your Chrome language or your preference.
+TWO WAYS TO ORGANIZE
+• Dock desktop: flip through pages with the mouse wheel, search your saved bookmarks and drag shortcuts into the bottom Dock.
+• Grouped bookmarks: organize shortcuts in collapsible groups, drag them between groups and manage several at once. A shortcut pinned to the Dock can stay in its group.
+• Import selected Chrome bookmarks or all of them. Back up your shortcuts and groups as a local JSON file.
+• Press Ctrl+Y (Cmd+Y on Mac) to add the current page. Choose a light or dark theme and use English or Simplified Chinese.
 
-No account, ads, analytics or cloud sync. Shortcuts, settings and imported wallpaper files are stored on your device. To display site icons, public favicon services receive the shortcut’s domain, without the rest of its URL. Preset images and image URLs you choose load from their hosts.
+YOUR BACKGROUND
+Choose a color, image or local video, or import a compatible Wallpaper Engine Scene. In Wallpaper Engine, open the wallpaper’s folder in Explorer. In the extension, go to Settings → Scene wallpaper and choose the folder or select scene.pkg with its optional project.json.
+
+Some Scene effects respond to your mouse. Compatibility varies by scene. System audio effects and Web/HTML wallpapers are unsupported. This extension is independent of Wallpaper Engine.
+
+PRIVACY
+Your bookmark collection, layout settings and imported wallpaper files stay on your device. Bookmark and wallpaper features require no account. The extension does not use ads, analytics, tracking or bookmark cloud sync.
+
+Site icon lookups send only a shortcut’s domain to a public icon service. Preset and online backgrounds load from their image hosts. The optional Tasks panel connects to the Xuyan website only after you allow access. It uses your existing website session to read or manage your tasks.
 
 Questions or feedback: privacy@kskbl.com.cn

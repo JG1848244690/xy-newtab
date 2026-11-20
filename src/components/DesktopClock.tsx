@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useI18n } from '@/src/i18n';
+import { DesktopWeather } from './DesktopWeather';
 
 const minute = 60_000;
 
@@ -42,6 +43,7 @@ export function DesktopClock() {
         {period && <span className="desktop-clock-period" aria-hidden="true">{period}</span>}
       </time>
       <p className="desktop-clock-date">{date}</p>
+      <DesktopWeather />
     </header>
   );
 }

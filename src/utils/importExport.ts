@@ -2,25 +2,52 @@
  * 导入导出工具函数
  */
 
-import type { Shortcut, ShortcutGroup, ExportData } from './types';
+import type { BookmarkLayouts, Shortcut, ShortcutGroup, ExportData, Settings } from './types';
 import { DOCK_GROUP_ID } from './constants';
 import { getDockIds, setDockIds } from '@/src/services/groups';
-import { groupSchema, shortcutSchema } from '@/src/schemas';
+import { groupSchema, shortcutSchema, v } from '@/src/schemas';
 
-const EXPORT_VERSION = '1.0';
+const EXPORT_VERSION = '2.0';
+type LayoutSettings = Pick<Settings, 'layout' | 'iconsPerRow' | 'desktopOrder' | 'desktopHiddenIds'>;
+const layoutsSchema = v.object({
+  active: v.oneOf(['group', 'dock'] as const),
+  group: v.object({ iconsPerRow: v.number() }),
+  dock: v.object({
+    pinnedIds: v.array(v.string()),
+    desktopOrder: v.array(v.string()),
+    hiddenIds: v.array(v.string()),
+  }),
+});
+
+function validIds(ids: readonly string[], allowed: Set<string>) {
+  return [...new Set(ids)].filter((id) => allowed.has(id));
+}
+
+export function bookmarkBackup(shortcuts: Shortcut[], groups: ShortcutGroup[], settings: LayoutSettings): ExportData & { layouts: BookmarkLayouts } {
+  const allowed = new Set(shortcuts.map(({ id }) => id));
+  return {
+    version: EXPORT_VERSION,
+    exportedAt: Date.now(),
+    shortcuts,
+    // Legacy readers still find the Dock pins in the system group.
+    groups,
+    layouts: {
+      active: settings.layout === 'dock' ? 'dock' : 'group',
+      group: { iconsPerRow: settings.iconsPerRow },
+      dock: {
+        pinnedIds: validIds(getDockIds(groups), allowed),
+        desktopOrder: validIds(settings.desktopOrder ?? [], allowed),
+        hiddenIds: validIds(settings.desktopHiddenIds ?? [], allowed),
+      },
+    },
+  };
+}
 
 /**
  * 导出数据为 JSON 文件
  */
-export function exportData(shortcuts: Shortcut[], groups: ShortcutGroup[]): void {
-  const exportData: ExportData = {
-    version: EXPORT_VERSION,
-    exportedAt: Date.now(),
-    shortcuts,
-    groups,
-  };
-
-  const json = JSON.stringify(exportData, null, 2);
+export function exportData(data: ExportData): void {
+  const json = JSON.stringify(data, null, 2);
   const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
 
@@ -41,6 +68,12 @@ export async function parseImportFile(file: File): Promise<ExportData> {
   if (!Array.isArray(data?.shortcuts)) throw new Error('无效的数据格式：缺少 shortcuts');
   if (!Array.isArray(data.groups)) throw new Error('无效的数据格式：缺少 groups');
 
+  const version = data.version ?? '1.0';
+  if (version !== '1.0' && version !== EXPORT_VERSION) throw new Error('Unsupported backup version');
+  const layouts = version === EXPORT_VERSION ? layoutsSchema.parse(data.layouts) : undefined;
+  if (layouts && (!Number.isInteger(layouts.group.iconsPerRow) || layouts.group.iconsPerRow < 1)) {
+    throw new Error('Invalid columns');
+  }
   const exportedAt = typeof data.exportedAt === 'number' ? data.exportedAt : Date.now();
   const shortcuts = data.shortcuts.map((shortcut) => {
     if (!shortcut?.id || !shortcut.name || !shortcut.url) throw new Error('无效的快捷方式数据');
@@ -52,13 +85,20 @@ export async function parseImportFile(file: File): Promise<ExportData> {
     const createdAt = group.createdAt ?? exportedAt;
     return groupSchema.parse({ ...group, createdAt, updatedAt: group.updatedAt ?? createdAt, isExpanded: group.isExpanded ?? true });
   });
-  return { version: data.version ?? EXPORT_VERSION, exportedAt, shortcuts, groups };
+  if (new Set(shortcuts.map(({ id }) => id)).size !== shortcuts.length ||
+      new Set(groups.map(({ id }) => id)).size !== groups.length) throw new Error('Duplicate backup identifiers');
+  return { version, exportedAt, shortcuts, groups, layouts };
 }
 
 /**
  * 导入模式
  */
 export type ImportMode = 'merge' | 'replace';
+export type RestoredBookmarks = {
+  shortcuts: Shortcut[];
+  groups: ShortcutGroup[];
+  settings: Partial<LayoutSettings>;
+};
 
 /**
  * 合并导入数据
@@ -66,8 +106,9 @@ export type ImportMode = 'merge' | 'replace';
 export function mergeImportData(
   existingShortcuts: Shortcut[],
   existingGroups: ShortcutGroup[],
-  importData: ExportData
-): { shortcuts: Shortcut[]; groups: ShortcutGroup[] } {
+  importData: ExportData,
+  settings: LayoutSettings,
+): RestoredBookmarks {
   const now = Date.now();
   const idMap = new Map<string, string>(); // 旧ID -> 新ID
 
@@ -124,26 +165,47 @@ export function mergeImportData(
   }
 
   let groups = [...existingGroups, ...newGroups];
-  const importedDock = getDockIds(importData.groups).flatMap((oldId) => {
-    const id = idMap.get(oldId);
-    return id === undefined ? [] : [id];
-  });
+  const mapIds = (ids: string[]) => ids.flatMap((id) => idMap.get(id) ?? []);
+  const addedIds = new Set(newShortcuts.map(({ id }) => id));
+  const imported = importData.layouts?.dock;
+  const importedDock = mapIds(imported?.pinnedIds ?? getDockIds(importData.groups));
   if (importedDock.length) groups = setDockIds(groups, [...new Set([...getDockIds(existingGroups), ...importedDock])]);
 
   return {
     shortcuts: [...existingShortcuts, ...newShortcuts],
     groups,
+    settings: imported ? {
+      desktopOrder: [...new Set([
+        ...(settings.desktopOrder ?? []),
+        ...existingShortcuts.map(({ id }) => id),
+        ...mapIds(imported.desktopOrder),
+      ])],
+      desktopHiddenIds: [...new Set([
+        ...(settings.desktopHiddenIds ?? []),
+        ...mapIds(imported.hiddenIds).filter((id) => addedIds.has(id)),
+      ])],
+    } : {},
   };
 }
 
 /**
  * 替换导入数据
  */
-export function replaceImportData(importData: ExportData): { shortcuts: Shortcut[]; groups: ShortcutGroup[] } {
+export function replaceImportData(importData: ExportData): RestoredBookmarks {
   const now = Date.now();
 
+  const allowed = new Set(importData.shortcuts.map(({ id }) => id));
+  const groups = importData.groups.map((group) => ({
+    ...group, updatedAt: now, shortcutIds: validIds(group.shortcutIds, allowed),
+  }));
+  const layouts = importData.layouts;
   return {
     shortcuts: importData.shortcuts.map(s => ({ ...s, updatedAt: now })),
-    groups: importData.groups.map(g => ({ ...g, updatedAt: now })),
+    groups: layouts ? setDockIds(groups, validIds(layouts.dock.pinnedIds, allowed)) : groups,
+    settings: {
+      ...(layouts && { layout: layouts.active, iconsPerRow: layouts.group.iconsPerRow }),
+      desktopOrder: validIds(layouts?.dock.desktopOrder ?? [], allowed),
+      desktopHiddenIds: validIds(layouts?.dock.hiddenIds ?? [], allowed),
+    },
   };
 }

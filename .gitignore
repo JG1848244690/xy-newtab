@@ -1,5 +1,6 @@
 node_modules
 .output
+.local-install/
 .wxt
 test-results
 playwright-report

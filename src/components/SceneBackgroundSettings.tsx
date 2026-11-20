@@ -6,6 +6,7 @@ import { Label } from '@/src/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/src/components/ui/select';
 import { useI18n } from '@/src/i18n';
 import { readSceneFiles, removeBackgroundScene, saveBackgroundScene } from '@/src/utils/sceneStorage';
+import { sceneSandboxEnabled } from '@/src/utils/sceneWallpaper';
 import type { BackgroundSetting, BackgroundSize } from '@/src/utils/types';
 
 export function SceneBackgroundSettings({ setting, onSave }: {
@@ -85,7 +86,9 @@ export function SceneBackgroundSettings({ setting, onSave }: {
           <Upload className="size-4" />{t('settings.bg.scene.choosePackage')}
         </Button>
         <p className="text-xs text-muted-foreground">{t('settings.bg.scene.hint')}</p>
-        <p className="text-xs text-muted-foreground">{t('settings.bg.scene.effects')}</p>
+        <p className="text-xs text-muted-foreground">
+          {t(sceneSandboxEnabled ? 'settings.bg.scene.effects' : 'settings.bg.scene.effectsWithoutScripts')}
+        </p>
         {busy && <p role="status" className="text-sm">{t('common.loading')}</p>}
         {error && <p role="alert" className="text-sm text-destructive">{t('settings.bg.scene.' + error)}</p>}
       </div>

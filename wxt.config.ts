@@ -1,16 +1,27 @@
 import { defineConfig } from 'wxt';
 import tailwindcss from '@tailwindcss/vite';
 import { localSceneRenderer } from './build/local-scene-renderer';
+import { TODO_HOST_PERMISSION } from './src/services/todoSite';
+import { WEATHER_HOST_PERMISSION } from './src/services/weatherSite';
 
 export default defineConfig({
   modules: ['@wxt-dev/module-react'],
 
   vite: () => ({
-    plugins: [tailwindcss(), localSceneRenderer()],
+    plugins: [tailwindcss()],
     optimizeDeps: { exclude: ['webwallgl'] },
   }),
+  hooks: {
+    'vite:build:extendConfig': (entrypoints, config) => {
+      const sandboxOnly = entrypoints.every((entrypoint) => entrypoint.type === 'sandbox');
+      (config.plugins ??= []).push(localSceneRenderer(sandboxOnly));
+    },
+    'vite:devServer:extendConfig': (config) => {
+      (config.plugins ??= []).push(localSceneRenderer());
+    },
+  },
 
-  manifest: ({ browser, mode }) => ({
+  manifest: ({ browser, manifestVersion, mode }) => ({
     // Web Store 多语言展示:default_locale 决定 fallback,其它语种用 _locales/<lang>/messages.json
     // 扩展内 UI 文案走 src/i18n(en / zh_CN),与这里各自独立。
     name: '__MSG_extName__',
@@ -29,10 +40,33 @@ export default defineConfig({
         }
       : {}),
 
-    // 扩展纯本地运行：无账号、无云同步、无自建后端
+    // 书签和布局保存在本地；今日待办通过下面的可选权限连接。
     // activeTab：popup 打开时读取当前标签页 URL/标题用于「快捷添加」，仅在用户点击图标后授权
     // bookmarks：一键导入 Chrome 书签
-    permissions: ['storage', 'activeTab', 'bookmarks'],
+    permissions: ['storage', 'activeTab', 'bookmarks',
+      ...(manifestVersion === 3 && (browser === 'chrome' || browser === 'edge') ? ['alarms' as const] : [])],
+    ...(manifestVersion === 3 && (browser === 'chrome' || browser === 'edge')
+      ? { optional_permissions: ['downloads' as const] } : {}),
+    ...(manifestVersion === 3 && (browser === 'chrome' || browser === 'edge') ? {
+      content_security_policy: {
+        extension_pages: "script-src 'self'; object-src 'self'; frame-src 'self';",
+        sandbox: [
+          "sandbox allow-scripts",
+          "default-src 'none'",
+          "script-src 'self' 'unsafe-eval'",
+          "style-src 'self' 'unsafe-inline'",
+          "connect-src data: blob:",
+          "img-src 'self' data: blob:",
+          "media-src data: blob:",
+          "font-src data: blob:",
+          "form-action 'none'",
+          "base-uri 'none'",
+        ].join('; '),
+      },
+    } : {}),
+    ...(manifestVersion === 3
+      ? { optional_host_permissions: [TODO_HOST_PERMISSION, WEATHER_HOST_PERMISSION] }
+      : { optional_permissions: [TODO_HOST_PERMISSION, WEATHER_HOST_PERMISSION] }),
     host_permissions: [
       // 仅向图标服务发送快捷方式所在域名以获取 favicon。
       'https://www.google.com/*',

@@ -5,6 +5,7 @@ import { DockDesktop } from '@/src/components/DockDesktop';
 import { GroupLayout } from '@/src/components/GroupLayout';
 import { ImportExportDialog } from '@/src/components/ImportExportDialog';
 import { SettingsSheet } from '@/src/components/SettingsSheet';
+import { Todos } from '@/src/components/Todos';
 import { Button } from '@/src/components/ui/button';
 import { useShortcutsStore } from '@/src/hooks/useShortcutsStore';
 import { useGroupsStore } from '@/src/hooks/useGroupsStore';
@@ -14,6 +15,10 @@ import { useStoresReady } from '@/src/lib/useStoresReady';
 import { NEWTAB_NAVIGATED_EVENT } from '@/src/utils/navigationReset';
 import { useI18n } from '@/src/i18n';
 import { cn } from '@/src/lib/utils';
+import { persistStorageItems } from '@/src/lib/storage';
+import { settingsStore } from '@/src/store/settings';
+import { STORAGE_KEYS } from '@/src/store/keys';
+import type { RestoredBookmarks } from '@/src/utils/importExport';
 
 function App() {
   const storesReady = useStoresReady();
@@ -28,7 +33,7 @@ function App() {
       return shortcut ? [shortcut] : [];
     });
   }, [shortcuts, pinnedIds]);
-  const { settings: { background, desktopOrder, desktopHiddenIds }, setBackground, setDesktopOrder,
+  const { settings, settings: { background, desktopOrder, desktopHiddenIds }, setBackground, setDesktopOrder,
     setDesktopVisible, setLayout, layout } = useSettingsStore();
   const dockMode = layout === 'dock';
 
@@ -62,10 +67,11 @@ function App() {
     );
   }
 
-  const handleImportData = (newShortcuts: typeof shortcuts, newGroups: typeof records) => {
-    shortcutActions.replace(newShortcuts);
-    groupActions.replace(newGroups);
-  };
+  const handleImportData = (restored: RestoredBookmarks) => persistStorageItems({
+    [STORAGE_KEYS.shortcuts]: restored.shortcuts,
+    [STORAGE_KEYS.groups]: restored.groups,
+    [STORAGE_KEYS.settings]: { ...settingsStore.get(), ...restored.settings },
+  });
 
   return (
     <div className="relative min-h-screen">
@@ -76,6 +82,7 @@ function App() {
           <ImportExportDialog
             shortcuts={shortcuts}
             groups={records}
+            settings={settings}
             onImport={handleImportData}
             addShortcuts={shortcutActions.addMany}
             compact
@@ -86,6 +93,7 @@ function App() {
             onClick={() => setLayout(dockMode ? 'group' : 'dock')}>
             {dockMode ? <LayoutGrid className="size-4" /> : <Dock className="size-4" />}
           </Button>
+          <Todos />
           <Button
             ref={settingsTrigger}
             variant="ghost"

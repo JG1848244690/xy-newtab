@@ -27,6 +27,7 @@ import { Image, Palette, Maximize2, RotateCcw, Upload, Globe, Video, Volume2, Vo
 import { useI18n, SUPPORTED_LOCALES, type Locale } from '@/src/i18n';
 import { detectLocale } from '@/src/i18n/detect';
 import { useSettingsStore } from '@/src/hooks/useSettingsStore';
+import { WeatherSettings } from './WeatherSettings';
 import { removeBackgroundScene } from '@/src/utils/sceneStorage';
 import { SceneBackgroundSettings } from './SceneBackgroundSettings';
 import {
@@ -317,6 +318,8 @@ export function SettingsSheet({
               </Button>
             </div>
           </div>
+
+          <WeatherSettings config={settings.weather} />
 
           {/* 背景类型选择 */}
           <div className="settings-section space-y-3">

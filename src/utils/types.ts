@@ -53,6 +53,7 @@ export interface BackgroundSetting {
 
 // 设置
 export interface Settings {
+  weather?: import('@/src/services/weatherSite').WeatherConfig;
   desktopOrder?: string[];
   desktopHiddenIds?: string[];
   iconsPerRow: number;
@@ -70,6 +71,13 @@ export interface ExportData {
   exportedAt: number; // 导出时间戳
   shortcuts: Shortcut[];
   groups: ShortcutGroup[];
+  layouts?: BookmarkLayouts;
+}
+
+export interface BookmarkLayouts {
+  active: 'group' | 'dock';
+  group: { iconsPerRow: number };
+  dock: { pinnedIds: string[]; desktopOrder: string[]; hiddenIds: string[] };
 }
 
 // 扩展 Window 类型

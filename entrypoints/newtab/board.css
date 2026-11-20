@@ -235,7 +235,7 @@ a.bookmark-icon:focus-visible {
 .desktop {
   --desktop-icon-size: clamp(42px, 6.5vh, 52px);
   position: fixed;
-  inset: 0 0 max(108px, calc(env(safe-area-inset-bottom) + 92px));
+  inset: 0 0 max(calc(108px + var(--dock-taskbar-inset, 0px)), calc(env(safe-area-inset-bottom) + 92px));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -287,6 +287,39 @@ a.bookmark-icon:focus-visible {
   line-height: 1.5;
   text-align: center;
   text-shadow: 0 1px 3px #0b182c, 0 2px 9px rgb(5 17 34 / 73%);
+}
+
+.desktop-weather {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  max-width: min(24rem, calc(100vw - 24px));
+  padding: 7px 12px;
+  border: 1px solid rgb(255 255 255 / 25%);
+  border-radius: 12px;
+  background: rgb(15 28 44 / 55%);
+  backdrop-filter: blur(14px);
+}
+
+.desktop-weather-main,
+.desktop-weather-details {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  text-align: center;
+}
+
+.desktop-weather-main { font-size: .8rem; }
+.desktop-weather-main strong { font-size: 1.1rem; font-variant-numeric: tabular-nums; }
+.desktop-weather-details, .desktop-weather-status { font-size: .7rem; }
+.desktop-weather-details a { text-decoration: underline; text-underline-offset: 2px; }
+.desktop-weather-status { text-shadow: 0 1px 5px #0b182c, 0 1px 3px #0b182c; }
+
+@media (max-height: 520px) {
+  .desktop-weather { padding-block: 4px; }
+  .desktop-weather-details span:not([role='status']) { display: none; }
 }
 
 .desktop-pages {
@@ -513,7 +546,7 @@ a.bookmark-icon:focus-visible {
 }
 
 .dock-position {
-  bottom: max(20px, env(safe-area-inset-bottom));
+  bottom: max(calc(20px + var(--dock-taskbar-inset, 0px)), env(safe-area-inset-bottom));
 }
 
 .dock-shelf {
@@ -593,6 +626,102 @@ a.bookmark-icon:focus-visible {
 .dock-tools,
 .dock-empty {
   backdrop-filter: blur(22px) saturate(150%);
+}
+
+.todo-popover {
+  position: fixed;
+  inset: 4.5rem 1rem auto auto;
+  width: min(25rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 5.5rem);
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: 16px;
+  background: rgb(245 251 254 / 96%);
+}
+
+.newtab.dark .todo-popover { background: rgb(26 45 60 / 96%); }
+
+.todo-panel { color: var(--bookmark-ink); }
+
+.todo-panel-header,
+.todo-panel-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 16px;
+}
+
+.todo-panel-header { border-bottom: 1px solid var(--bookmark-line); }
+.todo-panel-dialog .todo-panel-header { padding-inline-end: 2.75rem; }
+.todo-panel-header h2 { font-size: .95rem; font-weight: 650; }
+.todo-panel-header p, .todo-panel-count { color: var(--bookmark-muted); font-size: .75rem; }
+.todo-panel-body { padding: 10px 12px; }
+.todo-panel-message { padding: 8px 4px; color: var(--bookmark-muted); font-size: .85rem; }
+.todo-panel-count { padding: 3px 4px 5px; }
+.todo-days {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--bookmark-line);
+  border-radius: 10px;
+}
+.todo-days label { position: relative; }
+.todo-days span {
+  display: block;
+  border-radius: 7px;
+  padding: 6px 3px;
+  text-align: center;
+  color: var(--bookmark-muted);
+  font-size: .8rem;
+  cursor: pointer;
+}
+.todo-days input:checked + span {
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+  font-weight: 650;
+}
+.todo-days input:focus-visible + span { outline: 2px solid var(--color-ring); outline-offset: 1px; }
+.todo-days:disabled span { cursor: default; }
+.todo-list-toolbar { display: flex; align-items: center; justify-content: space-between; padding-top: 8px; }
+.todo-list { display: grid; gap: 3px; }
+.todo-list li { display: flex; gap: 4px; align-items: flex-start; padding: 6px 0; }
+.todo-list li p { font-size: .85rem; overflow-wrap: anywhere; }
+.todo-list li span { color: var(--bookmark-muted); font-size: .75rem; font-variant-numeric: tabular-nums; }
+.todo-list li .todo-description { color: var(--bookmark-muted); font-size: .75rem; white-space: pre-wrap; }
+.todo-editor {
+  display: grid;
+  gap: 8px;
+  margin-block: 5px 9px;
+  padding: 10px;
+  border: 1px solid var(--bookmark-line);
+  border-radius: 10px;
+  font-size: .85rem;
+  overflow-wrap: anywhere;
+}
+.todo-editor h3 { font-weight: 650; }
+.todo-editor-fields, .todo-editor-range > div { display: grid; gap: 4px; min-width: 0; }
+.todo-editor-fields > :is(label, .todo-editor-range, .todo-editor-all-day) { margin-top: 4px; }
+.todo-editor-range { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr)); gap: 8px; }
+.todo-editor-range[hidden] { display: none; }
+.todo-editor-range input { min-width: 0; }
+.todo-editor-all-day { display: flex; align-items: center; gap: 6px; }
+.todo-editor-actions { display: flex; justify-content: flex-end; gap: 6px; }
+.todo-panel-completed { margin-top: 8px; border-top: 1px solid var(--bookmark-line); }
+.todo-panel-completed summary { padding: 9px 4px 4px; color: var(--bookmark-muted); font-size: .8rem; cursor: pointer; }
+.todo-panel-footer { border-top: 1px solid var(--bookmark-line); color: var(--bookmark-muted); font-size: .8rem; }
+.todo-site-link { display: inline-flex; align-items: center; gap: 4px; }
+.todo-site-link:hover { text-decoration: underline; text-underline-offset: .18em; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .todo-popover:popover-open { animation: todo-panel-in 160ms ease-out; }
+}
+
+@keyframes todo-panel-in {
+  from { opacity: 0; transform: translateY(-4px); }
 }
 
 @media (prefers-reduced-motion: reduce) {

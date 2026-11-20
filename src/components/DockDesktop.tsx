@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { DndContext, DragOverlay, KeyboardCode, KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
 import { DockLayout, dockDropTarget } from './DockLayout';
@@ -21,6 +21,20 @@ interface DockDesktopProps {
   onManage: () => void;
 }
 
+function taskbarInset(): number {
+  const { screen, outerHeight, outerWidth, innerWidth, screenY } = window;
+  if (!navigator.userAgent.includes('Windows') || outerHeight < screen.height - 2) return 0;
+
+  const reservedHeight = Math.max(0, screen.height - screen.availHeight);
+  const { availTop } = screen as Screen & { availTop?: number };
+  const overlap = availTop === undefined ? reservedHeight : screenY + outerHeight - availTop - screen.availHeight;
+  // An auto-hide taskbar can cover a screen-filling window without shrinking its work area.
+  const bottomInset = reservedHeight ? Math.max(0, Math.min(reservedHeight, overlap)) : 48;
+  // Screen bounds ignore page zoom. Keep the clearance large enough when zooming out.
+  const viewportScale = Math.max(1, innerWidth / Math.max(1, Math.min(outerWidth, screen.width)));
+  return Math.ceil(bottomInset * viewportScale);
+}
+
 export function DockDesktop({ shortcuts, dockShortcuts, desktopOrder, hiddenIds, onSetDesktopVisible,
   onSort, onUpdateShortcut, onPin, onReorder, onManage }: DockDesktopProps) {
   const { t } = useI18n();
@@ -29,6 +43,22 @@ export function DockDesktop({ shortcuts, dockShortcuts, desktopOrder, hiddenIds,
   const [recentPin, setRecentPin] = useState<string>();
   const [editing, setEditing] = useState<Shortcut | null>(null);
   const editorTrigger = useRef<HTMLButtonElement | null>(null);
+  const workspace = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const surface = workspace.current;
+    if (!surface) return;
+    const updateInset = () => surface.style.setProperty('--dock-taskbar-inset', `${taskbarInset()}px`);
+    updateInset();
+    window.addEventListener('resize', updateInset);
+    window.addEventListener('focus', updateInset);
+    document.addEventListener('fullscreenchange', updateInset);
+    return () => {
+      window.removeEventListener('resize', updateInset);
+      window.removeEventListener('focus', updateInset);
+      document.removeEventListener('fullscreenchange', updateInset);
+    };
+  }, []);
   const ordered = useMemo(() => {
     if (!desktopOrder?.length) return shortcuts;
     const remaining = new Map(shortcuts.map((shortcut) => [shortcut.id, shortcut]));
@@ -108,9 +138,11 @@ export function DockDesktop({ shortcuts, dockShortcuts, desktopOrder, hiddenIds,
         moveShortcut(shortcut, target.index, target.page);
         if (target.kind === 'marker') target.showPage();
       }}>
-      <DesktopPages shortcuts={visible} onEdit={edit} onMove={moveShortcut} />
-      <DockLayout shortcuts={dockShortcuts} recentPin={recentPin} onUnpin={(id) => onPin(id, false)}
-        onReorder={onReorder} onManage={onManage} onEdit={edit} />
+      <div ref={workspace}>
+        <DesktopPages shortcuts={visible} onEdit={edit} onMove={moveShortcut} />
+        <DockLayout shortcuts={dockShortcuts} recentPin={recentPin} onUnpin={(id) => onPin(id, false)}
+          onReorder={onReorder} onManage={onManage} onEdit={edit} />
+      </div>
       <ShortcutDialog open={editing !== null} shortcut={editing}
         onOpenChange={(open) => { if (!open) setEditing(null); }}
         onSave={(data) => { if (editing) onUpdateShortcut(editing.id, data); }}

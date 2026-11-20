@@ -10,16 +10,21 @@ import {
   DialogTrigger,
 } from '@/src/components/ui/dialog';
 import { Button } from '@/src/components/ui/button';
-import type { Shortcut, ShortcutGroup, ExportData } from '@/src/utils/types';
-import { exportData, parseImportFile, mergeImportData, replaceImportData, type ImportMode } from '@/src/utils/importExport';
+import type { Shortcut, ShortcutGroup, ExportData, Settings } from '@/src/utils/types';
+import { bookmarkBackup, exportData, parseImportFile, mergeImportData, replaceImportData, type ImportMode, type RestoredBookmarks } from '@/src/utils/importExport';
 import { ChromeBookmarkImportDialog } from './ChromeBookmarkImportDialog';
 import { useI18n } from '@/src/i18n';
+import { BookmarkAutoBackup } from './BookmarkAutoBackup';
+import { autoBackupSupported } from '@/src/services/bookmarkAutoBackup';
+import { DOCK_GROUP_ID } from '@/src/utils/constants';
+import { getDockIds } from '@/src/services/groups';
 
 interface ImportExportDialogProps {
   compact?: boolean;
   shortcuts: Shortcut[];
   groups: ShortcutGroup[];
-  onImport: (shortcuts: Shortcut[], groups: ShortcutGroup[]) => void;
+  settings: Settings;
+  onImport: (restored: RestoredBookmarks) => Promise<void>;
   addShortcuts: (items: { name: string; url: string }[]) => number;
 }
 
@@ -27,6 +32,7 @@ export function ImportExportDialog({
   compact = false,
   shortcuts,
   groups,
+  settings,
   onImport,
   addShortcuts,
 }: ImportExportDialogProps) {
@@ -35,12 +41,14 @@ export function ImportExportDialog({
   const [importMode, setImportMode] = useState<ImportMode>('merge');
   const [previewData, setPreviewData] = useState<ExportData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
   const [chromeOpen, setChromeOpen] = useState(false);
   const chromeTrigger = useRef<HTMLButtonElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const parseRequest = useRef(0);
 
   const handleExport = () => {
-    exportData(shortcuts, groups);
+    exportData(bookmarkBackup(shortcuts, groups, settings));
     handleClose();
   };
 
@@ -48,35 +56,38 @@ export function ImportExportDialog({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const request = ++parseRequest.current;
+    e.target.value = '';
+    setPreviewData(null);
     setError(null);
     try {
       const data = await parseImportFile(file);
-      setPreviewData(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('importExport.parseFail'));
-      setPreviewData(null);
+      if (request === parseRequest.current) setPreviewData(data);
+    } catch {
+      if (request === parseRequest.current) setError(t('importExport.parseFail'));
     }
-
-    // 重置 input 以允许重复选择同一文件
-    e.target.value = '';
   };
 
-  const handleImport = () => {
-    if (!previewData) return;
-
-    let result: { shortcuts: Shortcut[]; groups: ShortcutGroup[] };
-
-    if (importMode === 'merge') {
-      result = mergeImportData(shortcuts, groups, previewData);
-    } else {
-      result = replaceImportData(previewData);
+  const handleImport = async () => {
+    if (!previewData || importing) return;
+    setImporting(true);
+    setError(null);
+    try {
+      const result = importMode === 'merge'
+        ? mergeImportData(shortcuts, groups, previewData, settings)
+        : replaceImportData(previewData);
+      await onImport(result);
+      handleClose();
+    } catch {
+      setError(t('importExport.restoreFailed'));
+    } finally {
+      setImporting(false);
     }
-
-    onImport(result.shortcuts, result.groups);
-    handleClose();
   };
+
 
   const handleClose = () => {
+    parseRequest.current++;
     setImportMode('merge');
     setPreviewData(null);
     setError(null);
@@ -85,7 +96,9 @@ export function ImportExportDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(nextOpen) => nextOpen ? setOpen(true) : handleClose()}>
+    <Dialog open={open} onOpenChange={(nextOpen) => {
+      if (!importing) nextOpen ? setOpen(true) : handleClose();
+    }}>
       <DialogTrigger asChild>
         <Button variant="ghost" size={compact ? 'icon' : 'sm'} className="bookmark-action gap-1.5 rounded-lg"
           aria-label={t('layout.importExport')} title={compact ? t('layout.importExport') : undefined}>
@@ -101,13 +114,17 @@ export function ImportExportDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-4 py-4">
+        <div className="grid gap-4 py-4" inert={importing}>
           {/* 导出按钮 */}
           <div className="flex items-center justify-between p-4 rounded-xl border bg-muted/30">
             <div>
               <p className="font-medium">{t('importExport.exportTitle')}</p>
               <p className="text-sm text-muted-foreground">
-                {t('importExport.exportSummary', { shortcuts: shortcuts.length, groups: groups.length })}
+                {t('importExport.exportSummary', {
+                  shortcuts: shortcuts.length,
+                  groups: groups.filter(({ id }) => id !== DOCK_GROUP_ID).length,
+                  dock: getDockIds(groups).length,
+                })}
               </p>
             </div>
             <Button onClick={handleExport} variant="outline" size="sm">
@@ -167,9 +184,16 @@ export function ImportExportDialog({
                 <div className="flex items-center gap-2 text-sm">
                   <Check className="w-4 h-4 text-green-500" />
                   <span>
-                    {t('importExport.previewSummary', { shortcuts: previewData.shortcuts.length, groups: previewData.groups.length })}
+                    {t('importExport.previewSummary', {
+                      shortcuts: previewData.shortcuts.length,
+                      groups: previewData.groups.filter(({ id }) => id !== DOCK_GROUP_ID).length,
+                      dock: previewData.layouts?.dock.pinnedIds.length ?? getDockIds(previewData.groups).length,
+                    })}
                   </span>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  {t(previewData.layouts ? 'importExport.completeLayout' : 'importExport.legacyLayout')}
+                </p>
 
                 {/* 导入模式选择 */}
                 <div className="flex gap-2">
@@ -206,13 +230,14 @@ export function ImportExportDialog({
               </div>
             )}
           </div>
+          {open && autoBackupSupported && <BookmarkAutoBackup />}
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={handleClose}>
+          <Button variant="outline" onClick={handleClose} disabled={importing}>
             {t('common.close')}
           </Button>
-          <Button onClick={handleImport} disabled={!previewData}>
+          <Button onClick={() => void handleImport()} disabled={!previewData || importing}>
             {t('importExport.confirmImport')}
           </Button>
         </DialogFooter>

@@ -85,7 +85,7 @@ const dock = (page: Page) => page.getByRole('navigation', { name: 'Dock', exact:
 
 test('switches layout from the toolbar and returns focus after the settings panel closes', async ({ board }) => {
   const toolbar = board.getByRole('group', { name: '操作', exact: true });
-  await expect(toolbar.getByRole('button')).toHaveCount(3);
+  await expect(toolbar.getByRole('button')).toHaveCount(4);
   await toolbar.getByRole('button', { name: '切换到底部 Dock' }).click();
   await expect(dock(board)).toBeVisible();
   await expect(section(board, 'Work')).toHaveCount(0);
@@ -104,6 +104,247 @@ test('switches layout from the toolbar and returns focus after the settings pane
   await board.emulateMedia({ reducedMotion: 'reduce' });
   await settings.click();
   await expect(panel).toHaveCSS('animation-name', 'none');
+});
+
+test('switches task dates and manages tasks through the authorized website session', async ({ board, worker }) => {
+  const origin = 'https://hls.kskbl.com.cn/*';
+  expect(await worker.evaluate((origin) => chrome.permissions.contains({ origins: [origin] }), origin)).toBe(false);
+
+  await worker.evaluate(() => {
+    const originalFetch = globalThis.fetch;
+    type Task = {
+      id: string; content: string; startDate: string; endDate: string; startTime: string; endTime: string;
+      allDay: boolean; completed: boolean; description?: string;
+    };
+    const task = (id: string, content: string, date: string, allDay = false, completed = false): Task => ({
+      id, content, startDate: date, endDate: date, startTime: allDay ? '00:00:00' : '09:30:00',
+      endTime: allDay ? '23:59:59' : '10:00:00', allDay, completed,
+    });
+    const fixture = {
+      signedIn: false,
+      requests: [] as { url: string; credentials?: string; method: string; body?: unknown }[],
+      tasks: [
+        task('00000000-0000-4000-8000-000000000001', 'Design review', '2026-11-30'),
+        task('00000000-0000-4000-8000-000000000002', 'Send notes', '2026-11-30', true, true),
+        task('00000000-0000-4000-8000-000000000003', 'Yesterday only', '2026-11-29'),
+      ],
+    };
+    Object.assign(globalThis, { todayTodoFixture: fixture });
+    Object.defineProperty(chrome.permissions, 'contains', { value: async () => {
+      return Boolean((await chrome.storage.session.get('todoPermissionFixture')).todoPermissionFixture);
+    } });
+    globalThis.fetch = async (input, init) => {
+      const url = String(input);
+      if (!url.startsWith('https://hls.kskbl.com.cn/')) return originalFetch(input, init);
+      const { pathname, searchParams } = new URL(url);
+      const method = init?.method ?? 'GET';
+      const body = typeof init?.body === 'string' ? JSON.parse(init.body) : undefined;
+      fixture.requests.push({ url, credentials: init?.credentials, method, body });
+      if (!fixture.signedIn) return new Response(null, { status: 401 });
+      if (pathname === '/api-hls/todos/by-date' && method === 'GET') {
+        const date = searchParams.get('date') ?? '';
+        return Response.json(fixture.tasks.filter((item) => item.startDate <= date && item.endDate >= date));
+      }
+      if (pathname === '/api-hls/todos' && method === 'POST') {
+        const created = { ...body, id: '00000000-0000-4000-8000-000000000004', completed: false };
+        fixture.tasks.push(created);
+        return Response.json(created);
+      }
+      const match = /^\/api-hls\/todos\/([^/]+)(\/toggle)?$/.exec(pathname);
+      const current = fixture.tasks.find((item) => item.id === match?.[1]);
+      if (!current) return new Response(null, { status: 404 });
+      if (method === 'DELETE') {
+        fixture.tasks = fixture.tasks.filter((item) => item.id !== current.id);
+        return Response.json({ success: true });
+      }
+      if (method === 'PATCH' && match?.[2]) {
+        current.completed = !current.completed;
+        return Response.json({ id: current.id, completed: current.completed });
+      }
+      if (method === 'PATCH') return Response.json(Object.assign(current, body));
+      return new Response(null, { status: 405 });
+    };
+  });
+  await board.evaluate(() => {
+    Object.defineProperty(chrome.permissions, 'request', { value: async () => {
+      await chrome.storage.session.set({ todoPermissionFixture: true });
+      return true;
+    } });
+    Object.defineProperty(chrome.permissions, 'remove', { value: async () => {
+      await chrome.storage.session.remove('todoPermissionFixture');
+      return true;
+    } });
+  });
+
+  const requests = () => worker.evaluate(() => (globalThis as any).todayTodoFixture.requests);
+  const localMidnight = await board.evaluate(() => new Date(2026, 10, 30, 0, 30).getTime());
+  await board.clock.setFixedTime(localMidnight);
+  expect(await requests()).toHaveLength(0);
+  const trigger = board.getByRole('button', { name: '待办', exact: true });
+  const panel = board.getByRole('dialog', { name: '待办', exact: true });
+  await trigger.click();
+  await expect(panel.getByRole('button', { name: '连接待办' })).toBeVisible();
+  expect(await requests()).toHaveLength(0);
+
+  await panel.getByRole('button', { name: '连接待办' }).click();
+  await expect(panel.getByRole('link', { name: '前往系统登录' })).toHaveAttribute('href', 'https://hls.kskbl.com.cn/login');
+  expect(await requests()).toEqual([{ url: 'https://hls.kskbl.com.cn/api-hls/todos/by-date?date=2026-11-30', credentials: 'include', method: 'GET', body: undefined }]);
+  await worker.evaluate(() => { (globalThis as any).todayTodoFixture.signedIn = true; });
+  await panel.getByRole('button', { name: '刷新待办' }).click();
+  await expect(panel.getByText('Design review')).toBeVisible();
+  await expect(panel.getByText('09:30 – 10:00')).toBeVisible();
+  await expect(panel.getByText('Send notes')).toBeHidden();
+  const completed = panel.getByText('已完成（1）', { exact: true });
+  await completed.click();
+  await expect(panel.getByText('Send notes')).toBeVisible();
+  await expect(panel.getByText('全天')).toBeVisible();
+  await completed.click();
+  await expect(panel.getByText('Send notes')).toBeHidden();
+  await expect(panel.getByRole('heading', { name: '待办', exact: true })).toBeVisible();
+  await expect(panel.getByText('Design review')).toBeVisible();
+  await completed.press('Enter');
+  await expect(panel.getByText('Send notes')).toBeVisible();
+
+  await panel.getByText('昨天', { exact: true }).click();
+  await expect(panel.getByText('Yesterday only')).toBeVisible();
+  await expect(panel.getByText('Design review')).toHaveCount(0);
+  await panel.getByText('明天', { exact: true }).click();
+  await expect(panel.getByText('这一天没有待办。')).toBeVisible();
+  await panel.getByRole('button', { name: '新建待办' }).click();
+  const editor = panel.getByRole('form', { name: '新建待办' });
+  await expect(editor.getByLabel('开始日期')).toHaveValue('2026-12-01');
+  await editor.getByLabel('标题').fill('Cross-day task');
+  await editor.getByLabel('结束日期').fill('2026-11-29');
+  await editor.getByRole('button', { name: '保存待办' }).click();
+  await expect(editor.getByRole('alert')).toHaveText('结束日期需等于或晚于开始日期。');
+  await editor.getByLabel('开始日期').fill('2026-11-30');
+  await editor.getByLabel('结束日期').fill('2026-12-01');
+  await editor.getByRole('checkbox', { name: '全天' }).uncheck();
+  await editor.getByLabel('开始时间').fill('22:00');
+  await editor.getByLabel('结束时间').fill('09:00');
+  await editor.getByLabel('备注（可选）').fill('Keep this note');
+  await editor.getByRole('button', { name: '保存待办' }).click();
+  await expect(panel.getByText('Cross-day task', { exact: true })).toBeVisible();
+  await panel.getByText('今天', { exact: true }).click();
+  await expect(panel.getByText('Cross-day task', { exact: true })).toBeVisible();
+  await panel.getByRole('button', { name: '编辑「Cross-day task」' }).click();
+  const edit = panel.getByRole('form', { name: '编辑待办' });
+  await expect(edit.getByLabel('备注（可选）')).toHaveValue('Keep this note');
+  await edit.getByLabel('标题').fill('Updated task');
+  await edit.getByRole('button', { name: '保存待办' }).click();
+  const toggle = panel.getByRole('button', { name: '完成状态「Updated task」' });
+  await toggle.click();
+  await panel.getByText('已完成（2）', { exact: true }).click();
+  await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+  await panel.getByRole('button', { name: '删除「Updated task」' }).click();
+  await expect(panel.getByText('确定删除「Updated task」？跨天待办会从所有日期移除。')).toBeVisible();
+  await panel.getByRole('button', { name: '取消', exact: true }).click();
+  await expect(panel.getByText('Updated task', { exact: true })).toBeVisible();
+  await panel.getByRole('button', { name: '删除「Updated task」' }).click();
+  await panel.getByRole('button', { name: '删除待办', exact: true }).click();
+  await expect(panel.getByText('待办已删除。')).toBeVisible();
+  await panel.getByText('明天', { exact: true }).click();
+  await expect(panel.getByText('这一天没有待办。')).toBeVisible();
+
+  const writes = (await requests()).filter(({ method }: { method: string }) => method !== 'GET');
+  expect(writes.map(({ method }: { method: string }) => method)).toEqual(['POST', 'PATCH', 'PATCH', 'PATCH', 'DELETE']);
+  expect(writes.every(({ credentials }: { credentials?: string }) => credentials === 'include')).toBe(true);
+  expect(writes[0].body).toMatchObject({
+    startDate: '2026-11-30', endDate: '2026-12-01', startTime: '22:00:00', endTime: '09:00:00', allDay: false,
+  });
+
+  const count = (await requests()).length;
+  await panel.getByRole('button', { name: '断开连接' }).click();
+  await expect(panel.getByRole('button', { name: '连接待办' })).toBeVisible();
+  expect(await requests()).toHaveLength(count);
+  await board.keyboard.press('Escape');
+  await expect(panel).toBeHidden();
+  await expect(board.locator('.todo-panel')).toHaveCount(0);
+});
+
+test('enables weather after consent, validates the key and reuses the local forecast cache', async ({ board, worker }) => {
+  await worker.evaluate(() => {
+    const originalFetch = globalThis.fetch;
+    const originalContains = chrome.permissions.contains.bind(chrome.permissions);
+    const weatherOrigin = 'https://api.weatherapi.com/*';
+    const calls: { city: string | null; language: string | null; credentials?: string }[] = [];
+    Object.assign(globalThis, { weatherFixture: calls });
+    Object.defineProperty(chrome.permissions, 'contains', {
+      value: async (permission: chrome.permissions.Permissions) => permission.origins?.includes(weatherOrigin)
+        ? Boolean((await chrome.storage.session.get('weatherAllowed')).weatherAllowed)
+        : originalContains(permission),
+    });
+    globalThis.fetch = async (input, options) => {
+      const url = new URL(String(input));
+      if (url.origin !== 'https://api.weatherapi.com') return originalFetch(input, options);
+      calls.push({ city: url.searchParams.get('q'), language: url.searchParams.get('lang'), credentials: options?.credentials });
+      if ((await chrome.storage.session.get('weatherOffline')).weatherOffline) throw new TypeError('Offline fixture');
+      if (url.searchParams.get('key') !== 'weather-fixture') return Response.json({ error: { code: 2006 } }, { status: 401 });
+      return Response.json({
+        location: { name: 'Beijing' },
+        current: { temp_c: 17.4, feelslike_c: 15.1, is_day: 1, condition: { code: 1003, text: '局部多云' } },
+        forecast: { forecastday: [{ day: { mintemp_c: 7, maxtemp_c: 19 } }] },
+      });
+    };
+  });
+  await board.addInitScript(() => {
+    Object.defineProperty(chrome.permissions, 'request', {
+      value: async (permission: chrome.permissions.Permissions) => {
+        if (!permission.origins?.includes('https://api.weatherapi.com/*')) return false;
+        await chrome.storage.session.set({ weatherAllowed: true });
+        return true;
+      },
+    });
+    Object.defineProperty(chrome.permissions, 'remove', {
+      value: async () => {
+        await chrome.storage.session.remove('weatherAllowed');
+        return true;
+      },
+    });
+  });
+  await board.reload();
+  const requests = () => worker.evaluate(() => Reflect.get(globalThis, 'weatherFixture'));
+  await board.getByRole('button', { name: '切换到底部 Dock' }).click();
+  await expect(board.locator('.desktop-weather')).toHaveCount(0);
+  expect(await requests()).toEqual([]);
+
+  await board.getByRole('button', { name: '设置', exact: true }).click();
+  const panel = board.getByRole('dialog', { name: '设置' });
+  await panel.locator('summary').filter({ hasText: '天气' }).click();
+  await panel.getByLabel('城市', { exact: true }).fill('Beijing');
+  await panel.getByLabel('WeatherAPI.com API Key').fill('invalid-fixture');
+  await panel.getByRole('button', { name: '保存天气设置' }).click();
+  await expect(panel.getByRole('alert')).toContainText('拒绝了此 Key');
+  await panel.getByLabel('WeatherAPI.com API Key').fill('weather-fixture');
+  await panel.getByRole('button', { name: '保存天气设置' }).click();
+  await expect(panel.getByRole('button', { name: '关闭天气' })).toBeVisible();
+  await board.keyboard.press('Escape');
+  const weather = board.locator('.desktop-weather');
+  await expect(weather).toContainText('17°C');
+  await expect(weather).toContainText('体感 15°C');
+  await expect(weather).toContainText('7°C 至 19°C');
+  await expect(weather.getByRole('link', { name: 'WeatherAPI.com' })).toBeVisible();
+  await board.reload();
+  await expect(weather).toContainText('Beijing · 局部多云');
+  expect(await requests()).toEqual(Array(2).fill({ city: 'Beijing', language: 'zh', credentials: 'omit' }));
+
+  await worker.evaluate(async () => {
+    const { weatherCache } = await chrome.storage.local.get('weatherCache');
+    await chrome.storage.local.set({ weatherCache: { ...weatherCache, fetchedAt: Date.now() - 31 * 60_000 } });
+    await chrome.storage.session.set({ weatherOffline: true });
+  });
+  await board.reload();
+  await expect(weather).toContainText('17°C');
+  await expect(weather.getByRole('status')).toHaveText('上次获取的数据');
+  expect(await requests()).toHaveLength(3);
+
+  await board.getByRole('button', { name: '设置', exact: true }).click();
+  await panel.locator('summary').filter({ hasText: '天气' }).click();
+  await panel.getByRole('button', { name: '关闭天气' }).click();
+  await expect(weather).toHaveCount(0);
+  await expect.poll(() => board.evaluate(async () => (await chrome.storage.local.get('settings')).settings?.weather)).toBeUndefined();
 });
 
 test('follows the browser UI locale automatically and persists a language override', async ({ board }) => {
@@ -155,6 +396,57 @@ test('defaults to a glass Dock and respects reduced motion', async ({ board }) =
   expect(await board.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
 });
 
+test('keeps the Dock clear of the Windows taskbar at the bottom of a screen-filling window', async ({ board }) => {
+  await board.setViewportSize({ width: 1200, height: 1000 });
+  await board.addInitScript(() => {
+    Object.defineProperties(window.screen, {
+      width: { value: 1200 },
+      height: { value: 1000 },
+      availHeight: { value: 1000, configurable: true },
+      availTop: { value: 0, configurable: true },
+    });
+    Object.defineProperties(window, {
+      outerWidth: { value: 1200 },
+      outerHeight: { value: 1000, configurable: true },
+      screenY: { value: 0 },
+    });
+    Object.defineProperty(navigator, 'userAgent', { value: 'Mozilla/5.0 (Windows NT 10.0)' });
+  });
+  await board.reload();
+  await board.getByRole('button', { name: '切换到底部 Dock' }).click();
+
+  const dockGap = () => dock(board).evaluate((element) => innerHeight - element.getBoundingClientRect().bottom);
+  const desktopGap = () => board.locator('.desktop').evaluate((element) => innerHeight - element.getBoundingClientRect().bottom);
+  const baseGap = 20;
+  const taskbarHeight = 48;
+  await expect.poll(dockGap).toBe(baseGap + taskbarHeight);
+  await expect.poll(desktopGap).toBe(108 + taskbarHeight);
+
+  await board.setViewportSize({ width: 1440, height: 1200 });
+  await expect.poll(dockGap).toBe(baseGap + Math.ceil(taskbarHeight * 1.2));
+  await board.setViewportSize({ width: 1200, height: 1000 });
+
+  await board.evaluate(() => {
+    Object.defineProperty(screen, 'availHeight', { value: 952 });
+    window.dispatchEvent(new Event('resize'));
+  });
+  await expect.poll(dockGap).toBe(baseGap + taskbarHeight);
+
+  await board.evaluate(() => {
+    Object.defineProperty(screen, 'availTop', { value: 48 });
+    window.dispatchEvent(new Event('resize'));
+  });
+  await expect.poll(dockGap).toBe(baseGap);
+
+  await board.evaluate(() => {
+    Object.defineProperty(screen, 'availTop', { value: 0 });
+    Object.defineProperty(window, 'outerHeight', { value: 952 });
+  });
+  await board.setViewportSize({ width: 1200, height: 864 });
+  await expect.poll(dockGap).toBe(baseGap);
+  await expect.poll(desktopGap).toBe(108);
+});
+
 test('shows the local clock in Dock and updates the date across midnight', async ({ board }) => {
   await board.clock.install({ time: new Date(2026, 10, 19, 23, 59, 57) });
   const clock = board.locator('.desktop-clock');
@@ -170,10 +462,17 @@ test('shows the local clock in Dock and updates the date across midnight', async
   await expect(clock).toHaveCount(0);
 });
 
-test('imports a Scene wallpaper locally, restores it after reload and removes it', async ({ board }) => {
+test('plays a local SceneScript with pointer input in the wallpaper sandbox', async ({ board }) => {
   const sceneName = 'Scene test fixture';
   const config = Buffer.from(JSON.stringify({
-    general: { orthogonalprojection: { width: 640, height: 360 }, clearcolor: '0.2 0.4 0.6' },
+    general: {
+      orthogonalprojection: { width: 640, height: 360 },
+      clearcolor: '0.2 0.4 0.6',
+      zoom: {
+        value: 1,
+        script: 'export function update(value) { return input.cursorScreenPosition.x > 400 ? 2 : 1; }',
+      },
+    },
     objects: [],
   }));
   const entry = Buffer.from('scene.json');
@@ -190,8 +489,9 @@ test('imports a Scene wallpaper locally, restores it after reload and removes it
   const picker = board.locator('input[accept=".pkg,.json"]');
   await picker.setInputFiles({ name: 'invalid.pkg', mimeType: 'application/octet-stream', buffer: Buffer.from('invalid') });
   await expect(board.getByRole('alert')).toContainText('请选择有效的 Scene 文件');
-  const canvas = board.locator('[data-scene-wallpaper] canvas');
-  await expect(canvas).toHaveCount(0);
+  const scene = board.locator('iframe[data-scene-wallpaper]');
+  const canvas = scene.contentFrame().locator('canvas');
+  await expect(scene).toHaveCount(0);
 
   await picker.setInputFiles([
     { name: 'scene.pkg', mimeType: 'application/octet-stream', buffer: Buffer.concat([header, config]) },
@@ -199,13 +499,29 @@ test('imports a Scene wallpaper locally, restores it after reload and removes it
   ]);
   await expect(board.getByTitle(sceneName)).toBeVisible();
   await expect(canvas).toBeVisible();
+  expect(await canvas.evaluate(() => ({ origin: window.origin, runtimeId: globalThis.chrome?.runtime?.id })))
+    .toEqual({ origin: 'null', runtimeId: undefined });
+  expect(await scene.evaluate((frame: HTMLIFrameElement) => frame.contentDocument)).toBeNull();
+  expect(await canvas.evaluate(() => new Promise<string>((resolve) => {
+    document.addEventListener('securitypolicyviolation', (event) => resolve(event.effectiveDirective), { once: true });
+    void fetch('https://scene-sandbox.test/').catch(() => {});
+  }))).toBe('connect-src');
+
+  const zoom = () => canvas.evaluate(() => {
+    const sceneWindow = window as Window & { __scene?: { cameraTransforms: { zoom: number } } };
+    return sceneWindow.__scene?.cameraTransforms.zoom;
+  });
+  await board.mouse.move(200, 100);
+  await expect.poll(zoom).toBe(1);
+  await board.mouse.move(800, 100);
+  await expect.poll(zoom).toBe(2);
   await board.reload();
   await expect(canvas).toBeVisible();
   await expect(board.getByText('无法播放这张 Scene 壁纸')).toHaveCount(0);
 
   await board.getByRole('button', { name: '设置', exact: true }).click();
   await board.getByRole('button', { name: '移除 Scene 壁纸' }).click();
-  await expect(canvas).toHaveCount(0);
+  await expect(scene).toHaveCount(0);
   await expect.poll(() => board.evaluate(async () => {
     const { settings } = await chrome.storage.local.get('settings');
     return (settings as { background?: { type: string } }).background?.type;
@@ -546,8 +862,35 @@ test('keeps Dock pins independent while importing and exporting the legacy backu
   expect(data.groups.filter((group: { id: string }) => group.id === 'sys-dock')).toEqual([
     expect.objectContaining({ shortcutIds: ['legacy', 'bravo'] }),
   ]);
+  expect(data.layouts).toMatchObject({ active: 'dock', dock: { pinnedIds: ['legacy', 'bravo'] } });
   await switchLayout(board, '分组');
   await expect(link(board, 'Read', 'Bravo')).toBeVisible();
+});
+
+test('restores both layouts, including explicit empty Dock pins, from a version 2 backup', async ({ board }) => {
+  const backup = {
+    version: '2.0', exportedAt: 1, shortcuts, groups,
+    layouts: {
+      active: 'dock',
+      group: { iconsPerRow: 6 },
+      dock: { pinnedIds: [], desktopOrder: ['charlie', 'legacy', 'alpha'], hiddenIds: ['bravo'] },
+    },
+  };
+  await board.getByRole('button', { name: '导入导出', exact: true }).click();
+  const dialog = board.getByRole('dialog', { name: '导入导出书签' });
+  await dialog.locator('input[type=file]').setInputFiles({
+    name: 'both-layouts.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(backup)),
+  });
+  await dialog.getByRole('button', { name: '替换', exact: true }).click();
+  await dialog.getByRole('button', { name: '确认导入' }).click();
+  await expect(dialog).toBeHidden();
+  await board.reload();
+  await expect(board.getByRole('main', { name: '书签桌面' }).getByRole('link').first()).toHaveText('Charlie');
+  await expect(board.getByRole('main', { name: '书签桌面' }).getByRole('link', { name: 'Bravo' })).toHaveCount(0);
+  await expect(dock(board).getByRole('link')).toHaveCount(0);
+  await expect.poll(() => board.evaluate(async () => (await chrome.storage.local.get('settings')).settings.iconsPerRow)).toBe(6);
+  await switchLayout(board, '分组');
+  await expect(section(board, 'Read').getByRole('link')).toHaveText(['Bravo', 'Charlie']);
 });
 
 test('reads cached icons and failed lookups locally on subsequent tabs', async ({ board, worker }) => {
@@ -633,6 +976,17 @@ test('keeps keyboard ordering, batch copy, quick add and Chrome bookmark import 
   await expect(confirm).toBeDisabled();
   await picker.getByRole('checkbox', { name: 'Chrome bookmark', exact: true }).check();
   await expect(picker.getByRole('checkbox', { name: '全选' })).toHaveJSProperty('indeterminate', true);
+  const search = picker.getByRole('searchbox');
+  await search.fill('SKIPPED.TEST');
+  await expect(picker.getByRole('checkbox', { name: 'Chrome bookmark', exact: true })).toHaveCount(0);
+  await picker.getByRole('checkbox', { name: '全选搜索结果' }).check();
+  await picker.getByRole('checkbox', { name: '全选搜索结果' }).uncheck();
+  await search.fill('Import fixture');
+  await expect(picker.getByRole('checkbox', { name: 'Chrome bookmark', exact: true })).toBeChecked();
+  await search.fill('nothing-to-insert');
+  await expect(picker.getByText('没有符合搜索条件的书签')).toBeVisible();
+  await expect(picker.getByRole('checkbox', { name: '全选搜索结果' })).toBeDisabled();
+  await search.clear();
   await expect(board.locator('a[href="https://imported.test"]')).toHaveCount(0);
   await confirm.click();
   await expect(picker.getByRole('status')).toContainText('导入 1 个');
@@ -642,6 +996,7 @@ test('keeps keyboard ordering, batch copy, quick add and Chrome bookmark import 
 });
 
 test('opens the Chrome picker from the toolbar and imports all only after confirmation', async ({ board, worker }) => {
+  await board.setViewportSize({ width: 370, height: 520 });
   await board.evaluate(async () => {
     await chrome.bookmarks.create({ title: 'First Chrome bookmark', url: 'https://first-import.test' });
     await chrome.bookmarks.create({ title: 'Second Chrome bookmark', url: 'https://second-import.test' });
@@ -652,6 +1007,12 @@ test('opens the Chrome picker from the toolbar and imports all only after confir
   const openPicker = exportDialog.getByRole('button', { name: '选择书签' });
   await openPicker.click();
   const picker = board.getByRole('dialog', { name: '从 Chrome 书签导入' });
+  await expect(picker.getByRole('searchbox')).toBeVisible();
+  const frame = await picker.boundingBox();
+  expect(frame).not.toBeNull();
+  expect(frame!.x).toBeGreaterThanOrEqual(0);
+  expect(frame!.y + frame!.height).toBeLessThanOrEqual(520);
+  await expect(picker.getByRole('button', { name: '确认导入' })).toBeInViewport();
   await picker.getByRole('checkbox', { name: '全选' }).check();
   await expect(picker.getByRole('checkbox', { name: 'First Chrome bookmark' })).toBeChecked();
   await picker.getByRole('button', { name: '取消', exact: true }).click();
@@ -665,6 +1026,7 @@ test('opens the Chrome picker from the toolbar and imports all only after confir
   await expect(picker.getByRole('status')).toContainText('导入 2 个');
   await picker.getByRole('button', { name: '关闭', exact: true }).click();
   await exportDialog.getByRole('button', { name: '关闭', exact: true }).click();
+  await board.setViewportSize({ width: 1280, height: 720 });
   const desktop = board.getByRole('main', { name: '书签桌面' });
   await expect(desktop.getByRole('link', { name: 'First Chrome bookmark' })).toBeVisible();
   await expect(desktop.getByRole('link', { name: 'Second Chrome bookmark' })).toBeVisible();
